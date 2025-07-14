@@ -38,18 +38,30 @@ interface EquipmentGridProps {
 }
 
 const EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; position: string }[] = [
+  { slot: 'badge', label: 'Badge', position: 'col-start-1 row-start-1' },
   { slot: 'hat', label: 'Hat', position: 'col-start-3 row-start-1' },
+  { slot: 'emblem', label: 'Emblem', position: 'col-start-5 row-start-1' },
   { slot: 'face', label: 'Face', position: 'col-start-2 row-start-2' },
   { slot: 'eye', label: 'Eye', position: 'col-start-4 row-start-2' },
   { slot: 'earring', label: 'Earring', position: 'col-start-1 row-start-3' },
+  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-3' },
   { slot: 'top', label: 'Top', position: 'col-start-3 row-start-3' },
-  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-5 row-start-3' },
+  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-4 row-start-3' },
+  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-5 row-start-3' },
   { slot: 'weapon', label: 'Weapon', position: 'col-start-1 row-start-4' },
+  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-4' },
   { slot: 'bottom', label: 'Bottom', position: 'col-start-3 row-start-4' },
+  { slot: 'overall', label: 'Overall', position: 'col-start-3 row-start-4' },
+  { slot: 'pocket', label: 'Pocket', position: 'col-start-4 row-start-4' },
   { slot: 'secondary', label: 'Secondary', position: 'col-start-5 row-start-4' },
+  { slot: 'ring1', label: 'Ring 1', position: 'col-start-1 row-start-5' },
   { slot: 'gloves', label: 'Gloves', position: 'col-start-2 row-start-5' },
   { slot: 'shoes', label: 'Shoes', position: 'col-start-3 row-start-5' },
   { slot: 'cape', label: 'Cape', position: 'col-start-4 row-start-5' },
+  { slot: 'ring2', label: 'Ring 2', position: 'col-start-5 row-start-5' },
+  { slot: 'ring3', label: 'Ring 3', position: 'col-start-1 row-start-6' },
+  { slot: 'ring4', label: 'Ring 4', position: 'col-start-2 row-start-6' },
+  { slot: 'heart', label: 'Heart', position: 'col-start-4 row-start-6' },
 ];
 
 // Equipment slot icons mapping
@@ -95,9 +107,16 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-5 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
+      <div className="grid grid-cols-5 grid-rows-6 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
         {EQUIPMENT_SLOTS.map(({ slot, label, position }) => {
           const equipment = equipmentBySlot[slot];
+          
+          // Hide top/bottom if overall is equipped, hide overall if top/bottom equipped
+          const hasOverall = equipmentBySlot['overall'];
+          const hasTopOrBottom = equipmentBySlot['top'] || equipmentBySlot['bottom'];
+          
+          if (slot === 'overall' && hasTopOrBottom) return null;
+          if ((slot === 'top' || slot === 'bottom') && hasOverall) return null;
           
           return (
             <Card 

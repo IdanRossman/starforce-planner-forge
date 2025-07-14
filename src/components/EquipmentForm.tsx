@@ -193,6 +193,9 @@ export function EquipmentForm({
 
   const selectedSlot = form.watch('slot');
   const availableEquipment = selectedSlot ? EQUIPMENT_BY_SLOT[selectedSlot as keyof typeof EQUIPMENT_BY_SLOT] || [] : [];
+  
+  // Watch for overall/top/bottom conflicts
+  const currentSlot = form.watch('slot');
 
   const onSubmit = (data: EquipmentFormData) => {
     if (isEditing && equipment) {
@@ -261,19 +264,25 @@ export function EquipmentForm({
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="max-h-[200px]">
-                        {EQUIPMENT_SLOTS.map((slot) => {
-                          const IconComponent = getSlotIcon(slot.value);
-                          return (
-                            <SelectItem key={slot.value} value={slot.value}>
-                              <div className="flex items-center gap-2">
-                                <IconComponent className="h-4 w-4" />
-                                {slot.label}
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
+                       <SelectContent className="max-h-[200px]">
+                         {EQUIPMENT_SLOTS.map((slot) => {
+                           const IconComponent = getSlotIcon(slot.value);
+                           return (
+                             <SelectItem key={slot.value} value={slot.value}>
+                               <div className="flex items-center gap-2">
+                                 <IconComponent className="h-4 w-4" />
+                                 {slot.label}
+                                 {(slot.value === 'overall' && (currentSlot === 'top' || currentSlot === 'bottom')) && 
+                                   <span className="text-xs text-muted-foreground">(conflicts with top/bottom)</span>
+                                 }
+                                 {((slot.value === 'top' || slot.value === 'bottom') && currentSlot === 'overall') && 
+                                   <span className="text-xs text-muted-foreground">(conflicts with overall)</span>
+                                 }
+                               </div>
+                             </SelectItem>
+                           );
+                         })}
+                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
