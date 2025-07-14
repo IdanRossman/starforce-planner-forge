@@ -41,5 +41,3 @@ jobs:
     - name: Build app
       run: npm run build  # Or `vite build` if that’s how you’re building the app
 
-    - name: Run tests (optional, remove if no tests are set up)
-      run: npm test
