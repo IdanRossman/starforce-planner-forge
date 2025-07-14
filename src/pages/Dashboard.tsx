@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Character, Equipment } from "@/types";
+import { Character, Equipment, EquipmentSlot } from "@/types";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CharacterForm } from "@/components/CharacterForm";
+import { EquipmentForm } from "@/components/EquipmentForm";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { StarForceCalculator, calculateStarForce } from "@/components/StarForceCalculator";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,9 @@ export default function Dashboard() {
   const [characters, setCharacters] = useState<Character[]>(mockCharacters);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
+  const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
+  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
+  const [addingToSlot, setAddingToSlot] = useState<EquipmentSlot | null>(null);
 
   const handleSelectCharacter = (character: Character) => {
     setSelectedCharacter(character);
@@ -42,11 +46,46 @@ export default function Dashboard() {
 
   const handleEditEquipment = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
+    setEditingEquipment(equipment);
+    setAddingToSlot(null);
+    setEquipmentFormOpen(true);
   };
 
-  const handleAddEquipment = (slot: string) => {
-    // TODO: Open equipment add dialog
-    console.log("Add equipment to slot:", slot);
+  const handleAddEquipment = (slot: EquipmentSlot) => {
+    setEditingEquipment(null);
+    setAddingToSlot(slot);
+    setEquipmentFormOpen(true);
+  };
+
+  const handleSaveEquipment = (equipmentData: Omit<Equipment, 'id'> | Equipment) => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        if ('id' in equipmentData) {
+          // Editing existing equipment
+          const updatedEquipment = char.equipment.map(eq => 
+            eq.id === equipmentData.id ? equipmentData as Equipment : eq
+          );
+          return { ...char, equipment: updatedEquipment };
+        } else {
+          // Adding new equipment
+          const newEquipment: Equipment = {
+            ...equipmentData,
+            id: `eq-${Date.now()}`,
+          };
+          const filteredEquipment = char.equipment.filter(eq => eq.slot !== newEquipment.slot);
+          return { ...char, equipment: [...filteredEquipment, newEquipment] };
+        }
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
   };
 
   const calculation = selectedEquipment 
@@ -175,6 +214,15 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+
+        {/* Equipment Form Dialog */}
+        <EquipmentForm
+          open={equipmentFormOpen}
+          onOpenChange={setEquipmentFormOpen}
+          equipment={editingEquipment}
+          defaultSlot={addingToSlot}
+          onSave={handleSaveEquipment}
+        />
       </div>
     </div>
   );
