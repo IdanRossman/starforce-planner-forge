@@ -145,7 +145,7 @@ export const getClassSubcategory = (className: string): string => {
       return category.name;
     }
   }
-  return 'Other';
+  return CLASS_SUBCATEGORIES.OTHER;
 };
 
 // Get job icon component

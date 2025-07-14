@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
-import { fetchCharacterSprite, getPlaceholderSprite, REGIONS, SKIN_IDS, type CharacterSprite } from '@/lib/maplestoryApi';
 import {
   Dialog,
   DialogContent,
@@ -78,8 +77,6 @@ const ORGANIZED_SERVERS = {
 
 export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
-  const [characterSprite, setCharacterSprite] = useState<CharacterSprite | null>(null);
-  const [spriteLoading, setSpriteLoading] = useState(false);
 
   const form = useForm<CharacterFormData>({
     resolver: zodResolver(characterSchema),
@@ -103,37 +100,6 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       setOpen(true);
     }
   }, [editingCharacter, form]);
-
-  // Fetch character sprite when class changes
-  useEffect(() => {
-    const subscription = form.watch((value) => {
-      if (value.class) {
-        console.log('Character class changed to:', value.class);
-        setSpriteLoading(true);
-        fetchCharacterSprite(value.class)
-          .then((sprite) => {
-            console.log('Received sprite:', sprite);
-            if (sprite) {
-              setCharacterSprite(sprite);
-            } else {
-              // Fallback to placeholder when API fails
-              console.log('Using placeholder sprite for:', value.class);
-              const placeholder = getPlaceholderSprite(value.class);
-              setCharacterSprite(placeholder);
-            }
-            setSpriteLoading(false);
-          })
-          .catch((error) => {
-            console.error('Error in fetchCharacterSprite:', error);
-            setCharacterSprite(null);
-            setSpriteLoading(false);
-          });
-      } else {
-        setCharacterSprite(null);
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
 
   const onSubmit = (data: CharacterFormData) => {
     const newCharacter: Omit<Character, 'id'> = {
@@ -258,39 +224,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                    </FormItem>
                  );
                }}
-              />
-
-            {/* Character Sprite Preview */}
-            {(characterSprite || spriteLoading) && (
-              <div className="flex flex-col items-center space-y-2 py-4 border rounded-lg bg-card">
-                <h4 className="text-sm font-medium text-muted-foreground">Character Preview</h4>
-                {spriteLoading ? (
-                  <div className="flex items-center justify-center w-24 h-24 bg-muted rounded-lg animate-pulse">
-                    <span className="text-xs text-muted-foreground">Loading...</span>
-                  </div>
-                ) : characterSprite ? (
-                  <div className="flex items-center justify-center p-2 bg-muted rounded-lg">
-                    <img 
-                      src={characterSprite.url} 
-                      alt={`${form.watch('class')} character sprite`}
-                      className="max-w-[80px] max-h-[80px] object-contain"
-                      onError={(e) => {
-                        console.error('Sprite image failed to render:', characterSprite.url);
-                        e.currentTarget.style.display = 'none';
-                      }}
-                      onLoad={() => {
-                        console.log('Sprite image rendered successfully:', characterSprite.url);
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="text-xs text-muted-foreground">No sprite available</div>
-                )}
-                <p className="text-xs text-muted-foreground text-center">
-                  {characterSprite?.url.startsWith('data:') ? 'Placeholder sprite' : 'Powered by MapleStory.io'}
-                </p>
-              </div>
-            )}
+             />
 
             <FormField
               control={form.control}
