@@ -49,12 +49,7 @@ function saviorCost(currentStar: number, itemLevel: number): number {
 }
 
 function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
-  const cost = saviorCost(currentStar, itemLevel);
-  // Debug logging to compare with Brandon's costs
-  if (itemLevel === 150) {
-    console.log(`Star ${currentStar} cost: ${cost.toLocaleString()}`);
-  }
-  return cost;
+  return saviorCost(currentStar, itemLevel);
 }
 
 function getSafeguardMultiplierIncrease(currentStar: number, server: string): number {
@@ -176,12 +171,6 @@ function performExperiment(
 
   while (currentStar < desiredStar) {
     const chanceTime = decreaseCount === 2;
-    
-    // Debug for 16→17★ progression
-    if (currentStar === 16) {
-      console.log(`Attempting 16→17★, chanceTime: ${chanceTime}`);
-    }
-    
     totalMesos += attemptCost(currentStar, itemLevel, boomProtect, thirtyOff, starCatch, mvpDiscount, chanceTime, server);
 
     if (chanceTime) {
@@ -244,7 +233,7 @@ export function calculateStarForce(
     };
   }
 
-  const trials = 1000;
+  const trials = 500; // Reduced for better performance
   let totalCost = 0;
   let totalBooms = 0;
   
@@ -296,9 +285,6 @@ export function calculateStarForce(
   const avgCost = totalCost / trials;
   const avgBooms = totalBooms / trials;
   const sparesNeeded = Math.ceil(avgBooms); // Round up - if 0.7 booms, need 1 spare
-
-  // Debug: Log the final results to compare with Brandon's
-  console.log(`Final Results: Average Cost: ${(avgCost / 1000000000).toFixed(2)}B, Average Booms: ${avgBooms.toFixed(2)}`);
 
   // Generate recommendations
   const recommendations: string[] = [];
