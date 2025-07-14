@@ -449,7 +449,7 @@ export default function Dashboard() {
           </div>
 
           {/* Main Content */}
-          <div className="col-span-12">
+          <div className="col-span-12 lg:col-span-8">
             {selectedCharacter ? (
               <Tabs defaultValue="equipment" className="space-y-6">
                 <TabsList className="bg-muted/50">
