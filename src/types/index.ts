@@ -42,7 +42,8 @@ export type EquipmentSlot =
   | 'pendant2'
   | 'pocket'
   | 'heart'
-  | 'badge';
+  | 'badge'
+  | 'medal';
 
 export type EquipmentType = 
   | 'armor'

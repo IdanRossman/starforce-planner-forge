@@ -70,8 +70,9 @@ const EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; position: string }[
   // Column 6: Secondary equipment
   { slot: 'emblem', label: 'Emblem', position: 'col-start-6 row-start-1' },
   { slot: 'badge', label: 'Badge', position: 'col-start-6 row-start-2' },
-  { slot: 'secondary', label: 'Secondary', position: 'col-start-6 row-start-3' },
-  { slot: 'cape', label: 'Cape', position: 'col-start-6 row-start-4' },
+  { slot: 'medal', label: 'Medal', position: 'col-start-6 row-start-3' },
+  { slot: 'secondary', label: 'Secondary', position: 'col-start-6 row-start-4' },
+  { slot: 'cape', label: 'Cape', position: 'col-start-6 row-start-5' },
   { slot: 'heart', label: 'Heart', position: 'col-start-6 row-start-6' },
 ];
 
@@ -102,6 +103,7 @@ const getSlotIcon = (slot: string) => {
     pocket: Package,
     heart: Heart,
     badge: Star,
+    medal: Star,
   };
   
   const IconComponent = iconMap[slot] || Package;
