@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Character, Equipment } from "@/types";
 import { StarForceTable } from "@/components/StarForceTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { BarChart3, Users, Target, Coins } from "lucide-react";
 import { loadFromLocalStorage } from "@/lib/utils";
 
 export default function Overview() {
+  const navigate = useNavigate();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
 
@@ -29,8 +31,7 @@ export default function Overview() {
   const completionRate = totalEquipment > 0 ? ((totalEquipment - incompleteEquipment) / totalEquipment * 100) : 0;
 
   const handleAddStarForceItem = () => {
-    // This will be handled by the parent component eventually
-    console.log("Add starforce item");
+    navigate('/characters');
   };
 
   const handleRemoveStarForceItem = (id: string) => {

@@ -579,7 +579,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               className="flex items-center gap-2"
             >
               <Package className="w-4 h-4" />
-              Add Equipment for StarForce
+              Go to Characters to Add Equipment
             </Button>
           </div>
         )}
