@@ -224,7 +224,11 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
   };
 
   const totalCost = calculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
-  const totalSpares = calculations.reduce((sum, calc) => sum + calc.expectedSpares, 0);
+  const totalSparesNeeded = calculations.reduce((sum, calc) => {
+    const totalAvailable = 1 + calc.sparesCount; // 1 base + spares
+    const shortfall = Math.max(0, calc.expectedSpares - totalAvailable);
+    return sum + shortfall;
+  }, 0);
   const hasCalculations = calculations.some(calc => calc.isCalculated);
 
   return (
@@ -394,9 +398,23 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                         <span className="font-semibold">
                           {calc.expectedSpares}
                         </span>
-                        {calc.sparesCount < calc.expectedSpares && (
-                          <span className="text-xs text-red-400">
-                            Need {calc.expectedSpares - calc.sparesCount} more
+                        {/* Show total available vs needed */}
+                        <div className="text-xs">
+                          <div className="text-muted-foreground">
+                            Have: {1 + calc.sparesCount} total
+                          </div>
+                          <div className="text-muted-foreground">
+                            (1 base + {calc.sparesCount} spares)
+                          </div>
+                        </div>
+                        {/* Status indicator */}
+                        {(1 + calc.sparesCount) < calc.expectedSpares ? (
+                          <span className="text-xs text-red-400 font-medium">
+                            ❌ Need {calc.expectedSpares - (1 + calc.sparesCount)} more
+                          </span>
+                        ) : (
+                          <span className="text-xs text-green-400 font-medium">
+                            ✅ Sufficient
                           </span>
                         )}
                        </div>
@@ -462,9 +480,9 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               <div className="flex items-center gap-3 p-3 bg-card rounded-lg">
                 <Package className="w-5 h-5 text-primary" />
                 <div>
-                  <span className="text-sm text-muted-foreground">Total Spares Needed</span>
+                  <span className="text-sm text-muted-foreground">Additional Spares Needed</span>
                   <p className="text-lg font-bold text-primary">
-                    {totalSpares} items
+                    {totalSparesNeeded} more items
                   </p>
                 </div>
               </div>
