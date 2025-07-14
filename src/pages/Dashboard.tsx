@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Character, Equipment } from "@/types";
 import { CharacterCard } from "@/components/CharacterCard";
+import { CharacterForm } from "@/components/CharacterForm";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { StarForceCalculator, calculateStarForce } from "@/components/StarForceCalculator";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,14 @@ export default function Dashboard() {
     }
   };
 
+  const addCharacter = (newCharacter: Omit<Character, 'id'>) => {
+    const character: Character = {
+      ...newCharacter,
+      id: `char-${Date.now()}`, // Simple ID generation for demo
+    };
+    setCharacters([...characters, character]);
+  };
+
   const handleEditEquipment = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
   };
@@ -56,10 +65,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-muted-foreground">Plan your equipment upgrades efficiently</p>
             </div>
-            <Button className="bg-gradient-to-r from-primary to-maple-orange hover:opacity-90">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Character
-            </Button>
+            <CharacterForm onAddCharacter={addCharacter} />
           </div>
         </div>
       </header>
@@ -163,13 +169,7 @@ export default function Dashboard() {
                   <p className="text-muted-foreground mb-6">
                     Choose a character from the list to view and manage their equipment
                   </p>
-                  <Button 
-                    variant="outline" 
-                    className="border-primary/50 hover:bg-primary/10"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Character
-                  </Button>
+                  <CharacterForm onAddCharacter={addCharacter} />
                 </CardContent>
               </Card>
             )}
