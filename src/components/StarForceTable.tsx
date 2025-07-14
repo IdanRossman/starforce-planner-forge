@@ -319,36 +319,37 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
   return (
     <Card className="bg-gradient-to-br from-card to-card/80">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="flex items-center gap-2 flex-shrink-0">
             <Calculator className="w-5 h-5 text-primary" />
-            {title || "StarForce Bulk Calculator"}
-            {subtitle && <span className="text-sm text-muted-foreground ml-2">• {subtitle}</span>}
+            <span className="text-base sm:text-lg">{title || "StarForce Bulk Calculator"}</span>
+            {subtitle && <span className="hidden sm:inline text-sm text-muted-foreground ml-2">• {subtitle}</span>}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button 
               onClick={onAddStarForceItem}
               variant="outline" 
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 h-8 px-3"
             >
-              <Package className="w-4 h-4" />
-              Add Equipment
+              <Package className="w-3 h-3" />
+              <span className="text-xs">Add Equipment</span>
             </Button>
             {hasCalculations && (
               <Button 
                 onClick={exportToCSV}
                 variant="outline" 
                 size="sm"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 h-8 px-3"
               >
-                <Download className="w-4 h-4" />
-                Export CSV
+                <Download className="w-3 h-3" />
+                <span className="text-xs hidden sm:inline">Export CSV</span>
+                <span className="text-xs sm:hidden">Export</span>
               </Button>
             )}
-            <Button onClick={calculateAll} className="flex items-center gap-2">
-              <Calculator className="w-4 h-4" />
-              {hasCalculations ? 'Recalculate All' : 'Calculate All'}
+            <Button onClick={calculateAll} className="flex items-center gap-2 h-8 px-3" size="sm">
+              <Calculator className="w-3 h-3" />
+              <span className="text-xs">{hasCalculations ? 'Recalculate' : 'Calculate'}</span>
             </Button>
           </div>
         </div>
