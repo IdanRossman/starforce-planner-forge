@@ -199,6 +199,7 @@ export function calculateStarForce(
     successRateBonus?: number;
     starCatching?: boolean;
     safeguard?: boolean;
+    spareCost?: number; // Cost of spare items for when items boom
   } = {}
 ): StarForceCalculation {
   const {
@@ -206,6 +207,7 @@ export function calculateStarForce(
     successRateBonus = 0,
     starCatching = false,
     safeguard = false,
+    spareCost = 0, // Default no spare cost
   } = events || {};
 
   // Input validation
@@ -270,22 +272,36 @@ export function calculateStarForce(
     });
   }
 
-  // Generate recommendations
-  const recommendations: string[] = [];
+  // Calculate total cost including spares
   const avgCost = totalCost / trials;
   const avgBooms = totalBooms / trials;
+  const spareCostTotal = avgBooms * spareCost; // Cost of spare items needed
+  const totalAverageCost = avgCost + spareCostTotal;
+
+  // Generate recommendations
+  const recommendations: string[] = [];
   
   if (avgBooms > 0.5 && !safeguard && targetLevel >= 15) {
     recommendations.push("Consider using Safeguard for stars 15-16 to prevent destruction.");
   }
-  if (avgCost > 500000000 && !thirtyOff) {
+  if (totalAverageCost > 500000000 && !thirtyOff) {
     recommendations.push("Wait for a 30% Off event to significantly reduce costs.");
+  }
+  if (spareCost > 0 && avgBooms > 1) {
+    recommendations.push(`Expected ${avgBooms.toFixed(1)} booms - factor in ${formatMesos(spareCostTotal)} for spare items.`);
+  }
+
+  function formatMesos(amount: number): string {
+    if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
+    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
+    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
+    return amount.toString();
   }
 
   return {
     currentLevel,
     targetLevel,
-    averageCost: Math.round(totalCost / trials),
+    averageCost: Math.round(totalAverageCost), // Now includes spare costs
     averageBooms: Math.round((totalBooms / trials) * 100) / 100,
     successRate: Math.round((trials / trials) * 10000) / 100, // Simplified
     boomRate: Math.round((totalBooms / (trials * 5)) * 10000) / 100, // Estimated
@@ -306,6 +322,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
   const [starCatching, setStarCatching] = useState(false);
   const [eventType, setEventType] = useState<string>("");
   const [costDiscount, setCostDiscount] = useState(0);
+  const [spareCost, setSpareCost] = useState(0); // Cost of spare items
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null
   );
@@ -334,6 +351,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
         starCatching,
         safeguard,
         eventType: eventType as Events["eventType"] || undefined,
+        spareCost,
       };
       
       const result = calculateStarForce(itemLevel, currentLevel, targetLevel, "epic", "Regular", events);
@@ -450,17 +468,31 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
               <label className="text-sm text-muted-foreground">Star Catching (+5%)</label>
             </div>
           </div>
-          <div>
-            <label className="text-sm text-muted-foreground">Cost Discount (%)</label>
-            <Input
-              type="number"
-              value={costDiscount}
-              onChange={(e) => setCostDiscount(Number(e.target.value))}
-              min={0}
-              max={50}
-              step={5}
-              className="mt-1"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-muted-foreground">Cost Discount (%)</label>
+              <Input
+                type="number"
+                value={costDiscount}
+                onChange={(e) => setCostDiscount(Number(e.target.value))}
+                min={0}
+                max={50}
+                step={5}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground">Spare Item Cost (mesos)</label>
+              <Input
+                type="number"
+                value={spareCost}
+                onChange={(e) => setSpareCost(Number(e.target.value))}
+                min={0}
+                step={1000000}
+                placeholder="0"
+                className="mt-1"
+              />
+            </div>
           </div>
           <Button type="submit" className="w-full">
             Calculate Enhancement Cost

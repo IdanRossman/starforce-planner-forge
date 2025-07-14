@@ -61,6 +61,7 @@ export interface Events {
   successRateBonus?: number;
   starCatching?: boolean;
   safeguard?: boolean;
+  spareCost?: number;
   eventType?: "5/10/15" | "Shining Star" | "30% Off" | "No Boom";
 }
 
