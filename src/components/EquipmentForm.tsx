@@ -385,14 +385,14 @@ export function EquipmentForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Potential Tier (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                    <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} value={field.value || "none"}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select potential tier (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">No Potential</SelectItem>
+                        <SelectItem value="none">No Potential</SelectItem>
                         {EQUIPMENT_TIERS.map((tier) => (
                           <SelectItem key={tier.value} value={tier.value}>
                             {tier.label}
