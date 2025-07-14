@@ -49,12 +49,12 @@ function saviorCost(currentStar: number, itemLevel: number): number {
 }
 
 function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
-  // Use exact server mapping from Brandon's working calculator
-  if (server.toLowerCase() === "gms" || server.toLowerCase() === "Regular") {
-    return saviorCost(currentStar, itemLevel);
+  const cost = saviorCost(currentStar, itemLevel);
+  // Debug logging to compare with Brandon's costs
+  if (itemLevel === 150 && currentStar >= 15 && currentStar <= 17) {
+    console.log(`Star ${currentStar} cost: ${cost.toLocaleString()}`);
   }
-  // Default to savior cost for now, but this should match Brandon's exact logic
-  return saviorCost(currentStar, itemLevel);
+  return cost;
 }
 
 function getSafeguardMultiplierIncrease(currentStar: number, server: string): number {
@@ -290,6 +290,9 @@ export function calculateStarForce(
   const avgCost = totalCost / trials;
   const avgBooms = totalBooms / trials;
   const sparesNeeded = Math.ceil(avgBooms); // Round up - if 0.7 booms, need 1 spare
+
+  // Debug: Log the final results to compare with Brandon's
+  console.log(`Final Results: Average Cost: ${(avgCost / 1000000000).toFixed(2)}B, Average Booms: ${avgBooms.toFixed(2)}`);
 
   // Generate recommendations
   const recommendations: string[] = [];
