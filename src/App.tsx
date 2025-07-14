@@ -23,7 +23,7 @@ const App = () => (
           <AppNavbar />
           
           {/* Main Content */}
-          <main className="p-6">
+          <main className="p-6 pb-16">
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/characters" element={<Characters />} />
@@ -34,6 +34,15 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          
+          {/* Footer with signature */}
+          <footer className="border-t border-border/50 bg-card/30 backdrop-blur-sm">
+            <div className="container mx-auto px-6 py-4">
+              <p className="text-center text-sm text-muted-foreground">
+                Made by Idan Rossman
+              </p>
+            </div>
+          </footer>
         </HashRouter>
       </div>
     </TooltipProvider>
