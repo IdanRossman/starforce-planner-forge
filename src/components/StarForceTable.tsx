@@ -566,19 +566,24 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
             </Table>
           </div>
         ) : (
-          <div className="py-16 text-center">
-            <Calculator className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              No Equipment to Calculate
-            </h3>
-            <p className="text-muted-foreground mb-6">
-              Add equipment with incomplete star force goals to start calculating
-            </p>
+          <div className="py-20 text-center space-y-6">
+            <div className="mx-auto w-24 h-24 bg-muted/30 rounded-full flex items-center justify-center mb-6">
+              <Calculator className="w-12 h-12 text-muted-foreground" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-semibold text-foreground">
+                No Equipment to Calculate
+              </h3>
+              <p className="text-muted-foreground max-w-md mx-auto">
+                Add equipment with incomplete star force goals to start calculating upgrade costs and requirements
+              </p>
+            </div>
             <Button 
               onClick={onAddStarForceItem}
-              className="flex items-center gap-2"
+              size="lg"
+              className="mx-auto"
             >
-              <Package className="w-4 h-4" />
+              <Package className="w-4 h-4 mr-2" />
               Go to Characters to Add Equipment
             </Button>
           </div>
