@@ -4,7 +4,7 @@ import { CharacterCard } from "@/components/CharacterCard";
 import { CharacterForm } from "@/components/CharacterForm";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
-import { StarForceCalculator, calculateStarForce } from "@/components/StarForceCalculator";
+import { StarForceTable } from "@/components/StarForceTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -88,9 +88,6 @@ export default function Dashboard() {
     }
   };
 
-  const calculation = selectedEquipment 
-    ? calculateStarForce(selectedEquipment.currentStarForce, selectedEquipment.targetStarForce, selectedEquipment.tier)
-    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -170,28 +167,17 @@ export default function Dashboard() {
                 </TabsContent>
 
                 <TabsContent value="calculator" className="space-y-6">
-                  {selectedEquipment && calculation ? (
-                    <div className="space-y-6">
-                      <Card className="bg-gradient-to-br from-card to-card/80">
-                        <CardHeader>
-                          <CardTitle>
-                            {selectedEquipment.set ? `${selectedEquipment.set} ${selectedEquipment.slot}` : `Lv.${selectedEquipment.level} ${selectedEquipment.slot}`}
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <StarForceCalculator calculation={calculation} />
-                        </CardContent>
-                      </Card>
-                    </div>
+                  {selectedCharacter.equipment.length > 0 ? (
+                    <StarForceTable equipment={selectedCharacter.equipment} />
                   ) : (
                     <Card className="bg-gradient-to-br from-card to-card/80">
                       <CardContent className="py-12 text-center">
                         <Calculator className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                         <h3 className="text-lg font-semibold text-foreground mb-2">
-                          Select Equipment
+                          No Equipment Found
                         </h3>
                         <p className="text-muted-foreground">
-                          Click on an equipment piece to see StarForce calculations
+                          Add equipment to this character to start calculating StarForce costs
                         </p>
                       </CardContent>
                     </Card>
