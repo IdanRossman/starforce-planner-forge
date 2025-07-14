@@ -56,6 +56,14 @@ export type EquipmentTier =
   | 'unique'
   | 'legendary';
 
+export interface Events {
+  costMultiplier?: number;
+  successRateBonus?: number;
+  starCatching?: boolean;
+  safeguard?: boolean;
+  eventType?: "5/10/15" | "Shining Star" | "30% Off" | "No Boom";
+}
+
 export interface StarForceCalculation {
   currentLevel: number;
   targetLevel: number;
@@ -64,4 +72,6 @@ export interface StarForceCalculation {
   successRate: number;
   boomRate: number;
   costPerAttempt: number;
+  perStarStats: { star: number; successRate: number; boomRate: number; cost: number }[];
+  recommendations: string[];
 }

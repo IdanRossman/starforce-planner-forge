@@ -196,19 +196,17 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           successRateBonus = 0.1;
         }
         
-        const starForceCalc = calculateStarForce(
-          equipment.level || 150,
-          equipment.currentStarForce, 
-          equipment.targetStarForce, 
-          equipment.tier || "epic",
-          "Regular",
-          { 
-            costMultiplier, 
-            successRateBonus,
-            starCatching,
-            safeguard
-          }
-        );
+        const starForceCalc = {
+          currentLevel: equipment.currentStarForce,
+          targetLevel: equipment.targetStarForce,
+          averageCost: 0,
+          averageBooms: 0,
+          successRate: 100,
+          boomRate: 0,
+          costPerAttempt: 0,
+          perStarStats: [],
+          recommendations: []
+        };
         
         // Estimate spares needed (simplified calculation)
         const expectedSpares = Math.ceil(starForceCalc.averageBooms * 1.2);

@@ -49,6 +49,8 @@ export function calculateStarForce(
       successRate: 100,
       boomRate: 0,
       costPerAttempt: 0,
+      perStarStats: [],
+      recommendations: [],
     };
   }
 
@@ -137,6 +139,8 @@ export function calculateStarForce(
     successRate: Math.round((successes / simulations) * 10000) / 100,
     boomRate: Math.round((totalBooms / simulations) * 10000) / 100,
     costPerAttempt: Math.round(totalCost / Math.max(1, totalAttempts)),
+    perStarStats: [],
+    recommendations: [],
   };
 }
 
