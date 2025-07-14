@@ -116,6 +116,7 @@ export const EQUIPMENT_BY_SLOT = {
   ],
   ring1: [
     { name: 'Oz Ring', level: 110, tier: null },
+    { name: 'Event Ring', level: 120, tier: null },
     { name: 'Silver Blossom Ring', level: 110, tier: null },
     { name: 'Treasure Hunter John Ring', level: 125, tier: null },
     { name: 'Reinforced Gollux Ring', level: 140, tier: null },
