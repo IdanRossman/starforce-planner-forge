@@ -46,10 +46,10 @@ const EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; position: string }[
   { slot: 'pocket', label: 'Pocket', position: 'col-start-1 row-start-5' },
   
   // Column 2: Pendants + Weapon + Belt
-  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-1' },
-  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-2' },
-  { slot: 'weapon', label: 'Weapon', position: 'col-start-2 row-start-3' },
-  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-4' },
+  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-2' },
+  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-3' },
+  { slot: 'weapon', label: 'Weapon', position: 'col-start-2 row-start-4' },
+  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-5' },
   
   // Column 3: Main armor pieces
   { slot: 'hat', label: 'Hat', position: 'col-start-3 row-start-1' },
