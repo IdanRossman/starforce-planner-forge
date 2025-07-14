@@ -29,7 +29,7 @@ function getBaseCost(server: string, currentStar: number, itemLevel: number): nu
     return Math.round(100 * ((itemLevel ** 3) * Math.pow(currentStar + 1, 2.7) / 15000) + 100000);
   } else {
     // High star costs - calibrated to match 1B for 0->17* level 150
-    return Math.round(1000 * ((itemLevel ** 2.5) * Math.pow(currentStar + 1, 3.0) / 1500) + 1500000);
+    return Math.round(250 * ((itemLevel ** 2.5) * Math.pow(currentStar + 1, 2.8) / 1500) + 400000);
   }
 }
 
