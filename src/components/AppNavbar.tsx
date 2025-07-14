@@ -37,7 +37,14 @@ export function AppNavbar() {
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent">
                 MapleStory StarForce Planner
               </h1>
-              <p className="text-xs text-muted-foreground">Plan your equipment upgrades efficiently</p>
+              <div className="flex items-center gap-3">
+                <p className="text-xs text-muted-foreground">Plan your equipment upgrades efficiently</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/80">
+                  <span className="hidden md:inline">#BuffMerc</span>
+                  <span className="hidden md:inline">#LetUsKeepTheDonkey</span>
+                  <span>🦄</span>
+                </div>
+              </div>
             </div>
           </NavLink>
           
