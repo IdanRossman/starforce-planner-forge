@@ -53,19 +53,19 @@ export function calculateStarForce(
     };
   }
 
-  // Official MapleStory cost formula (more accurate)
+  // MapleStory cost formula (based on community calculators)
   function getBaseCost(itemLevel: number, star: number): number {
     const roundedLevel = Math.floor(itemLevel / 10) * 10;
     
     if (star <= 10) {
-      // Stars 1-10: Relatively affordable
+      // Stars 1-10: Base costs
       return Math.round(100 * ((roundedLevel ** 3) * (star + 1) / 25000) + 1000);
     } else if (star <= 15) {
-      // Stars 11-15: More expensive  
-      return Math.round(100 * ((roundedLevel ** 3) * Math.pow(star + 1, 2.7) / 8000) + 100000);
+      // Stars 11-15: Higher costs
+      return Math.round(100 * ((roundedLevel ** 3) * Math.pow(star + 1, 2.7) / 4000) + 500000);
     } else {
-      // Stars 16-25: Extremely expensive (real MapleStory scaling)
-      return Math.round(100 * ((roundedLevel ** 3) * Math.pow(star + 1, 3.5) / 2500) + 1000000);
+      // Stars 16-25: Very expensive (matching community calculators)
+      return Math.round(100 * ((roundedLevel ** 3) * Math.pow(star + 1, 3.8) / 1000) + 5000000);
     }
   }
 
