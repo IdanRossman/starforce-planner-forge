@@ -175,7 +175,7 @@ export default function Dashboard() {
                       <Card className="bg-gradient-to-br from-card to-card/80">
                         <CardHeader>
                           <CardTitle>
-                            {selectedEquipment.name} - {selectedEquipment.slot}
+                            {selectedEquipment.set ? `${selectedEquipment.set} ${selectedEquipment.slot}` : `Lv.${selectedEquipment.level} ${selectedEquipment.slot}`}
                           </CardTitle>
                         </CardHeader>
                         <CardContent>

@@ -32,7 +32,6 @@ import { Slider } from '@/components/ui/slider';
 import { EQUIPMENT_SETS, COMMON_EQUIPMENT_NAMES } from '@/data/equipmentSets';
 
 const equipmentSchema = z.object({
-  name: z.string().min(1, 'Equipment name is required'),
   slot: z.string().min(1, 'Equipment slot is required'),
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
@@ -107,7 +106,6 @@ export function EquipmentForm({
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
-      name: '',
       slot: defaultSlot || '',
       type: 'armor',
       level: 200,
@@ -123,7 +121,6 @@ export function EquipmentForm({
     if (open) {
       if (equipment) {
         form.reset({
-          name: equipment.name,
           slot: equipment.slot,
           type: equipment.type,
           level: equipment.level,
@@ -134,7 +131,6 @@ export function EquipmentForm({
         });
       } else {
         form.reset({
-          name: '',
           slot: defaultSlot || '',
           type: 'armor',
           level: 200,
@@ -148,9 +144,7 @@ export function EquipmentForm({
   }, [open, equipment, defaultSlot, form]);
 
   const selectedType = form.watch('type');
-  const selectedSet = form.watch('set');
   const availableSets = EQUIPMENT_SETS[selectedType] || [];
-  const availableNames = selectedSet && COMMON_EQUIPMENT_NAMES[selectedType]?.[selectedSet] || [];
 
   const onSubmit = (data: EquipmentFormData) => {
     if (isEditing && equipment) {
@@ -163,7 +157,6 @@ export function EquipmentForm({
       });
     } else {
       onSave({
-        name: data.name,
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
         level: data.level,
@@ -193,55 +186,6 @@ export function EquipmentForm({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Equipment Name</FormLabel>
-                  <FormControl>
-                    {availableNames.length > 0 ? (
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select equipment name" />
-                        </SelectTrigger>
-                        <SelectContent className="max-h-[200px]">
-                          {availableNames.map((name) => (
-                            <SelectItem key={name} value={name}>
-                              {name}
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="custom">Custom Name...</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Input placeholder="e.g., Arcane Umbra Katara" {...field} />
-                    )}
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {form.watch('name') === 'custom' && (
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Custom Equipment Name</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter custom equipment name" 
-                        value={field.value === 'custom' ? '' : field.value}
-                        onChange={(e) => field.onChange(e.target.value)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
 
             <div className="grid grid-cols-3 gap-4">
               <FormField

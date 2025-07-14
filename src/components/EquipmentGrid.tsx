@@ -92,7 +92,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment }: Eq
                     
                     <div>
                       <p className="text-xs font-medium text-foreground truncate">
-                        {eq.name}
+                        {eq.set ? `${eq.set} ${label}` : `Lv.${eq.level} ${label}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {label}

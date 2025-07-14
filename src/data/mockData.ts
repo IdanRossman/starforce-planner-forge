@@ -11,7 +11,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq1",
         slot: "weapon",
-        name: "Absolab Bow",
         type: "weapon",
         level: 160,
         set: "Absolab",
@@ -22,7 +21,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq2",
         slot: "top",
-        name: "Absolab Archer Top",
         type: "armor",
         level: 160,
         set: "Absolab",
@@ -33,7 +31,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq3",
         slot: "bottom",
-        name: "Absolab Archer Bottom",
         type: "armor",
         level: 160,
         set: "Absolab",
@@ -44,7 +41,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq4",
         slot: "gloves",
-        name: "Absolab Archer Gloves",
         type: "armor",
         level: 160,
         set: "Absolab",
@@ -55,7 +51,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq5",
         slot: "shoes",
-        name: "Absolab Archer Shoes",
         type: "armor",
         level: 160,
         set: "Absolab",
@@ -75,7 +70,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq6",
         slot: "weapon",
-        name: "Arcane Umbra Staff",
         type: "weapon",
         level: 200,
         set: "Arcane Umbra",
@@ -86,7 +80,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq7",
         slot: "secondary",
-        name: "Arcane Umbra Orb",
         type: "weapon",
         level: 200,
         set: "Arcane Umbra",
@@ -97,7 +90,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq8",
         slot: "hat",
-        name: "Arcane Umbra Mage Hat",
         type: "armor",
         level: 200,
         set: "Arcane Umbra",
@@ -117,7 +109,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq9",
         slot: "weapon",
-        name: "Genesis Dagger",
         type: "weapon",
         level: 200,
         set: "Genesis",
@@ -128,7 +119,6 @@ export const mockCharacters: Character[] = [
       {
         id: "eq10",
         slot: "secondary",
-        name: "Genesis Katara",
         type: "weapon",
         level: 200,
         set: "Genesis",

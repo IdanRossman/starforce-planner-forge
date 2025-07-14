@@ -10,7 +10,6 @@ export interface Character {
 export interface Equipment {
   id: string;
   slot: EquipmentSlot;
-  name: string;
   type: EquipmentType;
   level: number;
   set?: string;
