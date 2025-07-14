@@ -273,7 +273,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   }
                 />
                 <Label htmlFor="fiveTenFifteen" className="text-sm">
-                  5/10/15 Event (+10% success at ★5, ★10, ★15)
+                  5/10/15 Event (100% success at ★5, ★10, ★15)
                 </Label>
               </div>
               
