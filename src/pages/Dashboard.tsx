@@ -26,6 +26,8 @@ export default function Dashboard() {
   const [addingToSlot, setAddingToSlot] = useState<EquipmentSlot | null>(null);
   const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
   const [addingStarForceItem, setAddingStarForceItem] = useState(false);
+  const [characterFormOpen, setCharacterFormOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   
   // Import/Export state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -98,8 +100,8 @@ export default function Dashboard() {
   };
 
   const handleEditCharacter = (character: Character) => {
-    // TODO: Open character edit dialog
-    console.log("Edit character:", character);
+    setEditingCharacter(character);
+    setCharacterFormOpen(true);
   };
 
   const handleDeleteCharacter = (id: string) => {
@@ -110,11 +112,22 @@ export default function Dashboard() {
   };
 
   const addCharacter = (newCharacter: Omit<Character, 'id'>) => {
-    const character: Character = {
-      ...newCharacter,
-      id: `char-${Date.now()}`, // Simple ID generation for demo
-    };
-    setCharacters([...characters, character]);
+    if (editingCharacter) {
+      // Update existing character
+      setCharacters(prev => prev.map(char => 
+        char.id === editingCharacter.id 
+          ? { ...char, ...newCharacter }
+          : char
+      ));
+      setEditingCharacter(null);
+    } else {
+      // Add new character
+      const character: Character = {
+        ...newCharacter,
+        id: crypto.randomUUID(),
+      };
+      setCharacters(prev => [...prev, character]);
+    }
   };
 
   const handleEditEquipment = (equipment: Equipment) => {
@@ -400,7 +413,10 @@ export default function Dashboard() {
                 </DialogContent>
               </Dialog>
 
-              <CharacterForm onAddCharacter={addCharacter} />
+              <CharacterForm 
+                onAddCharacter={addCharacter}
+                editingCharacter={editingCharacter}
+              />
             </div>
           </div>
         </div>
@@ -502,7 +518,10 @@ export default function Dashboard() {
                   <p className="text-muted-foreground mb-6">
                     Choose a character from the list to view and manage their equipment
                   </p>
-                  <CharacterForm onAddCharacter={addCharacter} />
+                    <CharacterForm 
+                      onAddCharacter={addCharacter}
+                      editingCharacter={editingCharacter}
+                    />
                 </CardContent>
               </Card>
             )}

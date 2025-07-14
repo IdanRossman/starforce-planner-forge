@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -42,6 +42,7 @@ type CharacterFormData = z.infer<typeof characterSchema>;
 
 interface CharacterFormProps {
   onAddCharacter: (character: Omit<Character, 'id'>) => void;
+  editingCharacter?: Character | null;
 }
 
 const MAPLE_CLASSES = [
@@ -63,7 +64,7 @@ const MAPLE_SERVERS = [
   'Aurora', 'Elysium', 'Luna', 'Reboot', 'Burning'
 ];
 
-export function CharacterForm({ onAddCharacter }: CharacterFormProps) {
+export function CharacterForm({ onAddCharacter, editingCharacter }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<CharacterFormData>({
@@ -75,6 +76,19 @@ export function CharacterForm({ onAddCharacter }: CharacterFormProps) {
       server: '',
     },
   });
+
+  // Update form when editing character changes
+  useEffect(() => {
+    if (editingCharacter) {
+      form.reset({
+        name: editingCharacter.name,
+        class: editingCharacter.class,
+        level: editingCharacter.level,
+        server: editingCharacter.server,
+      });
+      setOpen(true);
+    }
+  }, [editingCharacter, form]);
 
   const onSubmit = (data: CharacterFormData) => {
     const newCharacter: Omit<Character, 'id'> = {
@@ -99,9 +113,9 @@ export function CharacterForm({ onAddCharacter }: CharacterFormProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Character</DialogTitle>
+          <DialogTitle>{editingCharacter ? 'Edit Character' : 'Add New Character'}</DialogTitle>
           <DialogDescription>
-            Create a new character to track their StarForce progress.
+            {editingCharacter ? 'Update character information.' : 'Create a new character to track their StarForce progress.'}
           </DialogDescription>
         </DialogHeader>
         
@@ -189,7 +203,7 @@ export function CharacterForm({ onAddCharacter }: CharacterFormProps) {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Create Character</Button>
+              <Button type="submit">{editingCharacter ? 'Update Character' : 'Create Character'}</Button>
             </DialogFooter>
           </form>
         </Form>
