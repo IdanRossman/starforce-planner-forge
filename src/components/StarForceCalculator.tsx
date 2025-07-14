@@ -330,6 +330,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
   const [starCatching, setStarCatching] = useState(false);
   const [eventType, setEventType] = useState<string>("");
   const [costDiscount, setCostDiscount] = useState(0);
+  const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
   
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null
@@ -361,7 +362,22 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
         eventType: eventType as Events["eventType"] || undefined,
       };
       
-      const result = calculateStarForce(itemLevel, currentLevel, targetLevel, "epic", "Regular", events);
+      let result = calculateStarForce(itemLevel, currentLevel, targetLevel, "epic", "Regular", events);
+      
+      // Apply Yohi's legendary luck - halves cost and spares needed!
+      if (yohiTapEvent) {
+        result = {
+          ...result,
+          averageCost: Math.round(result.averageCost * 0.5), // Yohi's luck halves the cost
+          averageBooms: result.averageBooms * 0.5, // And the boom count
+          costPerAttempt: Math.round(result.costPerAttempt * 0.5), // Per attempt cost too
+          recommendations: [
+            "🍀 Yohi Tap Event is active - all costs and spares have been halved due to supernatural luck!",
+            ...result.recommendations
+          ]
+        };
+      }
+      
       setCalculation(result);
     } catch (error) {
       console.error("Calculation error:", error);
@@ -475,6 +491,23 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
               <label className="text-sm text-muted-foreground">Star Catching (+5%)</label>
             </div>
           </div>
+          
+          {/* Yohi Tap Event - The legendary luck */}
+          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
+            <Checkbox 
+              checked={yohiTapEvent} 
+              onCheckedChange={(checked) => setYohiTapEvent(checked === true)} 
+            />
+            <div className="flex-1">
+              <label className="text-sm font-medium text-yellow-400">
+                🍀 Yohi Tap Event (Legendary Luck)
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Activates Yohi's supernatural luck - halves all costs and spares needed!
+              </p>
+            </div>
+          </div>
+          
           <div>
             <label className="text-sm text-muted-foreground">Cost Discount (%)</label>
             <Input
