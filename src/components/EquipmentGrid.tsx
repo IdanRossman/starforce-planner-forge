@@ -64,8 +64,8 @@ const EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; position: string }[
   { slot: 'overall', label: 'Overall', position: 'col-start-4 row-start-4' },
   
   // Column 5: Accessories
-  { slot: 'earring', label: 'Earring', position: 'col-start-5 row-start-1' },
-  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-5 row-start-2' },
+  { slot: 'earring', label: 'Earring', position: 'col-start-5 row-start-3' },
+  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-5 row-start-4' },
   { slot: 'gloves', label: 'Gloves', position: 'col-start-5 row-start-5' },
   
   // Column 6: Secondary equipment
