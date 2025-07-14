@@ -9,7 +9,14 @@ interface StarForceCalculatorProps {
 }
 
 // Mock StarForce calculation - you can replace this with actual formulas
-export function calculateStarForce(currentLevel: number, targetLevel: number, tier: string): StarForceCalculation {
+export function calculateStarForce(
+  currentLevel: number, 
+  targetLevel: number, 
+  tier: string,
+  events?: { costMultiplier?: number; successRateBonus?: number }
+): StarForceCalculation {
+  const { costMultiplier = 1, successRateBonus = 0 } = events || {};
+  
   const levels = targetLevel - currentLevel;
   if (levels <= 0) {
     return {
@@ -23,22 +30,59 @@ export function calculateStarForce(currentLevel: number, targetLevel: number, ti
     };
   }
 
-  // Simplified calculation - replace with actual MapleStory formulas
-  const baseCost = currentLevel < 15 ? 100000 : currentLevel < 20 ? 500000 : 1000000;
-  const successRate = Math.max(5, 100 - (currentLevel * 4));
-  const boomRate = currentLevel >= 15 ? Math.min(20, (currentLevel - 14) * 2) : 0;
+  // More realistic base costs per tier and star level
+  const baseCosts: { [key: string]: number[] } = {
+    rare: [100, 200, 300, 500, 800, 1300, 2100, 3400, 5500, 8900, 14400, 23400, 38000, 61700, 100200, 162900, 264500, 429600, 0, 0, 0, 0, 0, 0, 0],
+    epic: [500, 1000, 1500, 2500, 4000, 6500, 10500, 17000, 27500, 44500, 72000, 117000, 190000, 308500, 501000, 814500, 1322500, 2148000, 3487000, 5664000, 9201000, 14942000, 24267000, 39421000, 64060000],
+    unique: [1000, 2000, 3000, 5000, 8000, 13000, 21000, 34000, 55000, 89000, 144000, 234000, 380000, 617000, 1002000, 1629000, 2645000, 4296000, 6975000, 11328000, 18403000, 29885000, 48534000, 78842000, 128121000],
+    legendary: [2500, 5000, 7500, 12500, 20000, 32500, 52500, 85000, 137500, 222500, 360000, 585000, 950000, 1542500, 2505000, 4072500, 6612500, 10740000, 17437500, 28320000, 46007500, 74712500, 121335000, 197105000, 320210000]
+  };
   
-  const averageCost = baseCost * levels * (100 / successRate) * (tier === 'legendary' ? 2 : 1);
-  const averageBooms = levels * (boomRate / 100);
+  const baseSuccessRates = [0.95, 0.9, 0.85, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.03, 0.02, 0.01, 0.005];
+  const boomChances = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.01, 0.02, 0.02, 0.03, 0.03, 0.03, 0.04, 0.04, 0.1, 0.1, 0.2, 0.2, 0.3];
+  
+  let totalCost = 0;
+  let totalAttempts = 0;
+  let totalBooms = 0;
+  
+  for (let star = currentLevel; star < targetLevel; star++) {
+    const costs = baseCosts[tier] || baseCosts.rare;
+    const baseCost = costs[star] || 1000000;
+    const cost = Math.round(baseCost * costMultiplier);
+    
+    let successRate = baseSuccessRates[star] || 0.3;
+    
+    // Apply success rate bonus for 5/10/15 events at specific levels
+    if (successRateBonus > 0 && (star === 4 || star === 9 || star === 14)) {
+      successRate = Math.min(1, successRate + successRateBonus);
+    }
+    
+    const boomChance = boomChances[star] || 0;
+    
+    // Calculate expected attempts for this star level
+    let expectedAttempts;
+    if (boomChance > 0) {
+      expectedAttempts = 1 / (successRate + boomChance);
+    } else {
+      expectedAttempts = 1 / successRate;
+    }
+    
+    totalAttempts += expectedAttempts;
+    totalCost += expectedAttempts * cost;
+    totalBooms += expectedAttempts * boomChance;
+  }
+  
+  const averageSuccessRate = totalAttempts > 0 ? (targetLevel - currentLevel) / totalAttempts * 100 : 100;
+  const averageBoomRate = totalAttempts > 0 ? totalBooms / totalAttempts * 100 : 0;
 
   return {
     currentLevel,
     targetLevel,
-    averageCost,
-    averageBooms,
-    successRate,
-    boomRate,
-    costPerAttempt: baseCost
+    averageCost: Math.round(totalCost),
+    averageBooms: Math.round(totalBooms * 100) / 100,
+    successRate: Math.round(averageSuccessRate * 100) / 100,
+    boomRate: Math.round(averageBoomRate * 100) / 100,
+    costPerAttempt: Math.round(totalCost / Math.max(1, totalAttempts))
   };
 }
 

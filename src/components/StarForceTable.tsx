@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Equipment } from "@/types";
 import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -36,6 +39,12 @@ interface StarForceTableProps {
   starForceItems: Equipment[];
   onAddStarForceItem: () => void;
   onRemoveStarForceItem: (id: string) => void;
+}
+
+interface StarForceEvents {
+  fiveTenFifteen: boolean;
+  thirtyPercentOff: boolean;
+  shiningStarForce: boolean;
 }
 
 interface CalculationRow {
@@ -104,35 +113,39 @@ const getDangerColor = (currentStars: number) => {
 
 export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem }: StarForceTableProps) {
   // Filter equipped items that haven't reached target stars
-  const incompleteEquipment = equipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
+  const incompleteEquipment = useMemo(
+    () => equipment.filter(eq => eq.currentStarForce < eq.targetStarForce),
+    [equipment]
+  );
   
   // Combine incomplete equipped items with standalone starforce items
-  const allStarForceItems = [...incompleteEquipment, ...starForceItems];
-  
-  const [calculations, setCalculations] = useState<CalculationRow[]>(
-    allStarForceItems.map(eq => ({
-      equipment: eq,
-      sparesCount: 0,
-      expectedCost: 0,
-      expectedSpares: 0,
-      isCalculated: false,
-    }))
+  const allStarForceItems = useMemo(
+    () => [...incompleteEquipment, ...starForceItems],
+    [incompleteEquipment, starForceItems]
   );
+  
+  // Event states
+  const [events, setEvents] = useState<StarForceEvents>({
+    fiveTenFifteen: false,
+    thirtyPercentOff: false,
+    shiningStarForce: false,
+  });
+  
+  const [calculations, setCalculations] = useState<CalculationRow[]>([]);
 
   // Update calculations when items change
   useEffect(() => {
-    setCalculations(prev => {
-      const existingCalcs = new Map(prev.map(calc => [calc.equipment.id, calc]));
-      return allStarForceItems.map(eq => 
-        existingCalcs.get(eq.id) || {
-          equipment: eq,
-          sparesCount: 0,
-          expectedCost: 0,
-          expectedSpares: 0,
-          isCalculated: false,
-        }
-      );
-    });
+    const existingCalcs = new Map(calculations.map(calc => [calc.equipment.id, calc]));
+    const newCalculations = allStarForceItems.map(eq => 
+      existingCalcs.get(eq.id) || {
+        equipment: eq,
+        sparesCount: 0,
+        expectedCost: 0,
+        expectedSpares: 0,
+        isCalculated: false,
+      }
+    );
+    setCalculations(newCalculations);
   }, [allStarForceItems]);
 
   const updateSparesCount = (equipmentId: string, count: number) => {
@@ -149,10 +162,28 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     setCalculations(prev => 
       prev.map(calc => {
         const { equipment } = calc;
+        
+        // Apply event modifiers
+        let costMultiplier = 1;
+        let successRateBonus = 0;
+        
+        if (events.shiningStarForce) {
+          costMultiplier *= 0.7; // 30% off
+          successRateBonus = 0.1; // 10% bonus for 5/10/15
+        } else {
+          if (events.thirtyPercentOff) {
+            costMultiplier *= 0.7;
+          }
+          if (events.fiveTenFifteen) {
+            successRateBonus = 0.1;
+          }
+        }
+        
         const starForceCalc = calculateStarForce(
           equipment.currentStarForce, 
           equipment.targetStarForce, 
-          equipment.tier
+          equipment.tier,
+          { costMultiplier, successRateBonus }
         );
         
         // Estimate spares needed (simplified calculation)
@@ -195,6 +226,74 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               Calculate All
             </Button>
           </div>
+        </div>
+        
+        {/* Event Toggles */}
+        <div className="space-y-4 pt-4">
+          <div>
+            <h4 className="text-sm font-medium mb-3 text-foreground">StarForce Events</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="fiveTenFifteen"
+                  checked={events.fiveTenFifteen}
+                  onCheckedChange={(checked) => 
+                    setEvents(prev => ({ 
+                      ...prev, 
+                      fiveTenFifteen: checked,
+                      shiningStarForce: checked ? false : prev.shiningStarForce 
+                    }))
+                  }
+                  disabled={events.shiningStarForce}
+                />
+                <Label htmlFor="fiveTenFifteen" className="text-sm">
+                  5/10/15 Event
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="thirtyPercentOff"
+                  checked={events.thirtyPercentOff}
+                  onCheckedChange={(checked) => 
+                    setEvents(prev => ({ 
+                      ...prev, 
+                      thirtyPercentOff: checked,
+                      shiningStarForce: checked ? false : prev.shiningStarForce 
+                    }))
+                  }
+                  disabled={events.shiningStarForce}
+                />
+                <Label htmlFor="thirtyPercentOff" className="text-sm">
+                  30% Off Event
+                </Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="shiningStarForce"
+                  checked={events.shiningStarForce}
+                  onCheckedChange={(checked) => 
+                    setEvents(prev => ({
+                      fiveTenFifteen: false,
+                      thirtyPercentOff: false,
+                      shiningStarForce: checked,
+                    }))
+                  }
+                />
+                <Label htmlFor="shiningStarForce" className="text-sm">
+                  Shining StarForce
+                </Label>
+              </div>
+            </div>
+            
+            {events.shiningStarForce && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Shining StarForce combines 5/10/15 bonuses and 30% cost reduction
+              </p>
+            )}
+          </div>
+          <Separator />
         </div>
       </CardHeader>
       
