@@ -1,4 +1,5 @@
-export const EQUIPMENT_SETS = {
+export const EQUIPMENT_BY_SLOT = {
+  // Weapons
   weapon: [
     { name: 'Pensalir', level: 140, tier: 'epic' as const },
     { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
@@ -8,7 +9,24 @@ export const EQUIPMENT_SETS = {
     { name: 'Eternal', level: 250, tier: 'legendary' as const },
     { name: 'Genesis', level: 200, tier: 'legendary' as const },
   ],
-  armor: [
+  secondary: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+  ],
+  emblem: [
+    { name: 'Adventurer', level: 100, tier: 'unique' as const },
+    { name: 'Nova', level: 100, tier: 'unique' as const },
+    { name: 'Sengoku', level: 100, tier: 'unique' as const },
+    { name: 'Resistance', level: 100, tier: 'unique' as const },
+  ],
+
+  // Armor pieces
+  hat: [
     { name: 'Pensalir', level: 140, tier: 'epic' as const },
     { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
     { name: 'Sweetwater', level: 160, tier: 'unique' as const },
@@ -16,52 +34,142 @@ export const EQUIPMENT_SETS = {
     { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
     { name: 'Eternal', level: 250, tier: 'legendary' as const },
   ],
-  accessory: [
-    { name: 'Zakum', level: 50, tier: 'rare' as const },
-    { name: 'Horntail', level: 130, tier: 'epic' as const },
-    { name: 'Gollux', level: 150, tier: 'unique' as const },
-    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+  top: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
     { name: 'Sweetwater', level: 160, tier: 'unique' as const },
-    { name: 'Tyrant', level: 150, tier: 'legendary' as const },
     { name: 'Absolab', level: 160, tier: 'legendary' as const },
     { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
     { name: 'Eternal', level: 250, tier: 'legendary' as const },
-    { name: 'Pitched Boss', level: 160, tier: 'legendary' as const },
-    { name: 'Dreamy Belt', level: 200, tier: 'legendary' as const },
+  ],
+  bottom: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+  ],
+  overall: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+  ],
+  shoes: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+    { name: 'Tyrant', level: 150, tier: 'legendary' as const },
+  ],
+  gloves: [
+    { name: 'Pensalir', level: 140, tier: 'epic' as const },
+    { name: 'Chaos Root Abyss', level: 150, tier: 'legendary' as const },
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+    { name: 'Tyrant', level: 150, tier: 'legendary' as const },
+  ],
+  cape: [
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+    { name: 'Tyrant', level: 150, tier: 'legendary' as const },
+  ],
+  belt: [
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Tyrant', level: 150, tier: 'legendary' as const },
     { name: 'Genesis', level: 200, tier: 'legendary' as const },
-  ]
-};
+    { name: 'Dreamy Belt', level: 200, tier: 'legendary' as const },
+  ],
+  shoulder: [
+    { name: 'Absolab', level: 160, tier: 'legendary' as const },
+    { name: 'Arcane Umbra', level: 200, tier: 'legendary' as const },
+    { name: 'Eternal', level: 250, tier: 'legendary' as const },
+  ],
 
-export const COMMON_EQUIPMENT_NAMES = {
-  weapon: {
-    'Pensalir': ['Pensalir Sword', 'Pensalir Bow', 'Pensalir Staff', 'Pensalir Dagger'],
-    'Chaos Root Abyss': ['Chaos Crimson Arcglaive', 'Chaos Fafnir Sword', 'Chaos Fafnir Bow', 'Chaos Fafnir Staff'],
-    'Sweetwater': ['Sweetwater Sword', 'Sweetwater Bow', 'Sweetwater Staff', 'Sweetwater Dagger'],
-    'Absolab': ['Absolab Sword', 'Absolab Bow', 'Absolab Staff', 'Absolab Dagger'],
-    'Arcane Umbra': ['Arcane Umbra Sword', 'Arcane Umbra Bow', 'Arcane Umbra Staff', 'Arcane Umbra Dagger'],
-    'Eternal': ['Eternal Sword', 'Eternal Bow', 'Eternal Staff', 'Eternal Dagger'],
-    'Genesis': ['Genesis Sword', 'Genesis Bow', 'Genesis Staff', 'Genesis Dagger'],
-  },
-  armor: {
-    'Pensalir': ['Pensalir Helmet', 'Pensalir Suit', 'Pensalir Pants', 'Pensalir Shoes', 'Pensalir Gloves'],
-    'Chaos Root Abyss': ['Chaos Vellum Helmet', 'Chaos Crimson Queen Suit', 'Chaos Pierre Pants', 'Chaos Vellum Shoes', 'Chaos Crimson Queen Gloves'],
-    'Sweetwater': ['Sweetwater Hat', 'Sweetwater Suit', 'Sweetwater Pants', 'Sweetwater Shoes', 'Sweetwater Gloves'],
-    'Absolab': ['Absolab Helmet', 'Absolab Suit', 'Absolab Pants', 'Absolab Shoes', 'Absolab Gloves'],
-    'Arcane Umbra': ['Arcane Umbra Helmet', 'Arcane Umbra Suit', 'Arcane Umbra Pants', 'Arcane Umbra Shoes', 'Arcane Umbra Gloves'],
-    'Eternal': ['Eternal Helmet', 'Eternal Suit', 'Eternal Pants', 'Eternal Shoes', 'Eternal Gloves'],
-  },
-  accessory: {
-    'Zakum': ['Zakum Helmet', 'Aquatic Letter Eye Accessory'],
-    'Horntail': ['Horntail Necklace', 'Silver Blossom Ring'],
-    'Gollux': ['Solid Gollux Ring', 'Solid Gollux Earring', 'Solid Gollux Belt', 'Solid Gollux Pendant'],
-    'Superior Gollux': ['Superior Gollux Ring', 'Superior Gollux Earring', 'Superior Gollux Belt', 'Superior Gollux Pendant'],
-    'Sweetwater': ['Sweetwater Face Accessory', 'Sweetwater Eye Accessory'],
-    'Tyrant': ['Tyrant Cape', 'Tyrant Belt', 'Tyrant Shoes', 'Tyrant Gloves'],
-    'Absolab': ['Absolab Shoulder', 'Absolab Cape'],
-    'Arcane Umbra': ['Arcane Umbra Shoulder', 'Arcane Umbra Cape'],
-    'Eternal': ['Eternal Shoulder', 'Eternal Cape'],
-    'Pitched Boss': ['Berserked Face Accessory', 'Commanding Force Earring'],
-    'Dreamy Belt': ['Dreamy Belt'],
-    'Genesis': ['Genesis Badge', 'Genesis Ring'],
-  }
+  // Face & Eye accessories
+  face: [
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Pitched Boss', level: 160, tier: 'legendary' as const },
+    { name: 'Berserked', level: 160, tier: 'legendary' as const },
+  ],
+  eye: [
+    { name: 'Sweetwater', level: 160, tier: 'unique' as const },
+    { name: 'Aquatic Letter Eye', level: 50, tier: 'rare' as const },
+  ],
+
+  // Jewelry
+  earring: [
+    { name: 'Horntail', level: 130, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Commanding Force', level: 160, tier: 'legendary' as const },
+  ],
+  ring1: [
+    { name: 'Silver Blossom Ring', level: 110, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Kanna\'s Treasure', level: 160, tier: 'legendary' as const },
+    { name: 'Event Ring', level: 120, tier: 'legendary' as const },
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+  ],
+  ring2: [
+    { name: 'Silver Blossom Ring', level: 110, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Kanna\'s Treasure', level: 160, tier: 'legendary' as const },
+    { name: 'Event Ring', level: 120, tier: 'legendary' as const },
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+  ],
+  ring3: [
+    { name: 'Silver Blossom Ring', level: 110, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Kanna\'s Treasure', level: 160, tier: 'legendary' as const },
+    { name: 'Event Ring', level: 120, tier: 'legendary' as const },
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+  ],
+  ring4: [
+    { name: 'Silver Blossom Ring', level: 110, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+    { name: 'Kanna\'s Treasure', level: 160, tier: 'legendary' as const },
+    { name: 'Event Ring', level: 120, tier: 'legendary' as const },
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+  ],
+  pendant1: [
+    { name: 'Horntail Necklace', level: 130, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+  ],
+  pendant2: [
+    { name: 'Horntail Necklace', level: 130, tier: 'epic' as const },
+    { name: 'Gollux', level: 150, tier: 'unique' as const },
+    { name: 'Superior Gollux', level: 150, tier: 'legendary' as const },
+  ],
+
+  // Special items
+  pocket: [
+    { name: 'Pink Bean Belt', level: 130, tier: 'epic' as const },
+    { name: 'Sengoku Hakase Badge', level: 100, tier: 'legendary' as const },
+    { name: 'Antellion Guardian', level: 110, tier: 'epic' as const },
+    { name: 'Pocket Watch', level: 100, tier: 'rare' as const },
+  ],
+  heart: [
+    { name: 'Titanium Heart', level: 100, tier: 'epic' as const },
+    { name: 'Android Heart', level: 100, tier: 'rare' as const },
+  ],
+  badge: [
+    { name: 'Genesis', level: 200, tier: 'legendary' as const },
+    { name: 'Crystal Ventus Badge', level: 30, tier: 'legendary' as const },
+    { name: 'Sengoku Hakase Badge', level: 100, tier: 'legendary' as const },
+  ],
 };

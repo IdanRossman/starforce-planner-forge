@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { EQUIPMENT_SETS, COMMON_EQUIPMENT_NAMES } from '@/data/equipmentSets';
+import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
 
 const equipmentSchema = z.object({
   slot: z.string().min(1, 'Equipment slot is required'),
@@ -143,8 +143,8 @@ export function EquipmentForm({
     }
   }, [open, equipment, defaultSlot, form]);
 
-  const selectedType = form.watch('type');
-  const availableSets = EQUIPMENT_SETS[selectedType] || [];
+  const selectedSlot = form.watch('slot');
+  const availableEquipment = selectedSlot ? EQUIPMENT_BY_SLOT[selectedSlot as keyof typeof EQUIPMENT_BY_SLOT] || [] : [];
 
   const onSubmit = (data: EquipmentFormData) => {
     if (isEditing && equipment) {
@@ -264,25 +264,34 @@ export function EquipmentForm({
                 name="set"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Equipment Set</FormLabel>
+                    <FormLabel>Equipment</FormLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value);
-                      // Auto-update tier and level based on set
-                      const setData = availableSets.find(set => set.name === value);
-                      if (setData) {
-                        form.setValue('tier', setData.tier);
-                        form.setValue('level', setData.level);
+                      // Auto-update tier and level based on equipment selection
+                      const equipData = availableEquipment.find(eq => eq.name === value);
+                      if (equipData) {
+                        form.setValue('tier', equipData.tier);
+                        form.setValue('level', equipData.level);
+                        // Auto-determine type based on slot
+                        const slot = form.getValues('slot');
+                        if (['weapon', 'secondary', 'emblem'].includes(slot)) {
+                          form.setValue('type', 'weapon');
+                        } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
+                          form.setValue('type', 'armor');
+                        } else {
+                          form.setValue('type', 'accessory');
+                        }
                       }
                     }} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select set" />
+                          <SelectValue placeholder="Select equipment" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-[200px]">
-                        {availableSets.map((set) => (
-                          <SelectItem key={set.name} value={set.name}>
-                            {set.name} (Lv.{set.level})
+                        {availableEquipment.map((equipment) => (
+                          <SelectItem key={equipment.name} value={equipment.name}>
+                            {equipment.name} (Lv.{equipment.level})
                           </SelectItem>
                         ))}
                       </SelectContent>
