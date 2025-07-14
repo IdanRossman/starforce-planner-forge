@@ -13,6 +13,8 @@ export const mockCharacters: Character[] = [
         slot: "weapon",
         name: "Absolab Bow",
         type: "weapon",
+        level: 160,
+        set: "Absolab",
         currentStarForce: 17,
         targetStarForce: 22,
         tier: "legendary"
@@ -22,6 +24,8 @@ export const mockCharacters: Character[] = [
         slot: "top",
         name: "Absolab Archer Top",
         type: "armor",
+        level: 160,
+        set: "Absolab",
         currentStarForce: 15,
         targetStarForce: 17,
         tier: "legendary"
@@ -31,6 +35,8 @@ export const mockCharacters: Character[] = [
         slot: "bottom",
         name: "Absolab Archer Bottom",
         type: "armor",
+        level: 160,
+        set: "Absolab",
         currentStarForce: 12,
         targetStarForce: 17,
         tier: "unique"
@@ -40,6 +46,8 @@ export const mockCharacters: Character[] = [
         slot: "gloves",
         name: "Absolab Archer Gloves",
         type: "armor",
+        level: 160,
+        set: "Absolab",
         currentStarForce: 10,
         targetStarForce: 15,
         tier: "unique"
@@ -49,6 +57,8 @@ export const mockCharacters: Character[] = [
         slot: "shoes",
         name: "Absolab Archer Shoes",
         type: "armor",
+        level: 160,
+        set: "Absolab",
         currentStarForce: 8,
         targetStarForce: 15,
         tier: "epic"
@@ -67,6 +77,8 @@ export const mockCharacters: Character[] = [
         slot: "weapon",
         name: "Arcane Umbra Staff",
         type: "weapon",
+        level: 200,
+        set: "Arcane Umbra",
         currentStarForce: 20,
         targetStarForce: 22,
         tier: "legendary"
@@ -76,6 +88,8 @@ export const mockCharacters: Character[] = [
         slot: "secondary",
         name: "Arcane Umbra Orb",
         type: "weapon",
+        level: 200,
+        set: "Arcane Umbra",
         currentStarForce: 18,
         targetStarForce: 22,
         tier: "legendary"
@@ -85,6 +99,8 @@ export const mockCharacters: Character[] = [
         slot: "hat",
         name: "Arcane Umbra Mage Hat",
         type: "armor",
+        level: 200,
+        set: "Arcane Umbra",
         currentStarForce: 17,
         targetStarForce: 17,
         tier: "legendary"
@@ -103,6 +119,8 @@ export const mockCharacters: Character[] = [
         slot: "weapon",
         name: "Genesis Dagger",
         type: "weapon",
+        level: 200,
+        set: "Genesis",
         currentStarForce: 22,
         targetStarForce: 25,
         tier: "legendary"
@@ -112,6 +130,8 @@ export const mockCharacters: Character[] = [
         slot: "secondary",
         name: "Genesis Katara",
         type: "weapon",
+        level: 200,
+        set: "Genesis",
         currentStarForce: 21,
         targetStarForce: 25,
         tier: "legendary"

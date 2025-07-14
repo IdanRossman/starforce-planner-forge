@@ -29,11 +29,14 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { EQUIPMENT_SETS, COMMON_EQUIPMENT_NAMES } from '@/data/equipmentSets';
 
 const equipmentSchema = z.object({
   name: z.string().min(1, 'Equipment name is required'),
   slot: z.string().min(1, 'Equipment slot is required'),
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
+  level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
+  set: z.string().optional(),
   tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const),
   currentStarForce: z.number().min(0).max(25),
   targetStarForce: z.number().min(0).max(25),
@@ -107,6 +110,8 @@ export function EquipmentForm({
       name: '',
       slot: defaultSlot || '',
       type: 'armor',
+      level: 200,
+      set: '',
       tier: 'epic',
       currentStarForce: 0,
       targetStarForce: 17,
@@ -121,6 +126,8 @@ export function EquipmentForm({
           name: equipment.name,
           slot: equipment.slot,
           type: equipment.type,
+          level: equipment.level,
+          set: equipment.set || '',
           tier: equipment.tier,
           currentStarForce: equipment.currentStarForce,
           targetStarForce: equipment.targetStarForce,
@@ -130,6 +137,8 @@ export function EquipmentForm({
           name: '',
           slot: defaultSlot || '',
           type: 'armor',
+          level: 200,
+          set: '',
           tier: 'epic',
           currentStarForce: 0,
           targetStarForce: 17,
@@ -137,6 +146,11 @@ export function EquipmentForm({
       }
     }
   }, [open, equipment, defaultSlot, form]);
+
+  const selectedType = form.watch('type');
+  const selectedSet = form.watch('set');
+  const availableSets = EQUIPMENT_SETS[selectedType] || [];
+  const availableNames = selectedSet && COMMON_EQUIPMENT_NAMES[selectedType]?.[selectedSet] || [];
 
   const onSubmit = (data: EquipmentFormData) => {
     if (isEditing && equipment) {
@@ -152,6 +166,8 @@ export function EquipmentForm({
         name: data.name,
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
+        level: data.level,
+        set: data.set,
         tier: data.tier as EquipmentTier,
         currentStarForce: data.currentStarForce,
         targetStarForce: data.targetStarForce,
@@ -184,14 +200,50 @@ export function EquipmentForm({
                 <FormItem>
                   <FormLabel>Equipment Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Arcane Umbra Katara" {...field} />
+                    {availableNames.length > 0 ? (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select equipment name" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px]">
+                          {availableNames.map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="custom">Custom Name...</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <Input placeholder="e.g., Arcane Umbra Katara" {...field} />
+                    )}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            {form.watch('name') === 'custom' && (
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Custom Equipment Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter custom equipment name" 
+                        value={field.value === 'custom' ? '' : field.value}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="slot"
@@ -212,6 +264,25 @@ export function EquipmentForm({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Level</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="200" 
+                        value={field.value}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -243,30 +314,65 @@ export function EquipmentForm({
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="tier"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tier</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select tier" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {EQUIPMENT_TIERS.map((tier) => (
-                        <SelectItem key={tier.value} value={tier.value}>
-                          {tier.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="set"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Equipment Set</FormLabel>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      // Auto-update tier and level based on set
+                      const setData = availableSets.find(set => set.name === value);
+                      if (setData) {
+                        form.setValue('tier', setData.tier);
+                        form.setValue('level', setData.level);
+                      }
+                    }} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select set" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[200px]">
+                        {availableSets.map((set) => (
+                          <SelectItem key={set.name} value={set.name}>
+                            {set.name} (Lv.{set.level})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="tier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tier</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select tier" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {EQUIPMENT_TIERS.map((tier) => (
+                          <SelectItem key={tier.value} value={tier.value}>
+                            {tier.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}
