@@ -69,6 +69,9 @@ export default function Dashboard() {
       setStarForceItems(stored.starForceItems);
     } else {
       setCharacters(mockCharacters);
+      // Clear any existing localStorage data if starting fresh
+      localStorage.removeItem('starforce-planner-characters');
+      localStorage.removeItem('starforce-planner-starforce-items');
     }
   }, [toast]);
 
