@@ -121,7 +121,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
     return acc;
   }, {} as Record<EquipmentSlot, Equipment>);
 
-  const hasIncompleteStarForce = equipment.some(eq => eq.currentStarForce < eq.targetStarForce);
+  const hasIncompleteStarForce = equipment.some(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce);
 
   return (
     <TooltipProvider>
@@ -200,9 +200,11 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                             {label}
                           </p>
                         </div>
-                      </div>
                     </div>
-                    
+                  </div>
+                  
+                  {/* StarForce display - only show if starforceable */}
+                  {equipment.starforceable && (
                     <div className="flex items-center gap-1 text-xs">
                       <Star className="w-3 h-3 text-yellow-400" />
                       <span className="text-yellow-400 font-medium">
@@ -217,6 +219,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                         </>
                       )}
                     </div>
+                  )}
                   </>
                 ) : (
                   <Button

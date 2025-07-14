@@ -16,6 +16,7 @@ export interface Equipment {
   currentStarForce: number;
   targetStarForce: number;
   tier?: EquipmentTier | null;
+  starforceable: boolean;
 }
 
 export interface EquipmentWithCharacter extends Equipment {

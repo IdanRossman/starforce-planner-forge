@@ -23,7 +23,7 @@ export default function Overview() {
   const totalCharacters = characters.length;
   const totalEquipment = characters.reduce((sum, char) => sum + char.equipment.length, 0);
   const incompleteEquipment = characters.reduce(
-    (sum, char) => sum + char.equipment.filter(eq => eq.currentStarForce < eq.targetStarForce).length, 
+    (sum, char) => sum + char.equipment.filter(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce).length, 
     0
   );
   const completionRate = totalEquipment > 0 ? ((totalEquipment - incompleteEquipment) / totalEquipment * 100) : 0;
@@ -110,7 +110,7 @@ export default function Overview() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {characters.map((character) => {
-                const completed = character.equipment.filter(eq => eq.currentStarForce >= eq.targetStarForce).length;
+                const completed = character.equipment.filter(eq => !eq.starforceable || eq.currentStarForce >= eq.targetStarForce).length;
                 const total = character.equipment.length;
                 const progress = total > 0 ? (completed / total * 100) : 0;
                 
@@ -138,11 +138,13 @@ export default function Overview() {
         </Card>
       )}
 
-      {/* Overall StarForce Calculator */}
+      {/* Overall StarForce Calculator - only starforceable equipment */}
       <StarForceTable 
         equipment={characters.flatMap(char => 
-          char.equipment.map(eq => ({ ...eq, characterName: char.name }))
-        )} 
+          char.equipment
+            .filter(eq => eq.starforceable)
+            .map(eq => ({ ...eq, characterName: char.name }))
+        )}
         starForceItems={starForceItems}
         onAddStarForceItem={handleAddStarForceItem}
         onRemoveStarForceItem={handleRemoveStarForceItem}

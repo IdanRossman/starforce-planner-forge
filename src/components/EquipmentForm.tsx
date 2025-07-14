@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { 
   Sword, 
   Shield, 
@@ -55,7 +56,12 @@ const equipmentSchema = z.object({
   tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
   currentStarForce: z.number().min(0).max(23),
   targetStarForce: z.number().min(0).max(23),
-}).refine((data) => data.targetStarForce >= data.currentStarForce, {
+  starforceable: z.boolean(),
+}).refine((data) => {
+  // Only validate StarForce levels if the item is starforceable
+  if (!data.starforceable) return true;
+  return data.targetStarForce >= data.currentStarForce;
+}, {
   message: "Target StarForce must be greater than or equal to current StarForce",
   path: ["targetStarForce"],
 });
@@ -97,6 +103,7 @@ const getSlotIcon = (slotValue: string) => {
     pocket: Square,
     heart: Heart,
     badge: Badge,
+    medal: Badge,
   };
   return iconMap[slotValue] || Square;
 };
@@ -126,6 +133,7 @@ const EQUIPMENT_SLOTS = [
   { value: 'pocket', label: 'Pocket' },
   { value: 'heart', label: 'Heart' },
   { value: 'badge', label: 'Badge' },
+  { value: 'medal', label: 'Medal' },
 ];
 
 const EQUIPMENT_TYPES = [
@@ -161,8 +169,12 @@ export function EquipmentForm({
       tier: 'epic',
       currentStarForce: 0,
       targetStarForce: 22,
+      starforceable: true,
     },
   });
+
+  // Watch for starforceable toggle
+  const watchStarforceable = form.watch('starforceable');
 
   // Reset form when dialog opens/closes or equipment changes
   useEffect(() => {
@@ -176,6 +188,7 @@ export function EquipmentForm({
           tier: equipment.tier,
           currentStarForce: equipment.currentStarForce,
           targetStarForce: equipment.targetStarForce,
+          starforceable: equipment.starforceable,
         });
       } else {
         form.reset({
@@ -186,6 +199,7 @@ export function EquipmentForm({
           tier: 'epic',
           currentStarForce: 0,
           targetStarForce: 22,
+          starforceable: true,
         });
       }
     }
@@ -213,8 +227,9 @@ export function EquipmentForm({
         level: data.level,
         set: data.set,
         tier: data.tier as EquipmentTier | null | undefined,
-        currentStarForce: data.currentStarForce,
-        targetStarForce: data.targetStarForce,
+        currentStarForce: data.starforceable ? data.currentStarForce : 0,
+        targetStarForce: data.starforceable ? data.targetStarForce : 0,
+        starforceable: data.starforceable,
       });
     }
     onOpenChange(false);
@@ -415,6 +430,34 @@ export function EquipmentForm({
               />
             </div>
 
+            {/* StarForce Toggle */}
+            <FormField
+              control={form.control}
+              name="starforceable"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">
+                      StarForce Enhancement
+                    </FormLabel>
+                    <div className="text-sm text-muted-foreground">
+                      Can this equipment be enhanced with StarForce?
+                    </div>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* StarForce Sliders - Only show if starforceable */}
+            {watchStarforceable && (
+              <>
+
             <FormField
               control={form.control}
               name="currentStarForce"
@@ -456,6 +499,8 @@ export function EquipmentForm({
                 </FormItem>
               )}
             />
+              </>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

@@ -116,9 +116,9 @@ const getDangerColor = (currentStars: number) => {
 };
 
 export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, title, subtitle }: StarForceTableProps) {
-  // Filter equipped items that haven't reached target stars
+  // Filter equipped items that haven't reached target stars AND are starforceable
   const incompleteEquipment = useMemo(
-    () => equipment.filter(eq => eq.currentStarForce < eq.targetStarForce),
+    () => equipment.filter(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce),
     [equipment]
   );
   
