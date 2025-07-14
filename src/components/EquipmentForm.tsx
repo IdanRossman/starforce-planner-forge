@@ -384,7 +384,7 @@ export function EquipmentForm({
                 name="tier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Potential Tier (Optional)</FormLabel>
+                    <FormLabel>Potential Tier</FormLabel>
                     <Select 
                       onValueChange={(value) => {
                         if (value === "none") {
