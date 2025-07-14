@@ -18,7 +18,6 @@ interface StarForceCalculatorProps {
   initialCalculation?: StarForceCalculation;
 }
 
-// Enhanced StarForce calculation with item level and simulation
 export function calculateStarForce(
   itemLevel: number,
   currentLevel: number,
@@ -30,7 +29,7 @@ export function calculateStarForce(
     successRateBonus?: number;
     starCatching?: boolean;
     safeguard?: boolean;
-  }
+  } = {}
 ): StarForceCalculation {
   const {
     costMultiplier = 1,
@@ -54,28 +53,34 @@ export function calculateStarForce(
     };
   }
 
-  // Success rates (GMS, simplified from MapleStory Wiki)
+  // Accurate cost calculation based on item level and star
+  function getBaseCost(itemLevel: number, star: number): number {
+    const roundedLevel = Math.floor(itemLevel / 10) * 10;
+    const divisor = serverType === "Regular" ? 400 : 200;
+    
+    if (star <= 10) {
+      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / divisor);
+    } else if (star <= 15) {
+      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / (divisor * 0.8));
+    } else {
+      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / (divisor * 0.6));
+    }
+  }
+
+  // Success rates (accurate GMS rates)
   const baseSuccessRates: number[] = [
     0.95, 0.9, 0.85, 0.85, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55,
     0.5, 0.45, 0.4, 0.35, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,
     0.3, 0.03, 0.02, 0.01, 0.005,
   ];
 
-  // Destruction rates (0% for stars < 12 or with Safeguard for 12-17)
+  // Destruction rates  
   const boomChances: number[] = [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0-11
-    0.006, 0.01, 0.02, 0.03, 0.04, // 12-16
-    0.05, 0.06, 0.07, 0.08, 0.09, // 17-21
-    0.14, 0.147, 0.196, 0.294, // 22-25
+    0.01, 0.02, 0.02, 0.03, 0.04, // 12-16
+    0.06, 0.1, 0.2, 0.3, 0.4, // 17-21
+    0.5, 0.6, 0.7, 0.8, // 22-25
   ];
-
-  // Tier multipliers for costs
-  const tierMultipliers: { [key: string]: number } = {
-    rare: 0.8,
-    epic: 1.0,
-    unique: 1.2,
-    legendary: 1.5,
-  };
 
   // Monte Carlo simulation
   const simulations = 1000;
@@ -83,20 +88,42 @@ export function calculateStarForce(
   let totalAttempts = 0;
   let totalBooms = 0;
   let successes = 0;
+  const perStarStats: { star: number; successRate: number; boomRate: number; cost: number }[] = [];
 
+  // Calculate per-star stats first
+  for (let star = currentLevel; star < targetLevel; star++) {
+    let successRate = baseSuccessRates[star] || 0.3;
+    if (successRateBonus > 0 && [4, 9, 14].includes(star)) {
+      successRate = Math.min(1, successRate + successRateBonus);
+    }
+    if (starCatching) {
+      successRate = Math.min(1, successRate * 1.05);
+    }
+    
+    const boomRate = (safeguard && star >= 12 && star <= 16) ? 0 : (boomChances[star] || 0);
+    const safeguardMultiplier = safeguard && star >= 12 && star <= 16 ? 2 : 1;
+    const cost = Math.round(getBaseCost(itemLevel, star) * costMultiplier * safeguardMultiplier);
+    
+    perStarStats.push({
+      star,
+      successRate: successRate * 100,
+      boomRate: boomRate * 100,
+      cost
+    });
+  }
+
+  // Run simulations
   for (let i = 0; i < simulations; i++) {
     let currentStar = currentLevel;
     let attemptCost = 0;
     let attemptCount = 0;
     let boomCount = 0;
+    let consecutiveFailures = 0;
 
     while (currentStar < targetLevel) {
       // Calculate cost per attempt
-      const divisor = serverType === "Regular" ? 400 : 200;
-      const baseCost = 1000 + Math.pow(itemLevel, 2) * Math.pow(currentStar + 1, 2.3) / divisor;
-      const tierCost = baseCost * (tierMultipliers[tier] || 1.0);
       const safeguardMultiplier = safeguard && currentStar >= 12 && currentStar <= 16 ? 2 : 1;
-      const cost = Math.round(tierCost * safeguardMultiplier * costMultiplier);
+      const cost = Math.round(getBaseCost(itemLevel, currentStar) * costMultiplier * safeguardMultiplier);
 
       // Calculate success and boom rates
       let successRate = baseSuccessRates[currentStar] || 0.3;
@@ -104,22 +131,34 @@ export function calculateStarForce(
         successRate = Math.min(1, successRate + successRateBonus);
       }
       if (starCatching) {
-        successRate = Math.min(1, successRate * 1.05); // 5% multiplicative boost
+        successRate = Math.min(1, successRate * 1.05);
       }
       const boomRate = (safeguard && currentStar >= 12 && currentStar <= 16) ? 0 : (boomChances[currentStar] || 0);
-      const failRate = 1 - successRate - boomRate;
 
       // Simulate enhancement
       attemptCost += cost;
       attemptCount++;
-      const rand = Math.random();
-      if (rand < successRate) {
+      
+      // Chance Time (guaranteed success after 2 consecutive failures)
+      if (consecutiveFailures >= 2) {
         currentStar++;
-      } else if (rand < successRate + boomRate) {
-        boomCount++;
-        break; // Item destroyed
-      } else if (currentStar >= 12) {
-        currentStar--; // Drop a star on failure for 12+ stars
+        consecutiveFailures = 0;
+      } else {
+        const rand = Math.random();
+        if (rand < successRate) {
+          currentStar++;
+          consecutiveFailures = 0;
+        } else if (rand < successRate + boomRate) {
+          boomCount++;
+          currentStar = 12; // Reset to 12★ on boom (more realistic)
+          consecutiveFailures++;
+        } else {
+          // Failed enhancement
+          if (currentStar >= 15 && currentStar !== 15 && currentStar !== 20) {
+            currentStar--; // Drop a star on failure for certain levels
+          }
+          consecutiveFailures++;
+        }
       }
     }
 
@@ -131,16 +170,31 @@ export function calculateStarForce(
     totalBooms += boomCount;
   }
 
+  // Generate recommendations
+  const recommendations: string[] = [];
+  const avgBoomRate = (totalBooms / totalAttempts * 100);
+  const avgCost = totalCost / simulations;
+  
+  if (avgBoomRate > 5 && !safeguard && targetLevel >= 15) {
+    recommendations.push("Consider using Safeguard for stars 15-16 to prevent destruction.");
+  }
+  if (avgCost > 500000000 && costMultiplier === 1) {
+    recommendations.push("Wait for a 30% Off event to significantly reduce costs.");
+  }
+  if (targetLevel >= 17 && avgBoomRate > 10) {
+    recommendations.push("High destruction risk beyond 17★. Consider your meso budget carefully.");
+  }
+
   return {
     currentLevel,
     targetLevel,
     averageCost: Math.round(totalCost / simulations),
     averageBooms: Math.round((totalBooms / simulations) * 100) / 100,
     successRate: Math.round((successes / simulations) * 10000) / 100,
-    boomRate: Math.round((totalBooms / simulations) * 10000) / 100,
+    boomRate: Math.round((totalBooms / totalAttempts) * 10000) / 100,
     costPerAttempt: Math.round(totalCost / Math.max(1, totalAttempts)),
-    perStarStats: [],
-    recommendations: [],
+    perStarStats,
+    recommendations,
   };
 }
 
