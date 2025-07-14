@@ -51,7 +51,7 @@ function saviorCost(currentStar: number, itemLevel: number): number {
 function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
   const cost = saviorCost(currentStar, itemLevel);
   // Debug logging to compare with Brandon's costs
-  if (itemLevel === 150 && currentStar >= 15 && currentStar <= 17) {
+  if (itemLevel === 150) {
     console.log(`Star ${currentStar} cost: ${cost.toLocaleString()}`);
   }
   return cost;
