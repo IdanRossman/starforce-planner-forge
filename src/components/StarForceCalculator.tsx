@@ -13,9 +13,19 @@ export function calculateStarForce(
   currentLevel: number, 
   targetLevel: number, 
   tier: string,
-  events?: { costMultiplier?: number; successRateBonus?: number }
+  events?: { 
+    costMultiplier?: number; 
+    successRateBonus?: number;
+    starCatching?: boolean;
+    safeguard?: boolean;
+  }
 ): StarForceCalculation {
-  const { costMultiplier = 1, successRateBonus = 0 } = events || {};
+  const { 
+    costMultiplier = 1, 
+    successRateBonus = 0, 
+    starCatching = false, 
+    safeguard = false 
+  } = events || {};
   
   const levels = targetLevel - currentLevel;
   if (levels <= 0) {
@@ -48,7 +58,14 @@ export function calculateStarForce(
   for (let star = currentLevel; star < targetLevel; star++) {
     const costs = baseCosts[tier] || baseCosts.rare;
     const baseCost = costs[star] || 1000000;
-    const cost = Math.round(baseCost * costMultiplier);
+    
+    // Apply safeguard cost multiplier for 15->16 and 16->17
+    let starCostMultiplier = costMultiplier;
+    if (safeguard && (star === 15 || star === 16)) {
+      starCostMultiplier *= 2;
+    }
+    
+    const cost = Math.round(baseCost * starCostMultiplier);
     
     let successRate = baseSuccessRates[star] || 0.3;
     
@@ -57,7 +74,17 @@ export function calculateStarForce(
       successRate = Math.min(1, successRate + successRateBonus);
     }
     
-    const boomChance = boomChances[star] || 0;
+    // Apply star catching 5% success rate bonus globally
+    if (starCatching) {
+      successRate = Math.min(1, successRate + 0.05);
+    }
+    
+    let boomChance = boomChances[star] || 0;
+    
+    // Remove boom chance for 15->16 and 16->17 with safeguard
+    if (safeguard && (star === 15 || star === 16)) {
+      boomChance = 0;
+    }
     
     // Calculate expected attempts for this star level
     let expectedAttempts;

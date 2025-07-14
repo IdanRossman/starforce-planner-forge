@@ -50,6 +50,8 @@ interface StarForceEvents {
 interface CalculationRow {
   equipment: Equipment;
   sparesCount: number;
+  starCatching: boolean;
+  safeguard: boolean;
   expectedCost: number;
   expectedSpares: number;
   isCalculated: boolean;
@@ -140,6 +142,8 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
       existingCalcs.get(eq.id) || {
         equipment: eq,
         sparesCount: 0,
+        starCatching: false,
+        safeguard: false,
         expectedCost: 0,
         expectedSpares: 0,
         isCalculated: false,
@@ -158,10 +162,30 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     );
   };
 
+  const updateStarCatching = (equipmentId: string, enabled: boolean) => {
+    setCalculations(prev => 
+      prev.map(calc => 
+        calc.equipment.id === equipmentId 
+          ? { ...calc, starCatching: enabled, isCalculated: false }
+          : calc
+      )
+    );
+  };
+
+  const updateSafeguard = (equipmentId: string, enabled: boolean) => {
+    setCalculations(prev => 
+      prev.map(calc => 
+        calc.equipment.id === equipmentId 
+          ? { ...calc, safeguard: enabled, isCalculated: false }
+          : calc
+      )
+    );
+  };
+
   const calculateAll = () => {
     setCalculations(prev => 
       prev.map(calc => {
-        const { equipment } = calc;
+        const { equipment, starCatching, safeguard } = calc;
         
         // Apply event modifiers
         let costMultiplier = 1;
@@ -183,7 +207,12 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           equipment.currentStarForce, 
           equipment.targetStarForce, 
           equipment.tier,
-          { costMultiplier, successRateBonus }
+          { 
+            costMultiplier, 
+            successRateBonus,
+            starCatching,
+            safeguard
+          }
         );
         
         // Estimate spares needed (simplified calculation)
@@ -307,6 +336,8 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   <TableHead className="text-center">Current ★</TableHead>
                   <TableHead className="text-center">Target ★</TableHead>
                   <TableHead className="text-center">Current Spares</TableHead>
+                  <TableHead className="text-center">Star Catching</TableHead>
+                  <TableHead className="text-center">Safeguard</TableHead>
                   <TableHead className="text-center">Expected Cost</TableHead>
                   <TableHead className="text-center">Spares Needed</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
@@ -359,6 +390,21 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                       onChange={(e) => updateSparesCount(calc.equipment.id, parseInt(e.target.value) || 0)}
                       className="w-20 text-center"
                       placeholder="0"
+                    />
+                  </TableCell>
+                  
+                  <TableCell className="text-center">
+                    <Switch
+                      checked={calc.starCatching}
+                      onCheckedChange={(checked) => updateStarCatching(calc.equipment.id, checked)}
+                    />
+                  </TableCell>
+                  
+                  <TableCell className="text-center">
+                    <Switch
+                      checked={calc.safeguard}
+                      onCheckedChange={(checked) => updateSafeguard(calc.equipment.id, checked)}
+                      disabled={calc.equipment.currentStarForce >= 17} // Only useful for 15->16 and 16->17
                     />
                   </TableCell>
                   
