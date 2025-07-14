@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, Target, Coins } from "lucide-react";
 import { loadFromLocalStorage } from "@/lib/utils";
+import { getJobIcon, getJobColors, getJobCategoryName } from "@/lib/jobIcons";
 
 export default function Overview() {
   const navigate = useNavigate();
@@ -115,13 +116,27 @@ export default function Overview() {
                 const total = character.equipment.length;
                 const progress = total > 0 ? (completed / total * 100) : 0;
                 
+                const JobIcon = getJobIcon(character.class);
+                const jobColors = getJobColors(character.class);
+                const jobCategory = getJobCategoryName(character.class);
+                
                 return (
                   <div key={character.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                    <div>
-                      <p className="font-medium">{character.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {character.class} • Lv.{character.level}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                        <JobIcon className="w-4 h-4 text-white" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{character.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {character.class} • Lv.{character.level}
+                          </p>
+                          <Badge variant="outline" className={`text-xs ${jobColors.bgMuted} ${jobColors.text} ${jobColors.border}`}>
+                            {jobCategory}
+                          </Badge>
+                        </div>
+                      </div>
                     </div>
                     <div className="text-right">
                       <Badge variant="outline" className="mb-1">

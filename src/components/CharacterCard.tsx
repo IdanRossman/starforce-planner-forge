@@ -2,7 +2,8 @@ import { Character } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, User } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
+import { getJobIcon, getJobColors, getJobCategoryName } from "@/lib/jobIcons";
 
 interface CharacterCardProps {
   character: Character;
@@ -19,6 +20,10 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect, isSelecte
   
   const totalEquipment = character.equipment.length;
   const progressPercentage = totalEquipment > 0 ? (completedEquipment / totalEquipment) * 100 : 0;
+  
+  const JobIcon = getJobIcon(character.class);
+  const jobColors = getJobColors(character.class);
+  const jobCategory = getJobCategoryName(character.class);
 
   return (
     <Card 
@@ -30,16 +35,21 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect, isSelecte
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-primary to-maple-orange flex items-center justify-center">
-              <User className="w-5 h-5 text-primary-foreground" />
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+              <JobIcon className="w-5 h-5 text-white" />
             </div>
             <div>
               <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
                 {character.name}
               </CardTitle>
-              <p className="text-sm text-muted-foreground">
-                {character.class} • Lv.{character.level}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-muted-foreground">
+                  {character.class} • Lv.{character.level}
+                </p>
+                <Badge variant="outline" className={`text-xs ${jobColors.bgMuted} ${jobColors.text} ${jobColors.border}`}>
+                  {jobCategory}
+                </Badge>
+              </div>
             </div>
           </div>
           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
