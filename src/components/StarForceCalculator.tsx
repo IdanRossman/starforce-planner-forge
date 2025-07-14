@@ -246,23 +246,12 @@ export function calculateStarForce(
   const thirtyOff = costMultiplier < 1;
   const fiveTenFifteen = successRateBonus > 0;
   const mvpDiscount = 0; // Could be extracted from costMultiplier if needed
-  const server = "gms"; // Default to GMS
+  const server = "gms"; // Brandon uses lowercase "gms"
 
-  // Run simulations using Brandon's exact algorithm - double experiments per trial
+  // Run simulations using Brandon's exact algorithm 
   for (let i = 0; i < trials; i++) {
-    // Brandon runs TWO separate experiments per trial for better accuracy
-    const [mesoResult] = performExperiment(
-      currentLevel, 
-      targetLevel, 
-      itemLevel, 
-      safeguard, 
-      thirtyOff, 
-      starCatching, 
-      fiveTenFifteen, 
-      mvpDiscount, 
-      server
-    );
-    const [, boomResult] = performExperiment(
+    // Each trial gets both meso and boom data from the same experiment
+    const [mesoResult, boomResult] = performExperiment(
       currentLevel, 
       targetLevel, 
       itemLevel, 
