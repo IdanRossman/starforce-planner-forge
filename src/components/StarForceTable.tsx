@@ -197,9 +197,11 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
         }
         
         const starForceCalc = calculateStarForce(
+          equipment.level || 150,
           equipment.currentStarForce, 
           equipment.targetStarForce, 
-          equipment.tier,
+          equipment.tier || "epic",
+          "Regular",
           { 
             costMultiplier, 
             successRateBonus,

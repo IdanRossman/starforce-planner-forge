@@ -1,4 +1,3 @@
-```typescript
 import { useState } from "react";
 import { StarForceCalculation } from "@/types";
 import {
@@ -253,7 +252,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
           </div>
           <div>
             <label className="text-sm text-muted-foreground">Server Type</label>
-            <Select value={serverType} onValueChange={setServerType}>
+            <Select value={serverType} onValueChange={(value) => setServerType(value as "Regular" | "Reboot")}>
               <SelectTrigger className="mt-1">
                 <SelectValue />
               </SelectTrigger>
@@ -265,11 +264,11 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Checkbox checked={safeguard} onCheckedChange={setSafeguard} />
+              <Checkbox checked={safeguard} onCheckedChange={(checked) => setSafeguard(checked === true)} />
               <label className="text-sm text-muted-foreground">Safeguard (12-17)</label>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox checked={starCatching} onCheckedChange={setStarCatching} />
+              <Checkbox checked={starCatching} onCheckedChange={(checked) => setStarCatching(checked === true)} />
               <label className="text-sm text-muted-foreground">Star Catching (+5%)</label>
             </div>
           </div>
@@ -365,4 +364,3 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
     </Card>
   );
 }
-```
