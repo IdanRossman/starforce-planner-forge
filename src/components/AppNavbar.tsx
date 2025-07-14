@@ -37,51 +37,53 @@ export function AppNavbar() {
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent">
                 MapleStory StarForce Planner
               </h1>
-              <div className="flex items-center gap-3">
-                <p className="text-xs text-muted-foreground">Plan your equipment upgrades efficiently</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground/80">
-                  <span className="hidden md:inline">#BuffMerc</span>
-                  <span className="hidden md:inline">#LetUsKeepTheDonkey</span>
-                  <span>🦄</span>
-                </div>
-              </div>
+              <p className="text-xs text-muted-foreground">Plan your equipment upgrades efficiently</p>
             </div>
           </NavLink>
           
           {/* Navigation */}
-          <nav className="flex items-center gap-1">
-            {/* Main Items */}
-            {mainItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                end={item.url === "/"}
-                className={getNavCls(item.url)}
-              >
-                <div className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{item.title}</span>
-                </div>
-              </NavLink>
-            ))}
+          <div className="flex items-center gap-4">
+            <nav className="flex items-center gap-1">
+              {/* Main Items */}
+              {mainItems.map((item) => (
+                <NavLink
+                  key={item.title}
+                  to={item.url}
+                  end={item.url === "/"}
+                  className={getNavCls(item.url)}
+                >
+                  <div className="flex items-center gap-2">
+                    <item.icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{item.title}</span>
+                  </div>
+                </NavLink>
+              ))}
+              
+              {/* Separator */}
+              <div className="w-px h-6 bg-border mx-2" />
+              
+              {/* Tool Items */}
+              {toolItems.map((item) => (
+                <NavLink
+                  key={item.title}
+                  to={item.url}
+                  className={getNavCls(item.url)}
+                >
+                  <div className="flex items-center gap-2">
+                    <item.icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{item.title}</span>
+                  </div>
+                </NavLink>
+              ))}
+            </nav>
             
-            {/* Separator */}
-            <div className="w-px h-6 bg-border mx-2" />
-            
-            {/* Tool Items */}
-            {toolItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                className={getNavCls(item.url)}
-              >
-                <div className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{item.title}</span>
-                </div>
-              </NavLink>
-            ))}
-          </nav>
+            {/* Hashtags */}
+            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/80">
+              <span className="hidden md:inline">#BuffMerc</span>
+              <span className="hidden md:inline">#LetUsKeepTheDonkey</span>
+              <span>🦄</span>
+            </div>
+          </div>
         </div>
       </div>
     </header>
