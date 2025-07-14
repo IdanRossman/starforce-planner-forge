@@ -1,6 +1,7 @@
 import { Equipment, EquipmentSlot } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
 import { 
   Plus, 
@@ -119,25 +120,40 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
   const hasIncompleteStarForce = equipment.some(eq => eq.currentStarForce < eq.targetStarForce);
 
   return (
-    <div className="space-y-6">
+    <TooltipProvider>
+      <div className="space-y-6">
       <div className="grid grid-cols-6 grid-rows-6 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
         {EQUIPMENT_SLOTS.map(({ slot, label, position }) => {
           const equipment = equipmentBySlot[slot];
           
-          // Hide top/bottom if overall is equipped, hide overall if top/bottom equipped
+          // Check for conflicting equipment (overall vs top/bottom)
           const hasOverall = equipmentBySlot['overall'];
           const hasTopOrBottom = equipmentBySlot['top'] || equipmentBySlot['bottom'];
           
-          if (slot === 'overall' && hasTopOrBottom) return null;
-          if ((slot === 'top' || slot === 'bottom') && hasOverall) return null;
+          const isDisabled = !equipment && (
+            (slot === 'overall' && !!hasTopOrBottom) ||
+            ((slot === 'top' || slot === 'bottom') && !!hasOverall)
+          );
           
-          return (
+          const getTooltipMessage = () => {
+            if (slot === 'overall' && hasTopOrBottom) {
+              return "Cannot equip Overall when Top or Bottom is equipped";
+            }
+            if ((slot === 'top' || slot === 'bottom') && hasOverall) {
+              return "Cannot equip Top/Bottom when Overall is equipped";
+            }
+            return "";
+          };
+          
+          const cardContent = (
             <Card 
               key={slot} 
               className={`relative transition-all duration-200 group ${position} ${
                 equipment 
                   ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
-                  : "bg-muted/30 border-dashed border-muted"
+                  : isDisabled
+                    ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
+                    : "bg-muted/30 border-dashed border-muted"
               }`}
             >
               <CardContent className="p-3 h-full flex flex-col justify-between">
@@ -189,8 +205,13 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
                 ) : (
                   <Button
                     variant="ghost"
-                    className="h-full w-full border-0 bg-transparent hover:bg-muted/50 flex flex-col gap-2 text-muted-foreground hover:text-foreground"
-                    onClick={() => onAddEquipment(slot)}
+                    className={`h-full w-full border-0 bg-transparent flex flex-col gap-2 ${
+                      isDisabled 
+                        ? "text-muted-foreground/50 cursor-not-allowed" 
+                        : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => !isDisabled && onAddEquipment(slot)}
+                    disabled={isDisabled}
                   >
                     <Plus className="w-4 h-4" />
                     <span className="text-xs">{label}</span>
@@ -199,6 +220,19 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
               </CardContent>
             </Card>
           );
+
+          return isDisabled ? (
+            <TooltipProvider key={slot}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  {cardContent}
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{getTooltipMessage()}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : cardContent;
         })}
       </div>
       
@@ -218,6 +252,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
           </p>
         </div>
       )}
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
