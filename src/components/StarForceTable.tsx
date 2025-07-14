@@ -39,6 +39,8 @@ interface StarForceTableProps {
   starForceItems: Equipment[];
   onAddStarForceItem: () => void;
   onRemoveStarForceItem: (id: string) => void;
+  title?: string;
+  subtitle?: string;
 }
 
 interface StarForceEvents {
@@ -112,7 +114,7 @@ const getDangerColor = (currentStars: number) => {
   return 'text-green-400';
 };
 
-export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem }: StarForceTableProps) {
+export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, title, subtitle }: StarForceTableProps) {
   // Filter equipped items that haven't reached target stars
   const incompleteEquipment = useMemo(
     () => equipment.filter(eq => eq.currentStarForce < eq.targetStarForce),
@@ -237,7 +239,8 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5 text-primary" />
-            StarForce Bulk Calculator
+            {title || "StarForce Bulk Calculator"}
+            {subtitle && <span className="text-sm text-muted-foreground ml-2">• {subtitle}</span>}
           </CardTitle>
           <div className="flex items-center gap-2">
             <Button 

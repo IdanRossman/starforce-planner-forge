@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function Dashboard() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("equipment");
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
@@ -431,80 +432,88 @@ export default function Dashboard() {
             </Card>
           </div>
 
-          {/* Character Details */}
+          {/* Main Content */}
           <div className="col-span-12 lg:col-span-8">
-            {selectedCharacter ? (
-              <Tabs defaultValue="equipment" className="space-y-6">
-                <TabsList className="bg-muted/50">
-                  <TabsTrigger value="equipment" className="flex items-center gap-2">
-                    <Target className="w-4 h-4" />
-                    Equipment
-                  </TabsTrigger>
-                  <TabsTrigger value="calculator" className="flex items-center gap-2">
-                    <Calculator className="w-4 h-4" />
-                    Calculator
-                  </TabsTrigger>
-                </TabsList>
+            <Tabs defaultValue="overview" className="space-y-6">
+              <TabsList className="bg-muted/50">
+                <TabsTrigger value="overview" className="flex items-center gap-2">
+                  <Calculator className="w-4 h-4" />
+                  Overall
+                </TabsTrigger>
+                {selectedCharacter && (
+                  <>
+                    <TabsTrigger value="equipment" className="flex items-center gap-2">
+                      <Target className="w-4 h-4" />
+                      {selectedCharacter.name}'s Equipment
+                    </TabsTrigger>
+                    <TabsTrigger value="calculator" className="flex items-center gap-2">
+                      <Calculator className="w-4 h-4" />
+                      {selectedCharacter.name}'s Calculator
+                    </TabsTrigger>
+                  </>
+                )}
+              </TabsList>
 
-                <TabsContent value="equipment" className="space-y-6">
-                  <Card className="bg-gradient-to-br from-card to-card/80">
-                    <CardHeader>
-                      <CardTitle className="flex items-center justify-between">
-                        <span>{selectedCharacter.name}'s Equipment</span>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleResetAllEquipment}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            Reset All
-                          </Button>
-                          <div className="text-sm text-muted-foreground">
-                            {selectedCharacter.class} • Lv.{selectedCharacter.level}
+              <TabsContent value="overview" className="space-y-6">
+                <StarForceTable 
+                  equipment={characters.flatMap(char => char.equipment)} 
+                  starForceItems={starForceItems}
+                  onAddStarForceItem={handleAddStarForceItem}
+                  onRemoveStarForceItem={handleRemoveStarForceItem}
+                  title="Overall StarForce Calculator"
+                  subtitle="All characters combined"
+                />
+              </TabsContent>
+
+              {selectedCharacter && (
+                <>
+                  <TabsContent value="equipment" className="space-y-6">
+                    <Card className="bg-gradient-to-br from-card to-card/80">
+                      <CardHeader>
+                        <CardTitle className="flex items-center justify-between">
+                          <span>{selectedCharacter.name}'s Equipment</span>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={handleResetAllEquipment}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              Reset All
+                            </Button>
+                            <div className="text-sm text-muted-foreground">
+                              {selectedCharacter.class} • Lv.{selectedCharacter.level}
+                            </div>
                           </div>
-                        </div>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <EquipmentGrid
-                        equipment={selectedCharacter.equipment}
-                        onEditEquipment={handleEditEquipment}
-                        onAddEquipment={handleAddEquipment}
-                        onClearEquipment={handleClearEquipment}
-                        onOpenCalculator={() => {
-                          // Switch to calculator tab
-                          const calculatorTab = document.querySelector('[value="calculator"]') as HTMLElement;
-                          calculatorTab?.click();
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </TabsContent>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <EquipmentGrid
+                          equipment={selectedCharacter.equipment}
+                          onEditEquipment={handleEditEquipment}
+                          onAddEquipment={handleAddEquipment}
+                          onClearEquipment={handleClearEquipment}
+                          onOpenCalculator={() => {
+                            // Switch to the calculator tab for this character
+                            const tabElement = document.querySelector('[data-state="active"]')?.parentElement?.querySelector('[value="calculator"]') as HTMLElement;
+                            if (tabElement) tabElement.click();
+                          }}
+                        />
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-                <TabsContent value="calculator" className="space-y-6">
-                  <StarForceTable 
-                    equipment={selectedCharacter.equipment} 
-                    starForceItems={starForceItems}
-                    onAddStarForceItem={handleAddStarForceItem}
-                    onRemoveStarForceItem={handleRemoveStarForceItem}
-                  />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <Card className="bg-gradient-to-br from-card to-card/80">
-                <CardContent className="py-16 text-center">
-                  <Users className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-                  <h3 className="text-xl font-semibold text-foreground mb-2">
-                    Select a Character
-                  </h3>
-                  <p className="text-muted-foreground mb-6">
-                    Choose a character from the list to view and manage their equipment
-                  </p>
-                  <CharacterForm onAddCharacter={addCharacter} />
-                </CardContent>
-              </Card>
-            )}
+                  <TabsContent value="calculator" className="space-y-6">
+                    <StarForceTable 
+                      equipment={selectedCharacter.equipment} 
+                      starForceItems={starForceItems}
+                      onAddStarForceItem={handleAddStarForceItem}
+                      onRemoveStarForceItem={handleRemoveStarForceItem}
+                    />
+                  </TabsContent>
+                </>
+              )}
+            </Tabs>
           </div>
         </div>
 
