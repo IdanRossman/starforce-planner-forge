@@ -28,7 +28,7 @@ export function AppNavbar() {
     <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo/Home button with maple leaf */}
+          {/* Logo/Home button - Far Left */}
           <NavLink to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div className="w-8 h-8 bg-gradient-to-r from-primary to-maple-orange rounded-full flex items-center justify-center">
               <Leaf className="w-5 h-5 text-white" />
@@ -41,48 +41,46 @@ export function AppNavbar() {
             </div>
           </NavLink>
           
-          {/* Navigation */}
-          <div className="flex items-center gap-4">
-            <nav className="flex items-center gap-1">
-              {/* Main Items */}
-              {mainItems.map((item) => (
-                <NavLink
-                  key={item.title}
-                  to={item.url}
-                  end={item.url === "/"}
-                  className={getNavCls(item.url)}
-                >
-                  <div className="flex items-center gap-2">
-                    <item.icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{item.title}</span>
-                  </div>
-                </NavLink>
-              ))}
-              
-              {/* Separator */}
-              <div className="w-px h-6 bg-border mx-2" />
-              
-              {/* Tool Items */}
-              {toolItems.map((item) => (
-                <NavLink
-                  key={item.title}
-                  to={item.url}
-                  className={getNavCls(item.url)}
-                >
-                  <div className="flex items-center gap-2">
-                    <item.icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{item.title}</span>
-                  </div>
-                </NavLink>
-              ))}
-            </nav>
+          {/* Navigation - Center */}
+          <nav className="flex items-center gap-1">
+            {/* Main Items */}
+            {mainItems.map((item) => (
+              <NavLink
+                key={item.title}
+                to={item.url}
+                end={item.url === "/"}
+                className={getNavCls(item.url)}
+              >
+                <div className="flex items-center gap-2">
+                  <item.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{item.title}</span>
+                </div>
+              </NavLink>
+            ))}
             
-            {/* Hashtags */}
-            <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/80">
-              <span className="hidden md:inline">#BuffMerc</span>
-              <span className="hidden md:inline">#LetUsKeepTheDonkey</span>
-              <span>🦄</span>
-            </div>
+            {/* Separator */}
+            <div className="w-px h-6 bg-border mx-2" />
+            
+            {/* Tool Items */}
+            {toolItems.map((item) => (
+              <NavLink
+                key={item.title}
+                to={item.url}
+                className={getNavCls(item.url)}
+              >
+                <div className="flex items-center gap-2">
+                  <item.icon className="w-4 h-4" />
+                  <span className="hidden sm:inline">{item.title}</span>
+                </div>
+              </NavLink>
+            ))}
+          </nav>
+          
+          {/* Hashtags - Far Right */}
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/80">
+            <span className="hidden md:inline">#BuffMerc</span>
+            <span className="hidden md:inline">#LetUsKeepTheDonkey</span>
+            <span>🦄</span>
           </div>
         </div>
       </div>
