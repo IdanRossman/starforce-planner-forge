@@ -68,6 +68,7 @@ interface EquipmentFormProps {
   equipment?: Equipment;
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
+  allowSlotEdit?: boolean;
 }
 
 const getSlotIcon = (slotValue: string) => {
@@ -145,7 +146,8 @@ export function EquipmentForm({
   onOpenChange, 
   equipment, 
   defaultSlot, 
-  onSave 
+  onSave,
+  allowSlotEdit = false
 }: EquipmentFormProps) {
   const isEditing = !!equipment;
 
@@ -245,7 +247,7 @@ export function EquipmentForm({
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value}
-                      disabled={isEditing || !!defaultSlot}
+                      disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
                     >
                       <FormControl>
                         <SelectTrigger>

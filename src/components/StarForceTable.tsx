@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Equipment } from "@/types";
 import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,9 @@ import {
 
 interface StarForceTableProps {
   equipment: Equipment[];
+  starForceItems: Equipment[];
+  onAddStarForceItem: () => void;
+  onRemoveStarForceItem: (id: string) => void;
 }
 
 interface CalculationRow {
@@ -99,9 +102,15 @@ const getDangerColor = (currentStars: number) => {
   return 'text-green-400';
 };
 
-export function StarForceTable({ equipment }: StarForceTableProps) {
+export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem }: StarForceTableProps) {
+  // Filter equipped items that haven't reached target stars
+  const incompleteEquipment = equipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
+  
+  // Combine incomplete equipped items with standalone starforce items
+  const allStarForceItems = [...incompleteEquipment, ...starForceItems];
+  
   const [calculations, setCalculations] = useState<CalculationRow[]>(
-    equipment.map(eq => ({
+    allStarForceItems.map(eq => ({
       equipment: eq,
       sparesCount: 0,
       expectedCost: 0,
@@ -109,6 +118,22 @@ export function StarForceTable({ equipment }: StarForceTableProps) {
       isCalculated: false,
     }))
   );
+
+  // Update calculations when items change
+  useEffect(() => {
+    setCalculations(prev => {
+      const existingCalcs = new Map(prev.map(calc => [calc.equipment.id, calc]));
+      return allStarForceItems.map(eq => 
+        existingCalcs.get(eq.id) || {
+          equipment: eq,
+          sparesCount: 0,
+          expectedCost: 0,
+          expectedSpares: 0,
+          isCalculated: false,
+        }
+      );
+    });
+  }, [allStarForceItems]);
 
   const updateSparesCount = (equipmentId: string, count: number) => {
     setCalculations(prev => 
@@ -155,28 +180,41 @@ export function StarForceTable({ equipment }: StarForceTableProps) {
             <Calculator className="w-5 h-5 text-primary" />
             StarForce Bulk Calculator
           </CardTitle>
-          <Button onClick={calculateAll} className="flex items-center gap-2">
-            <Calculator className="w-4 h-4" />
-            Calculate All
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              onClick={onAddStarForceItem}
+              variant="outline" 
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Package className="w-4 h-4" />
+              Add Equipment
+            </Button>
+            <Button onClick={calculateAll} className="flex items-center gap-2">
+              <Calculator className="w-4 h-4" />
+              Calculate All
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Equipment</TableHead>
-                <TableHead className="text-center">Current ★</TableHead>
-                <TableHead className="text-center">Target ★</TableHead>
-                <TableHead className="text-center">Current Spares</TableHead>
-                <TableHead className="text-center">Expected Cost</TableHead>
-                <TableHead className="text-center">Spares Needed</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {calculations.map((calc) => (
+        {allStarForceItems.length > 0 ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Equipment</TableHead>
+                  <TableHead className="text-center">Current ★</TableHead>
+                  <TableHead className="text-center">Target ★</TableHead>
+                  <TableHead className="text-center">Current Spares</TableHead>
+                  <TableHead className="text-center">Expected Cost</TableHead>
+                  <TableHead className="text-center">Spares Needed</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {calculations.map((calc) => (
                 <TableRow key={calc.equipment.id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -246,16 +284,47 @@ export function StarForceTable({ equipment }: StarForceTableProps) {
                             Need {calc.expectedSpares - calc.sparesCount} more
                           </span>
                         )}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
+                       </div>
+                     ) : (
+                       <span className="text-muted-foreground">-</span>
+                     )}
+                   </TableCell>
+                  
+                  <TableCell className="text-center">
+                    {starForceItems.some(item => item.id === calc.equipment.id) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onRemoveStarForceItem(calc.equipment.id)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      >
+                        Remove
+                      </Button>
                     )}
                   </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="py-16 text-center">
+            <Calculator className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              No Equipment to Calculate
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Add equipment with incomplete star force goals to start calculating
+            </p>
+            <Button 
+              onClick={onAddStarForceItem}
+              className="flex items-center gap-2"
+            >
+              <Package className="w-4 h-4" />
+              Add Equipment for StarForce
+            </Button>
+          </div>
+        )}
 
         {hasCalculations && (
           <div className="mt-6 p-4 bg-muted/30 rounded-lg">

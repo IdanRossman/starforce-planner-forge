@@ -18,6 +18,8 @@ export default function Dashboard() {
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [addingToSlot, setAddingToSlot] = useState<EquipmentSlot | null>(null);
+  const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
+  const [addingStarForceItem, setAddingStarForceItem] = useState(false);
 
   const handleSelectCharacter = (character: Character) => {
     setSelectedCharacter(character);
@@ -54,10 +56,35 @@ export default function Dashboard() {
   const handleAddEquipment = (slot: EquipmentSlot) => {
     setEditingEquipment(null);
     setAddingToSlot(slot);
+    setAddingStarForceItem(false);
     setEquipmentFormOpen(true);
   };
 
+  const handleAddStarForceItem = () => {
+    setAddingStarForceItem(true);
+    setAddingToSlot(null);
+    setEditingEquipment(null);
+    setEquipmentFormOpen(true);
+  };
+
+  const handleRemoveStarForceItem = (id: string) => {
+    setStarForceItems(prev => prev.filter(item => item.id !== id));
+  };
+
   const handleSaveEquipment = (equipmentData: Omit<Equipment, 'id'> | Equipment) => {
+    if (addingStarForceItem) {
+      // Adding equipment for star force calculation only
+      const newEquipment: Equipment = {
+        ...equipmentData,
+        id: `sf-${Date.now()}`,
+      } as Equipment;
+      
+      setStarForceItems(prev => [...prev, newEquipment]);
+      setEquipmentFormOpen(false);
+      setAddingStarForceItem(false);
+      return;
+    }
+
     if (!selectedCharacter) return;
 
     const updatedCharacters = characters.map(char => {
@@ -86,6 +113,10 @@ export default function Dashboard() {
     if (updatedCharacter) {
       setSelectedCharacter(updatedCharacter);
     }
+
+    setEquipmentFormOpen(false);
+    setEditingEquipment(null);
+    setAddingToSlot(null);
   };
 
 
@@ -167,21 +198,12 @@ export default function Dashboard() {
                 </TabsContent>
 
                 <TabsContent value="calculator" className="space-y-6">
-                  {selectedCharacter.equipment.length > 0 ? (
-                    <StarForceTable equipment={selectedCharacter.equipment} />
-                  ) : (
-                    <Card className="bg-gradient-to-br from-card to-card/80">
-                      <CardContent className="py-12 text-center">
-                        <Calculator className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
-                          No Equipment Found
-                        </h3>
-                        <p className="text-muted-foreground">
-                          Add equipment to this character to start calculating StarForce costs
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
+                  <StarForceTable 
+                    equipment={selectedCharacter.equipment} 
+                    starForceItems={starForceItems}
+                    onAddStarForceItem={handleAddStarForceItem}
+                    onRemoveStarForceItem={handleRemoveStarForceItem}
+                  />
                 </TabsContent>
               </Tabs>
             ) : (
@@ -204,9 +226,17 @@ export default function Dashboard() {
         {/* Equipment Form Dialog */}
         <EquipmentForm
           open={equipmentFormOpen}
-          onOpenChange={setEquipmentFormOpen}
+          onOpenChange={(open) => {
+            setEquipmentFormOpen(open);
+            if (!open) {
+              setAddingStarForceItem(false);
+              setAddingToSlot(null);
+              setEditingEquipment(null);
+            }
+          }}
           equipment={editingEquipment}
           defaultSlot={addingToSlot}
+          allowSlotEdit={addingStarForceItem}
           onSave={handleSaveEquipment}
         />
       </div>
