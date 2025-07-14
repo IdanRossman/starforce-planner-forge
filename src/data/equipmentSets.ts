@@ -127,9 +127,11 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Guardian Angel Ring', level: 160, tier: null },
     { name: 'Eternal Terror', level: 200, tier: null },
+    { name: 'Whisper of the Source', level: 250, tier: null },
   ],
   ring2: [
     { name: 'Oz Ring', level: 110, tier: null },
+    { name: 'Event Ring', level: 120, tier: null },
     { name: 'Silver Blossom Ring', level: 110, tier: null },
     { name: 'Treasure Hunter John Ring', level: 125, tier: null },
     { name: 'Reinforced Gollux Ring', level: 140, tier: null },
@@ -138,9 +140,11 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Guardian Angel Ring', level: 160, tier: null },
     { name: 'Eternal Terror', level: 200, tier: null },
+    { name: 'Whisper of the Source', level: 250, tier: null },
   ],
   ring3: [
     { name: 'Oz Ring', level: 110, tier: null },
+    { name: 'Event Ring', level: 120, tier: null },
     { name: 'Silver Blossom Ring', level: 110, tier: null },
     { name: 'Treasure Hunter John Ring', level: 125, tier: null },
     { name: 'Reinforced Gollux Ring', level: 140, tier: null },
@@ -149,9 +153,11 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Guardian Angel Ring', level: 160, tier: null },
     { name: 'Eternal Terror', level: 200, tier: null },
+    { name: 'Whisper of the Source', level: 250, tier: null },
   ],
   ring4: [
     { name: 'Oz Ring', level: 110, tier: null },
+    { name: 'Event Ring', level: 120, tier: null },
     { name: 'Silver Blossom Ring', level: 110, tier: null },
     { name: 'Treasure Hunter John Ring', level: 125, tier: null },
     { name: 'Reinforced Gollux Ring', level: 140, tier: null },
@@ -160,6 +166,7 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Guardian Angel Ring', level: 160, tier: null },
     { name: 'Eternal Terror', level: 200, tier: null },
+    { name: 'Whisper of the Source', level: 250, tier: null },
   ],
   pendant1: [
     { name: 'Chaos Horntail Necklace', level: 120, tier: null },
@@ -169,6 +176,7 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Daybreak Pendant', level: 140, tier: null },
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Source of Suffering', level: 160, tier: null },
+    { name: 'Oath of Death', level: 250, tier: null },
   ],
   pendant2: [
     { name: 'Chaos Horntail Necklace', level: 120, tier: null },
@@ -178,6 +186,7 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Daybreak Pendant', level: 140, tier: null },
     { name: 'Superior Gollux', level: 150, tier: null },
     { name: 'Source of Suffering', level: 160, tier: null },
+    { name: 'Oath of Death', level: 250, tier: null },
   ],
 
   // Special items
@@ -189,6 +198,8 @@ export const EQUIPMENT_BY_SLOT = {
   heart: [
     { name: 'Lidium Heart', level: 30, tier: null },
     { name: 'Fairy Heart', level: 100, tier: null },
+    { name: 'Black Heart', level: 120, tier: null },
+    { name: 'Total Control', level: 200, tier: null },
   ],
   badge: [
     { name: 'Crystal Ventus Badge', level: 100, tier: null },
