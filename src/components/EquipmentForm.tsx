@@ -66,6 +66,12 @@ const equipmentSchema = z.object({
   path: ["targetStarForce"],
 });
 
+// Helper function to determine default starforceable status based on slot
+const getDefaultStarforceable = (slot: string): boolean => {
+  const nonStarforceableSlots = ['pocket', 'emblem', 'badge', 'secondary'];
+  return !nonStarforceableSlots.includes(slot);
+};
+
 type EquipmentFormData = z.infer<typeof equipmentSchema>;
 
 interface EquipmentFormProps {
@@ -173,8 +179,23 @@ export function EquipmentForm({
     },
   });
 
-  // Watch for starforceable toggle
+  // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
+  const watchSlot = form.watch('slot');
+
+  // Update starforceable default when slot changes
+  useEffect(() => {
+    if (watchSlot && !equipment) { // Only for new equipment, not editing
+      const defaultStarforceable = getDefaultStarforceable(watchSlot);
+      form.setValue('starforceable', defaultStarforceable);
+      
+      // Reset StarForce values if turning off starforceable
+      if (!defaultStarforceable) {
+        form.setValue('currentStarForce', 0);
+        form.setValue('targetStarForce', 0);
+      }
+    }
+  }, [watchSlot, equipment, form]);
 
   // Reset form when dialog opens/closes or equipment changes
   useEffect(() => {
@@ -199,7 +220,7 @@ export function EquipmentForm({
           tier: 'epic',
           currentStarForce: 0,
           targetStarForce: 22,
-          starforceable: true,
+          starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
         });
       }
     }
@@ -328,6 +349,16 @@ export function EquipmentForm({
                       } else {
                         form.setValue('type', 'accessory');
                       }
+                      
+                      // Set starforceable default for the equipment slot
+                      const defaultStarforceable = getDefaultStarforceable(slot);
+                      form.setValue('starforceable', defaultStarforceable);
+                      
+                      // Reset StarForce if not starforceable
+                      if (!defaultStarforceable) {
+                        form.setValue('currentStarForce', 0);
+                        form.setValue('targetStarForce', 0);
+                      }
                     }
                   }} value={field.value}>
                     <FormControl>
@@ -442,6 +473,11 @@ export function EquipmentForm({
                     </FormLabel>
                     <div className="text-sm text-muted-foreground">
                       Can this equipment be enhanced with StarForce?
+                      {watchSlot && !getDefaultStarforceable(watchSlot) && (
+                        <div className="text-amber-600 dark:text-amber-400 mt-1">
+                          Note: {watchSlot.charAt(0).toUpperCase() + watchSlot.slice(1)} items are typically not starforceable
+                        </div>
+                      )}
                     </div>
                   </div>
                   <FormControl>
