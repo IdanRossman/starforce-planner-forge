@@ -23,7 +23,7 @@ const App = () => (
           <AppNavbar />
           
           {/* Main Content */}
-          <main className="p-6 pb-16">
+          <main className="p-4 sm:p-6 pb-16 min-h-screen">
             <Routes>
               <Route path="/" element={<Overview />} />
               <Route path="/characters" element={<Characters />} />

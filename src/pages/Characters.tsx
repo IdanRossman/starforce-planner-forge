@@ -308,20 +308,20 @@ export default function Characters() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Characters</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Characters</h1>
+          <p className="text-sm text-muted-foreground">
             Manage your MapleStory characters and their equipment
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" onClick={handleExport} className="flex items-center gap-2">
+              <Button variant="outline" onClick={handleExport} className="flex items-center gap-2 h-9 px-3">
                 <Download className="w-4 h-4" />
-                Export
+                <span className="hidden sm:inline">Export</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
@@ -372,9 +372,9 @@ export default function Characters() {
 
           <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button variant="outline" className="flex items-center gap-2 h-9 px-3">
                 <Upload className="w-4 h-4" />
-                Import
+                <span className="hidden sm:inline">Import</span>
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -414,17 +414,17 @@ export default function Characters() {
       </div>
 
       {/* Main Content */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Characters List */}
-        <div className="col-span-12 lg:col-span-4">
+        <div className="lg:col-span-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="w-4 h-4 text-primary" />
                 Characters ({characters.length})
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3 px-4 pb-4">
               {characters.map((character) => (
                 <CharacterCard
                   key={character.id}
@@ -440,7 +440,7 @@ export default function Characters() {
         </div>
 
         {/* Main Content */}
-        <div className="col-span-12 lg:col-span-8">
+        <div className="lg:col-span-8">
           {selectedCharacter ? (
             <Tabs defaultValue="equipment" className="space-y-6">
               <TabsList>
