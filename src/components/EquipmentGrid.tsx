@@ -162,26 +162,26 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                 {equipment ? (
                   <>
                     <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <Badge variant="outline" className={getTierColor(equipment.tier)}>
-                          {equipment.tier.charAt(0).toUpperCase() + equipment.tier.slice(1)}
+                      <div className="flex items-start justify-between gap-1">
+                        <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
+                          {equipment.tier.charAt(0).toUpperCase()}
                         </Badge>
-                        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-1 h-auto"
+                            className="p-0.5 h-auto w-auto"
                             onClick={() => onEditEquipment(equipment)}
                           >
-                            <Edit className="w-3 h-3" />
+                            <Edit className="w-2.5 h-2.5" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="p-1 h-auto text-destructive hover:text-destructive"
+                            className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
                             onClick={() => onClearEquipment(equipment.slot)}
                           >
-                            <X className="w-3 h-3" />
+                            <X className="w-2.5 h-2.5" />
                           </Button>
                         </div>
                       </div>
