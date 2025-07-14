@@ -53,17 +53,19 @@ export function calculateStarForce(
     };
   }
 
-  // Accurate cost calculation based on item level and star
+  // Accurate cost calculation based on official MapleStory formula
   function getBaseCost(itemLevel: number, star: number): number {
     const roundedLevel = Math.floor(itemLevel / 10) * 10;
-    const divisor = serverType === "Regular" ? 400 : 200;
     
     if (star <= 10) {
-      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / divisor);
+      // Stars 1-10: Base formula
+      return Math.round(100 * (Math.pow(roundedLevel, 3) * Math.pow(star + 1, 1) / 2500) + 1000);
     } else if (star <= 15) {
-      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / (divisor * 0.8));
+      // Stars 11-15: Increased cost scaling
+      return Math.round(100 * (Math.pow(roundedLevel, 3) * Math.pow(star + 1, 2.7) / 40000) + 10000);
     } else {
-      return Math.round(1000 + (roundedLevel ** 2 * (star + 1) ** 2.7) / (divisor * 0.6));
+      // Stars 16-25: Very expensive
+      return Math.round(100 * (Math.pow(roundedLevel, 3) * Math.pow(star + 1, 3) / 20000) + 100000);
     }
   }
 
