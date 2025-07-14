@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
+import { getJobIcon, getJobColors, getJobCategoryName } from '@/lib/jobIcons';
 import {
   Dialog,
   DialogContent,
@@ -144,30 +145,64 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="class"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Class</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a class" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {MAPLE_CLASSES.map((cls) => (
-                        <SelectItem key={cls} value={cls}>
-                          {cls}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+             <FormField
+               control={form.control}
+               name="class"
+               render={({ field }) => {
+                 const JobIcon = field.value ? getJobIcon(field.value) : null;
+                 const jobColors = field.value ? getJobColors(field.value) : null;
+                 const jobCategory = field.value ? getJobCategoryName(field.value) : null;
+                 
+                 return (
+                   <FormItem>
+                     <FormLabel>Class</FormLabel>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                       <FormControl>
+                         <SelectTrigger>
+                           <SelectValue placeholder="Select a class">
+                             {field.value && JobIcon && jobColors && (
+                               <div className="flex items-center gap-2">
+                                 <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                   <JobIcon className="w-3 h-3 text-white" />
+                                 </div>
+                                 <span>{field.value}</span>
+                                 {jobCategory && (
+                                   <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                     {jobCategory}
+                                   </span>
+                                 )}
+                               </div>
+                             )}
+                           </SelectValue>
+                         </SelectTrigger>
+                       </FormControl>
+                       <SelectContent>
+                         {MAPLE_CLASSES.map((cls) => {
+                           const ClassIcon = getJobIcon(cls);
+                           const classColors = getJobColors(cls);
+                           const classCategory = getJobCategoryName(cls);
+                           
+                           return (
+                             <SelectItem key={cls} value={cls}>
+                               <div className="flex items-center gap-2">
+                                 <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
+                                   <ClassIcon className="w-2.5 h-2.5 text-white" />
+                                 </div>
+                                 <span>{cls}</span>
+                                 <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
+                                   {classCategory}
+                                 </span>
+                               </div>
+                             </SelectItem>
+                           );
+                         })}
+                       </SelectContent>
+                     </Select>
+                     <FormMessage />
+                   </FormItem>
+                 );
+               }}
+             />
 
             <FormField
               control={form.control}
