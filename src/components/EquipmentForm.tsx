@@ -245,7 +245,7 @@ export function EquipmentForm({
                     <Select 
                       onValueChange={field.onChange} 
                       value={field.value}
-                      disabled={isEditing && !!equipment}
+                      disabled={isEditing || !!defaultSlot}
                     >
                       <FormControl>
                         <SelectTrigger>
