@@ -52,7 +52,7 @@ const equipmentSchema = z.object({
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
-  tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).optional(),
+  tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
   currentStarForce: z.number().min(0).max(25),
   targetStarForce: z.number().min(0).max(25),
 }).refine((data) => data.targetStarForce >= data.currentStarForce, {
@@ -204,7 +204,7 @@ export function EquipmentForm({
         ...data,
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
-        tier: data.tier as EquipmentTier | undefined,
+        tier: data.tier as EquipmentTier | null | undefined,
       });
     } else {
       onSave({
@@ -212,7 +212,7 @@ export function EquipmentForm({
         type: data.type as EquipmentType,
         level: data.level,
         set: data.set,
-        tier: data.tier as EquipmentTier | undefined,
+        tier: data.tier as EquipmentTier | null | undefined,
         currentStarForce: data.currentStarForce,
         targetStarForce: data.targetStarForce,
       });
@@ -391,14 +391,14 @@ export function EquipmentForm({
                         onValueChange={(value) => {
                           console.log("Select onValueChange called with:", value);
                           if (value === "none") {
-                            console.log("Setting tier to undefined");
-                            field.onChange(undefined);
+                            console.log("Setting tier to null");
+                            field.onChange(null);
                           } else {
                             console.log("Setting tier to:", value);
                             field.onChange(value);
                           }
                         }} 
-                        value={field.value || "none"}
+                        value={field.value ?? "none"}
                       >
                         <FormControl>
                           <SelectTrigger>

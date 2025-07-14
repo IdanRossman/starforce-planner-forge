@@ -15,7 +15,7 @@ export interface Equipment {
   set?: string;
   currentStarForce: number;
   targetStarForce: number;
-  tier?: EquipmentTier;
+  tier?: EquipmentTier | null;
 }
 
 export type EquipmentSlot = 
