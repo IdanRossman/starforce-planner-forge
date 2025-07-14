@@ -1,7 +1,7 @@
 import Dashboard from "./Dashboard";
 
-const Index = () => {
+const Characters = () => {
   return <Dashboard />;
 };
 
-export default Index;
+export default Characters;
