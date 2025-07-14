@@ -84,6 +84,13 @@ export default function Dashboard() {
     }
   }, [characters, starForceItems]);
 
+  // Auto-select first character when characters load
+  useEffect(() => {
+    if (characters.length > 0 && !selectedCharacter) {
+      setSelectedCharacter(characters[0]);
+    }
+  }, [characters, selectedCharacter]);
+
   const handleSelectCharacter = (character: Character) => {
     setSelectedCharacter(character);
     setSelectedEquipment(null);
@@ -417,6 +424,7 @@ export default function Dashboard() {
                     onEdit={handleEditCharacter}
                     onDelete={handleDeleteCharacter}
                     onSelect={handleSelectCharacter}
+                    isSelected={selectedCharacter?.id === character.id}
                   />
                 ))}
               </CardContent>

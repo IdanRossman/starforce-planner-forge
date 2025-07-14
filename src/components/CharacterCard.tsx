@@ -9,9 +9,10 @@ interface CharacterCardProps {
   onEdit: (character: Character) => void;
   onDelete: (id: string) => void;
   onSelect: (character: Character) => void;
+  isSelected?: boolean;
 }
 
-export function CharacterCard({ character, onEdit, onDelete, onSelect }: CharacterCardProps) {
+export function CharacterCard({ character, onEdit, onDelete, onSelect, isSelected = false }: CharacterCardProps) {
   const completedEquipment = character.equipment.filter(
     (eq) => eq.currentStarForce >= eq.targetStarForce
   ).length;
@@ -20,7 +21,12 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect }: Charact
   const progressPercentage = totalEquipment > 0 ? (completedEquipment / totalEquipment) * 100 : 0;
 
   return (
-    <Card className="bg-gradient-to-br from-card to-card/80 border-border/50 hover:shadow-[var(--shadow-glow)] transition-all duration-300 hover:scale-[1.02] cursor-pointer group">
+    <Card 
+      className={`bg-gradient-to-br from-card to-card/80 border-border/50 hover:shadow-[var(--shadow-glow)] transition-all duration-300 hover:scale-[1.02] cursor-pointer group ${
+        isSelected ? 'ring-2 ring-primary shadow-[var(--shadow-glow)]' : ''
+      }`}
+      onClick={() => onSelect(character)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -63,7 +69,7 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect }: Charact
         </div>
       </CardHeader>
       
-      <CardContent onClick={() => onSelect(character)}>
+      <CardContent>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Server</span>
