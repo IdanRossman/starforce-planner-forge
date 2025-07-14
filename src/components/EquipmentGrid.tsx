@@ -2,7 +2,7 @@ import { Equipment, EquipmentSlot } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Plus, Edit } from "lucide-react";
+import { Star, Plus, Edit, Sword, Shield, Crown, Shirt, Square, Footprints, Hand, Glasses, Eye, CircleDot, Circle, Gem, Heart, Badge as BadgeIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface EquipmentGridProps {
@@ -33,6 +33,36 @@ const EQUIPMENT_SLOTS: { slot: EquipmentSlot; label: string; position: string }[
   { slot: 'belt', label: 'Belt', position: 'col-start-4 row-start-5' },
 ];
 
+const getSlotIcon = (slotValue: string) => {
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    weapon: Sword,
+    secondary: Shield,
+    emblem: BadgeIcon,
+    hat: Crown,
+    top: Shirt,
+    bottom: Square,
+    overall: Shirt,
+    shoes: Footprints,
+    gloves: Hand,
+    cape: Square,
+    belt: Circle,
+    shoulder: Square,
+    face: Glasses,
+    eye: Eye,
+    earring: CircleDot,
+    ring1: Circle,
+    ring2: Circle,
+    ring3: Circle,
+    ring4: Circle,
+    pendant1: Gem,
+    pendant2: Gem,
+    pocket: Square,
+    heart: Heart,
+    badge: BadgeIcon,
+  };
+  return iconMap[slotValue] || Square;
+};
+
 export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment }: EquipmentGridProps) {
   const getEquipmentForSlot = (slot: EquipmentSlot) => {
     return equipment.find(eq => eq.slot === slot);
@@ -59,6 +89,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment }: Eq
     <div className="grid grid-cols-5 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
       {EQUIPMENT_SLOTS.map(({ slot, label, position }) => {
         const eq = getEquipmentForSlot(slot);
+        const SlotIcon = getSlotIcon(slot);
         
         return (
           <Card 
@@ -90,13 +121,16 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment }: Eq
                       </Button>
                     </div>
                     
-                    <div>
-                      <p className="text-xs font-medium text-foreground truncate">
-                        {eq.set ? `${eq.set} ${label}` : `Lv.${eq.level} ${label}`}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {label}
-                      </p>
+                    <div className="flex items-start gap-2">
+                      <SlotIcon className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-foreground truncate">
+                          {eq.set || `Lv.${eq.level} Equipment`}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {label}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
@@ -118,7 +152,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment }: Eq
                   className="h-full w-full border-0 bg-transparent hover:bg-muted/50 flex flex-col gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => onAddEquipment(slot)}
                 >
-                  <Plus className="w-4 h-4" />
+                  <SlotIcon className="w-4 h-4" />
                   <span className="text-xs">{label}</span>
                 </Button>
               )}
