@@ -156,7 +156,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                         <SelectValue placeholder="Select a class" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="max-h-[200px]">
+                    <SelectContent>
                       {MAPLE_CLASSES.map((cls) => (
                         <SelectItem key={cls} value={cls}>
                           {cls}
@@ -195,7 +195,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                         <SelectValue placeholder="Select a server" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="max-h-[200px]">
+                    <SelectContent>
                       {MAPLE_SERVERS.map((server) => (
                         <SelectItem key={server} value={server}>
                           {server}

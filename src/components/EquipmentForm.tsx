@@ -300,7 +300,7 @@ export function EquipmentForm({
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
-                       <SelectContent className="max-h-[200px]">
+                      <SelectContent>
                          {EQUIPMENT_SLOTS.map((slot) => {
                            const IconComponent = getSlotIcon(slot.value);
                            return (
@@ -366,7 +366,7 @@ export function EquipmentForm({
                         <SelectValue placeholder="Select equipment" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="max-h-[200px]">
+                    <SelectContent>
                       {availableEquipment.map((equipment) => (
                         <SelectItem key={equipment.name} value={equipment.name}>
                           {equipment.name} (Lv.{equipment.level})
