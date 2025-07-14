@@ -233,7 +233,7 @@ export function calculateStarForce(
     };
   }
 
-  const trials = 100; // Reduced for better performance
+  const trials = 1000; // Increased for more consistent results
   let totalCost = 0;
   let totalBooms = 0;
   
