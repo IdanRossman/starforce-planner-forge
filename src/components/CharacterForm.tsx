@@ -43,6 +43,7 @@ type CharacterFormData = z.infer<typeof characterSchema>;
 interface CharacterFormProps {
   onAddCharacter: (character: Omit<Character, 'id'>) => void;
   editingCharacter?: Character | null;
+  onEditingChange?: (character: Character | null) => void;
 }
 
 const MAPLE_CLASSES = [
@@ -64,7 +65,7 @@ const MAPLE_SERVERS = [
   'Aurora', 'Elysium', 'Luna', 'Reboot', 'Burning'
 ];
 
-export function CharacterForm({ onAddCharacter, editingCharacter }: CharacterFormProps) {
+export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
 
   const form = useForm<CharacterFormData>({
@@ -96,15 +97,23 @@ export function CharacterForm({ onAddCharacter, editingCharacter }: CharacterFor
       class: data.class,
       level: data.level,
       server: data.server,
-      equipment: [], // Start with empty equipment array
+      equipment: editingCharacter?.equipment || [], // Preserve equipment when editing
     };
     onAddCharacter(newCharacter);
     form.reset();
     setOpen(false);
+    onEditingChange?.(null); // Reset editing state
+  };
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
+      onEditingChange?.(null); // Reset editing state when dialog closes
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="w-4 h-4" />
@@ -200,7 +209,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter }: CharacterFor
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
               <Button type="submit">{editingCharacter ? 'Update Character' : 'Create Character'}</Button>

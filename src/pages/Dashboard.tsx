@@ -119,7 +119,6 @@ export default function Dashboard() {
           ? { ...char, ...newCharacter }
           : char
       ));
-      setEditingCharacter(null);
     } else {
       // Add new character
       const character: Character = {
@@ -416,6 +415,7 @@ export default function Dashboard() {
               <CharacterForm 
                 onAddCharacter={addCharacter}
                 editingCharacter={editingCharacter}
+                onEditingChange={setEditingCharacter}
               />
             </div>
           </div>
@@ -521,6 +521,7 @@ export default function Dashboard() {
                     <CharacterForm 
                       onAddCharacter={addCharacter}
                       editingCharacter={editingCharacter}
+                      onEditingChange={setEditingCharacter}
                     />
                 </CardContent>
               </Card>
