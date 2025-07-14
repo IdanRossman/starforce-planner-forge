@@ -382,42 +382,36 @@ export function EquipmentForm({
               <FormField
                 control={form.control}
                 name="tier"
-                render={({ field }) => {
-                  console.log("Current tier field value:", field.value);
-                  return (
-                    <FormItem>
-                      <FormLabel>Potential Tier (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          console.log("Select onValueChange called with:", value);
-                          if (value === "none") {
-                            console.log("Setting tier to null");
-                            field.onChange(null);
-                          } else {
-                            console.log("Setting tier to:", value);
-                            field.onChange(value);
-                          }
-                        }} 
-                        value={field.value ?? "none"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select potential tier (optional)" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">No Potential</SelectItem>
-                          {EQUIPMENT_TIERS.map((tier) => (
-                            <SelectItem key={tier.value} value={tier.value}>
-                              {tier.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Potential Tier (Optional)</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          field.onChange(null);
+                        } else {
+                          field.onChange(value);
+                        }
+                      }} 
+                      value={field.value ?? "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select potential tier (optional)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">No Potential</SelectItem>
+                        {EQUIPMENT_TIERS.map((tier) => (
+                          <SelectItem key={tier.value} value={tier.value}>
+                            {tier.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
 

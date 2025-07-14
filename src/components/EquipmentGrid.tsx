@@ -22,7 +22,9 @@ import {
   X
 } from "lucide-react";
 
-const getTierColor = (tier: string) => {
+const getTierColor = (tier: string | null | undefined) => {
+  if (!tier) return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  
   const colors = {
     rare: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
     epic: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -163,9 +165,11 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                   <>
                     <div className="space-y-2">
                       <div className="flex items-start justify-between gap-1">
-                        <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
-                          {equipment.tier.charAt(0).toUpperCase()}
-                        </Badge>
+                        {equipment.tier && (
+                          <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
+                            {equipment.tier.charAt(0).toUpperCase()}
+                          </Badge>
+                        )}
                         <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                           <Button
                             variant="ghost"
