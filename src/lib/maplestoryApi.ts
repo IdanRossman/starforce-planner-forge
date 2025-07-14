@@ -157,13 +157,13 @@ export async function fetchCharacterSprite(
  * Get a placeholder character sprite URL based on job category
  */
 export function getPlaceholderSprite(className: string): CharacterSprite {
-  // This is a fallback when maplestory.io is not accessible
+  // Use base64 encoded SVG images to avoid CORS issues
   const placeholders = {
-    warrior: 'https://via.placeholder.com/80x80/ff6b6b/ffffff?text=⚔️',
-    mage: 'https://via.placeholder.com/80x80/4ecdc4/ffffff?text=🔮', 
-    archer: 'https://via.placeholder.com/80x80/45b7d1/ffffff?text=🏹',
-    thief: 'https://via.placeholder.com/80x80/f9ca24/ffffff?text=🗡️',
-    pirate: 'https://via.placeholder.com/80x80/6c5ce7/ffffff?text=🏴‍☠️'
+    warrior: createJobPlaceholder('⚔️', '#ff6b6b'),
+    mage: createJobPlaceholder('🔮', '#4ecdc4'), 
+    archer: createJobPlaceholder('🏹', '#45b7d1'),
+    thief: createJobPlaceholder('🗡️', '#f9ca24'),
+    pirate: createJobPlaceholder('🏴‍☠️', '#6c5ce7')
   };
   
   // Simple job category detection
@@ -183,4 +183,19 @@ export function getPlaceholderSprite(className: string): CharacterSprite {
     width: 80,
     height: 80
   };
+}
+
+/**
+ * Create a base64 encoded SVG placeholder
+ */
+function createJobPlaceholder(emoji: string, color: string): string {
+  const svg = `
+    <svg width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+      <rect width="80" height="80" fill="${color}" rx="8"/>
+      <text x="40" y="45" font-family="Arial" font-size="24" text-anchor="middle" fill="white">${emoji}</text>
+      <text x="40" y="65" font-family="Arial" font-size="8" text-anchor="middle" fill="white" opacity="0.8">MapleStory</text>
+    </svg>
+  `.trim();
+  
+  return `data:image/svg+xml;base64,${btoa(svg)}`;
 }

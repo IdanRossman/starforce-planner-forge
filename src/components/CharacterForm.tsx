@@ -272,16 +272,22 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                   <div className="flex items-center justify-center p-2 bg-muted rounded-lg">
                     <img 
                       src={characterSprite.url} 
-                      alt="Character sprite"
+                      alt={`${form.watch('class')} character sprite`}
                       className="max-w-[80px] max-h-[80px] object-contain"
                       onError={(e) => {
+                        console.error('Sprite image failed to render:', characterSprite.url);
                         e.currentTarget.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('Sprite image rendered successfully:', characterSprite.url);
                       }}
                     />
                   </div>
-                ) : null}
+                ) : (
+                  <div className="text-xs text-muted-foreground">No sprite available</div>
+                )}
                 <p className="text-xs text-muted-foreground text-center">
-                  Powered by MapleStory.io
+                  {characterSprite?.url.startsWith('data:') ? 'Placeholder sprite' : 'Powered by MapleStory.io'}
                 </p>
               </div>
             )}
