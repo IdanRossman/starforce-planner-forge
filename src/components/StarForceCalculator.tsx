@@ -110,7 +110,7 @@ function determineOutcome(
     return "Success";
   }
 
-  // Brandon's proven success rates (saviorRates from working calculator)
+  // Brandon's exact saviorRates from working calculator
   const rates: { [key: number]: [number, number, number, number] } = {
     0: [0.95, 0.05, 0, 0], 1: [0.9, 0.1, 0, 0], 2: [0.85, 0.15, 0, 0], 
     3: [0.85, 0.15, 0, 0], 4: [0.8, 0.2, 0, 0], 5: [0.75, 0.25, 0, 0],
@@ -118,18 +118,14 @@ function determineOutcome(
     9: [0.55, 0.45, 0, 0], 10: [0.5, 0.5, 0, 0], 11: [0.45, 0.55, 0, 0],
     12: [0.4, 0.6, 0, 0], 13: [0.35, 0.65, 0, 0], 14: [0.3, 0.7, 0, 0],
     15: [0.3, 0.679, 0, 0.021], 16: [0.3, 0.679, 0, 0.021], 17: [0.3, 0.679, 0, 0.021],
-    18: [0.3, 0.672, 0, 0.028], 19: [0.3, 0.672, 0, 0.028], 20: [0.3, 0.63, 0, 0.07],
-    21: [0.3, 0.63, 0, 0.07], 22: [0.03, 0.776, 0, 0.194], 23: [0.02, 0.686, 0, 0.294],
-    24: [0.01, 0.594, 0, 0.396], 25: [0.01, 0.594, 0, 0.396]
+    18: [0.3, 0, 0.672, 0.028], 19: [0.3, 0, 0.672, 0.028], 20: [0.3, 0.63, 0, 0.07],
+    21: [0.3, 0, 0.63, 0.07], 22: [0.03, 0, 0.776, 0.194], 23: [0.02, 0, 0.686, 0.294],
+    24: [0.01, 0, 0.594, 0.396], 25: [0.01, 0, 0.594, 0.396]
   };
 
   let [probSuccess, probMaintain, probDecrease, probBoom] = rates[currentStar] || [0.3, 0.4, 0, 0.3];
 
-  // Star drops for 12+ stars (except specific stars)
-  if (currentStar >= 12 && currentStar !== 12 && currentStar !== 15 && currentStar !== 20) {
-    probMaintain = 0;
-    probDecrease = 1 - probSuccess - probBoom;
-  }
+  // Use Brandon's exact rates without any overrides
 
   // Safeguard removes boom chance
   if (boomProtect && currentStar >= 12 && currentStar <= 16) {
