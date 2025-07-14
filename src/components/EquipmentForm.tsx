@@ -53,8 +53,8 @@ const equipmentSchema = z.object({
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
   tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
-  currentStarForce: z.number().min(0).max(25),
-  targetStarForce: z.number().min(0).max(25),
+  currentStarForce: z.number().min(0).max(23),
+  targetStarForce: z.number().min(0).max(23),
 }).refine((data) => data.targetStarForce >= data.currentStarForce, {
   message: "Target StarForce must be greater than or equal to current StarForce",
   path: ["targetStarForce"],
@@ -160,7 +160,7 @@ export function EquipmentForm({
       set: '',
       tier: 'epic',
       currentStarForce: 0,
-      targetStarForce: 17,
+      targetStarForce: 22,
     },
   });
 
@@ -185,7 +185,7 @@ export function EquipmentForm({
           set: '',
           tier: 'epic',
           currentStarForce: 0,
-          targetStarForce: 17,
+          targetStarForce: 22,
         });
       }
     }
@@ -424,7 +424,7 @@ export function EquipmentForm({
                   <FormControl>
                     <Slider
                       min={0}
-                      max={25}
+                      max={23}
                       step={1}
                       value={[field.value]}
                       onValueChange={(value) => field.onChange(value[0])}
@@ -445,7 +445,7 @@ export function EquipmentForm({
                   <FormControl>
                     <Slider
                       min={0}
-                      max={25}
+                      max={23}
                       step={1}
                       value={[field.value]}
                       onValueChange={(value) => field.onChange(value[0])}

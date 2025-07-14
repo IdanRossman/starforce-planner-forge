@@ -219,7 +219,7 @@ export function calculateStarForce(
   } = events || {};
 
   // Input validation
-  if (currentLevel >= targetLevel || itemLevel < 1 || targetLevel > 25 || currentLevel < 0) {
+  if (currentLevel >= targetLevel || itemLevel < 1 || targetLevel > 23 || currentLevel < 0) {
     return {
       currentLevel,
       targetLevel,
@@ -369,7 +369,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
   };
 
   // Render progress bar
-  const progress = calculation ? (calculation.currentLevel / 25) * 100 : 0;
+  const progress = calculation ? (calculation.currentLevel / 23) * 100 : 0;
   const dangerLevel = calculation ? getDangerLevel(calculation.currentLevel) : getDangerLevel(currentLevel);
 
   return (
@@ -417,7 +417,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
                 value={currentLevel}
                 onChange={(e) => setCurrentLevel(Number(e.target.value))}
                 min={0}
-                max={24}
+                max={23}
                 className="mt-1"
                 required
               />
@@ -429,7 +429,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
                 value={targetLevel}
                 onChange={(e) => setTargetLevel(Number(e.target.value))}
                 min={1}
-                max={25}
+                max={23}
                 className="mt-1"
                 required
               />
@@ -513,7 +513,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
                 <Progress value={progress} className="h-2" />
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>★0</span>
-                  <span>★25 (Max)</span>
+                  <span>★23 (Max)</span>
                 </div>
               </div>
 
