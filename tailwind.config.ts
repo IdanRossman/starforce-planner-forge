@@ -52,6 +52,20 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// MapleStory custom colors
+				maple: {
+					gold: 'hsl(var(--maple-gold))',
+					blue: 'hsl(var(--maple-blue))',
+					green: 'hsl(var(--maple-green))',
+					purple: 'hsl(var(--maple-purple))',
+					red: 'hsl(var(--maple-red))',
+					orange: 'hsl(var(--maple-orange))'
+				},
+				starforce: {
+					safe: 'hsl(var(--starforce-safe))',
+					caution: 'hsl(var(--starforce-caution))',
+					danger: 'hsl(var(--starforce-danger))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
