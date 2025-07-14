@@ -18,7 +18,8 @@ import {
   Eye,
   Ear,
   Heart,
-  Package 
+  Package,
+  X
 } from "lucide-react";
 
 const getTierColor = (tier: string) => {
@@ -35,6 +36,7 @@ interface EquipmentGridProps {
   equipment: Equipment[];
   onEditEquipment: (equipment: Equipment) => void;
   onAddEquipment: (slot: EquipmentSlot) => void;
+  onClearEquipment: (slot: EquipmentSlot) => void;
   onOpenCalculator?: () => void;
 }
 
@@ -111,7 +113,7 @@ const getSlotIcon = (slot: string) => {
   return <IconComponent className="w-4 h-4" />;
 };
 
-export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOpenCalculator }: EquipmentGridProps) {
+export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator }: EquipmentGridProps) {
   const equipmentBySlot = equipment.reduce((acc, item) => {
     acc[item.slot] = item;
     return acc;
@@ -164,14 +166,24 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onOp
                         <Badge variant="outline" className={getTierColor(equipment.tier)}>
                           {equipment.tier.charAt(0).toUpperCase() + equipment.tier.slice(1)}
                         </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 h-auto"
-                          onClick={() => onEditEquipment(equipment)}
-                        >
-                          <Edit className="w-3 h-3" />
-                        </Button>
+                        <div className="flex opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-auto"
+                            onClick={() => onEditEquipment(equipment)}
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 h-auto text-destructive hover:text-destructive"
+                            onClick={() => onClearEquipment(equipment.slot)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
                       </div>
                       
                       <div className="flex items-start gap-2">

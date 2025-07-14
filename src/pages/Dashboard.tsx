@@ -129,6 +129,46 @@ export default function Dashboard() {
     setStarForceItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleClearEquipment = (slot: EquipmentSlot) => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        const filteredEquipment = char.equipment.filter(eq => eq.slot !== slot);
+        return { ...char, equipment: filteredEquipment };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
+  };
+
+  const handleResetAllEquipment = () => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        return { ...char, equipment: [] };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
+
+    toast({
+      title: "Equipment Reset",
+      description: `All equipment cleared for ${selectedCharacter.name}`,
+    });
+  };
+
   const handleSaveEquipment = (equipmentData: Omit<Equipment, 'id'> | Equipment) => {
     if (addingStarForceItem) {
       // Adding equipment for star force calculation only
@@ -398,8 +438,18 @@ export default function Dashboard() {
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <span>{selectedCharacter.name}'s Equipment</span>
-                        <div className="text-sm text-muted-foreground">
-                          {selectedCharacter.class} • Lv.{selectedCharacter.level}
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleResetAllEquipment}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Reset All
+                          </Button>
+                          <div className="text-sm text-muted-foreground">
+                            {selectedCharacter.class} • Lv.{selectedCharacter.level}
+                          </div>
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -408,6 +458,7 @@ export default function Dashboard() {
                         equipment={selectedCharacter.equipment}
                         onEditEquipment={handleEditEquipment}
                         onAddEquipment={handleAddEquipment}
+                        onClearEquipment={handleClearEquipment}
                         onOpenCalculator={() => {
                           // Switch to calculator tab
                           const calculatorTab = document.querySelector('[value="calculator"]') as HTMLElement;
