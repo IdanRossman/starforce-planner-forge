@@ -31,7 +31,8 @@ import {
   Eye,
   Ear,
   Heart,
-  Star
+  Star,
+  Download
 } from "lucide-react";
 
 interface StarForceTableProps {
@@ -225,6 +226,77 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     );
   };
 
+  const exportToCSV = () => {
+    if (!hasCalculations) return;
+    
+    const isOverallView = equipment.length > 0 && 'characterName' in equipment[0];
+    
+    // Create CSV headers
+    const headers = [
+      'Equipment',
+      ...(isOverallView ? ['Character'] : []),
+      'Slot',
+      'Tier',
+      'Current Stars',
+      'Target Stars',
+      'Current Spares',
+      'Star Catching',
+      'Safeguard',
+      'Expected Cost (Mesos)',
+      'Expected Spares Needed',
+      'Total Available',
+      'Status'
+    ];
+    
+    // Create CSV rows
+    const rows = calculations
+      .filter(calc => calc.isCalculated)
+      .map(calc => {
+        const equipment = calc.equipment;
+        const totalAvailable = 1 + calc.sparesCount;
+        const shortfall = Math.max(0, calc.expectedSpares - totalAvailable);
+        const status = shortfall > 0 ? `Need ${shortfall} more` : 'Sufficient';
+        
+        return [
+          equipment.set || `Lv.${equipment.level} Equipment`,
+          ...(isOverallView ? [(equipment as EquipmentWithCharacter).characterName] : []),
+          equipment.slot,
+          equipment.tier || 'N/A',
+          equipment.currentStarForce,
+          equipment.targetStarForce,
+          calc.sparesCount,
+          calc.starCatching ? 'Yes' : 'No',
+          calc.safeguard ? 'Yes' : 'No',
+          calc.expectedCost,
+          calc.expectedSpares,
+          totalAvailable,
+          status
+        ];
+      });
+    
+    // Add summary row
+    rows.push([]);
+    rows.push(['SUMMARY']);
+    rows.push(['Total Expected Cost (Mesos)', ...(isOverallView ? [''] : []), '', '', '', '', '', '', '', totalCost]);
+    rows.push(['Additional Spares Needed', ...(isOverallView ? [''] : []), '', '', '', '', '', '', '', totalSparesNeeded]);
+    
+    // Convert to CSV string
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+    
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `starforce-calculations-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const totalCost = calculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
   const totalSparesNeeded = calculations.reduce((sum, calc) => {
     const totalAvailable = 1 + calc.sparesCount; // 1 base + spares
@@ -252,6 +324,17 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               <Package className="w-4 h-4" />
               Add Equipment
             </Button>
+            {hasCalculations && (
+              <Button 
+                onClick={exportToCSV}
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </Button>
+            )}
             <Button onClick={calculateAll} className="flex items-center gap-2">
               <Calculator className="w-4 h-4" />
               Calculate All
