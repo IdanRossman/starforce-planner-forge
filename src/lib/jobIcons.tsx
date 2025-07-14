@@ -9,6 +9,67 @@ export const JOB_CATEGORIES = {
   PIRATE: 'pirate'
 } as const;
 
+// Class subcategories
+export const CLASS_SUBCATEGORIES = {
+  EXPLORERS: 'Explorers',
+  CYGNUS_KNIGHTS: 'Cygnus Knights',
+  HEROES: 'Heroes',
+  RESISTANCE: 'Resistance',
+  NOVA: 'Nova',
+  FLORA: 'Flora',
+  OTHER: 'Other'
+} as const;
+
+// Organized class data with subcategories
+export const ORGANIZED_CLASSES = {
+  [CLASS_SUBCATEGORIES.EXPLORERS]: {
+    name: 'Explorers',
+    classes: [
+      'Hero', 'Paladin', 'Dark Knight',
+      'Fire/Poison Mage', 'Ice/Lightning Mage', 'Bishop',
+      'Bowmaster', 'Marksman', 'Pathfinder',
+      'Night Lord', 'Shadower', 'Dual Blade',
+      'Buccaneer', 'Corsair', 'Cannoneer'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.CYGNUS_KNIGHTS]: {
+    name: 'Cygnus Knights',
+    classes: [
+      'Dawn Warrior', 'Blaze Wizard', 'Wind Archer', 'Night Walker', 'Thunder Breaker'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.HEROES]: {
+    name: 'Heroes',
+    classes: [
+      'Aran', 'Evan', 'Mercedes', 'Phantom', 'Luminous', 'Shade'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.RESISTANCE]: {
+    name: 'Resistance',
+    classes: [
+      'Blaster', 'Battle Mage', 'Wild Hunter', 'Mechanic', 'Xenon', 'Demon Slayer', 'Demon Avenger'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.NOVA]: {
+    name: 'Nova',
+    classes: [
+      'Kaiser', 'Angelic Buster', 'Cadena', 'Kain'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.FLORA]: {
+    name: 'Flora',
+    classes: [
+      'Illium', 'Ark', 'Adele', 'Khali', 'Lara'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.OTHER]: {
+    name: 'Other',
+    classes: [
+      'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
+    ]
+  }
+};
+
 // Map character classes to job categories
 export const getJobCategory = (className: string): string => {
   const warriors = [
@@ -40,6 +101,16 @@ export const getJobCategory = (className: string): string => {
   if (pirates.includes(className)) return JOB_CATEGORIES.PIRATE;
   
   return JOB_CATEGORIES.WARRIOR; // default fallback
+};
+
+// Get class subcategory
+export const getClassSubcategory = (className: string): string => {
+  for (const [key, category] of Object.entries(ORGANIZED_CLASSES)) {
+    if (category.classes.includes(className)) {
+      return category.name;
+    }
+  }
+  return CLASS_SUBCATEGORIES.OTHER;
 };
 
 // Get job icon component

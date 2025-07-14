@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
-import { getJobIcon, getJobColors, getJobCategoryName } from '@/lib/jobIcons';
+import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import {
   Dialog,
   DialogContent,
@@ -152,6 +152,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                  const JobIcon = field.value ? getJobIcon(field.value) : null;
                  const jobColors = field.value ? getJobColors(field.value) : null;
                  const jobCategory = field.value ? getJobCategoryName(field.value) : null;
+                 const classSubcategory = field.value ? getClassSubcategory(field.value) : null;
                  
                  return (
                    <FormItem>
@@ -166,10 +167,15 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                                    <JobIcon className="w-3 h-3 text-white" />
                                  </div>
                                  <span>{field.value}</span>
-                                 {jobCategory && (
-                                   <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
-                                     {jobCategory}
-                                   </span>
+                                 {jobCategory && classSubcategory && (
+                                   <div className="flex gap-1">
+                                     <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                       {jobCategory}
+                                     </span>
+                                     <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                       {classSubcategory}
+                                     </span>
+                                   </div>
                                  )}
                                </div>
                              )}
@@ -177,25 +183,32 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                          </SelectTrigger>
                        </FormControl>
                        <SelectContent>
-                         {MAPLE_CLASSES.map((cls) => {
-                           const ClassIcon = getJobIcon(cls);
-                           const classColors = getJobColors(cls);
-                           const classCategory = getJobCategoryName(cls);
-                           
-                           return (
-                             <SelectItem key={cls} value={cls}>
-                               <div className="flex items-center gap-2">
-                                 <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
-                                   <ClassIcon className="w-2.5 h-2.5 text-white" />
-                                 </div>
-                                 <span>{cls}</span>
-                                 <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
-                                   {classCategory}
-                                 </span>
-                               </div>
-                             </SelectItem>
-                           );
-                         })}
+                         {Object.entries(ORGANIZED_CLASSES).map(([key, category]) => (
+                           <div key={key}>
+                             <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
+                               {category.name}
+                             </div>
+                             {category.classes.map((cls) => {
+                               const ClassIcon = getJobIcon(cls);
+                               const classColors = getJobColors(cls);
+                               const classCategory = getJobCategoryName(cls);
+                               
+                               return (
+                                 <SelectItem key={cls} value={cls} className="pl-6">
+                                   <div className="flex items-center gap-2">
+                                     <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
+                                       <ClassIcon className="w-2.5 h-2.5 text-white" />
+                                     </div>
+                                     <span className="flex-1">{cls}</span>
+                                     <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
+                                       {classCategory}
+                                     </span>
+                                   </div>
+                                 </SelectItem>
+                               );
+                             })}
+                           </div>
+                         ))}
                        </SelectContent>
                      </Select>
                      <FormMessage />
