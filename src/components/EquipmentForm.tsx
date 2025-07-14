@@ -4,6 +4,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
 import { Button } from '@/components/ui/button';
+import { 
+  Sword, 
+  Shield, 
+  Crown, 
+  Shirt, 
+  Footprints,
+  Hand,
+  Glasses,
+  CircleDot,
+  Heart,
+  Gem,
+  Badge,
+  Eye,
+  Circle,
+  Square
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -53,6 +69,36 @@ interface EquipmentFormProps {
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
 }
+
+const getSlotIcon = (slotValue: string) => {
+  const iconMap: Record<string, React.ComponentType<any>> = {
+    weapon: Sword,
+    secondary: Shield,
+    emblem: Badge,
+    hat: Crown,
+    top: Shirt,
+    bottom: Square,
+    overall: Shirt,
+    shoes: Footprints,
+    gloves: Hand,
+    cape: Square,
+    belt: Circle,
+    shoulder: Square,
+    face: Glasses,
+    eye: Eye,
+    earring: CircleDot,
+    ring1: Circle,
+    ring2: Circle,
+    ring3: Circle,
+    ring4: Circle,
+    pendant1: Gem,
+    pendant2: Gem,
+    pocket: Square,
+    heart: Heart,
+    badge: Badge,
+  };
+  return iconMap[slotValue] || Square;
+};
 
 const EQUIPMENT_SLOTS = [
   { value: 'weapon', label: 'Weapon' },
@@ -187,32 +233,97 @@ export function EquipmentForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="slot"
-                render={({ field }) => (
+            {/* First line: Slot (readonly with icon) */}
+            <FormField
+              control={form.control}
+              name="slot"
+              render={({ field }) => {
+                const SlotIcon = getSlotIcon(field.value);
+                return (
                   <FormItem>
-                    <FormLabel>Slot</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Equipment Slot</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value}
+                      disabled={isEditing && !!equipment}
+                    >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select slot" />
+                          <SelectValue placeholder="Select equipment slot">
+                            {field.value && (
+                              <div className="flex items-center gap-2">
+                                <SlotIcon className="h-4 w-4" />
+                                {EQUIPMENT_SLOTS.find(s => s.value === field.value)?.label}
+                              </div>
+                            )}
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="max-h-[200px]">
-                        {EQUIPMENT_SLOTS.map((slot) => (
-                          <SelectItem key={slot.value} value={slot.value}>
-                            {slot.label}
-                          </SelectItem>
-                        ))}
+                        {EQUIPMENT_SLOTS.map((slot) => {
+                          const IconComponent = getSlotIcon(slot.value);
+                          return (
+                            <SelectItem key={slot.value} value={slot.value}>
+                              <div className="flex items-center gap-2">
+                                <IconComponent className="h-4 w-4" />
+                                {slot.label}
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
                       </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
-                )}
-              />
+                );
+              }}
+            />
 
+            {/* Second line: Equipment (main selection) */}
+            <FormField
+              control={form.control}
+              name="set"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Equipment</FormLabel>
+                  <Select onValueChange={(value) => {
+                    field.onChange(value);
+                    // Auto-update tier and level based on equipment selection
+                    const equipData = availableEquipment.find(eq => eq.name === value);
+                    if (equipData) {
+                      form.setValue('tier', equipData.tier);
+                      form.setValue('level', equipData.level);
+                      // Auto-determine type based on slot
+                      const slot = form.getValues('slot');
+                      if (['weapon', 'secondary', 'emblem'].includes(slot)) {
+                        form.setValue('type', 'weapon');
+                      } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
+                        form.setValue('type', 'armor');
+                      } else {
+                        form.setValue('type', 'accessory');
+                      }
+                    }
+                  }} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select equipment" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="max-h-[200px]">
+                      {availableEquipment.map((equipment) => (
+                        <SelectItem key={equipment.name} value={equipment.name}>
+                          {equipment.name} (Lv.{equipment.level})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Third line: Level, Type, and Tier */}
+            <div className="grid grid-cols-3 gap-4">
               <FormField
                 control={form.control}
                 name="level"
@@ -248,50 +359,6 @@ export function EquipmentForm({
                         {EQUIPMENT_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="set"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Equipment</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      // Auto-update tier and level based on equipment selection
-                      const equipData = availableEquipment.find(eq => eq.name === value);
-                      if (equipData) {
-                        form.setValue('tier', equipData.tier);
-                        form.setValue('level', equipData.level);
-                        // Auto-determine type based on slot
-                        const slot = form.getValues('slot');
-                        if (['weapon', 'secondary', 'emblem'].includes(slot)) {
-                          form.setValue('type', 'weapon');
-                        } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
-                          form.setValue('type', 'armor');
-                        } else {
-                          form.setValue('type', 'accessory');
-                        }
-                      }
-                    }} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select equipment" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="max-h-[200px]">
-                        {availableEquipment.map((equipment) => (
-                          <SelectItem key={equipment.name} value={equipment.name}>
-                            {equipment.name} (Lv.{equipment.level})
                           </SelectItem>
                         ))}
                       </SelectContent>
