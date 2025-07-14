@@ -107,23 +107,80 @@ export async function fetchCharacterSprite(
     const items = getClassDefaultItems(className);
     const url = generateCharacterSpriteUrl(region, VERSIONS.LATEST, skinId, items);
     
+    console.log('Fetching character sprite for:', className);
+    console.log('Generated URL:', url);
+    
+    // First test with a fetch request to see if there are CORS issues
+    try {
+      const response = await fetch(url, { mode: 'no-cors' });
+      console.log('Fetch response status:', response.status);
+    } catch (fetchError) {
+      console.error('Fetch failed (likely CORS):', fetchError);
+    }
+    
     // Test if the image loads successfully
     return new Promise((resolve) => {
       const img = new Image();
+      img.crossOrigin = 'anonymous'; // Try to handle CORS
+      
+      const timeout = setTimeout(() => {
+        console.error('Image load timeout for:', url);
+        resolve(null);
+      }, 10000); // 10 second timeout
+      
       img.onload = () => {
+        clearTimeout(timeout);
+        console.log('Image loaded successfully:', url);
         resolve({
           url,
           width: img.naturalWidth,
           height: img.naturalHeight
         });
       };
-      img.onerror = () => {
+      
+      img.onerror = (error) => {
+        clearTimeout(timeout);
+        console.error('Image failed to load:', url, error);
+        console.error('This is likely due to CORS restrictions on maplestory.io API');
         resolve(null);
       };
+      
       img.src = url;
     });
   } catch (error) {
     console.error('Error fetching character sprite:', error);
     return null;
   }
+}
+
+/**
+ * Get a placeholder character sprite URL based on job category
+ */
+export function getPlaceholderSprite(className: string): CharacterSprite {
+  // This is a fallback when maplestory.io is not accessible
+  const placeholders = {
+    warrior: 'https://via.placeholder.com/80x80/ff6b6b/ffffff?text=⚔️',
+    mage: 'https://via.placeholder.com/80x80/4ecdc4/ffffff?text=🔮', 
+    archer: 'https://via.placeholder.com/80x80/45b7d1/ffffff?text=🏹',
+    thief: 'https://via.placeholder.com/80x80/f9ca24/ffffff?text=🗡️',
+    pirate: 'https://via.placeholder.com/80x80/6c5ce7/ffffff?text=🏴‍☠️'
+  };
+  
+  // Simple job category detection
+  let category = 'warrior'; // default
+  if (className.toLowerCase().includes('mage') || className.toLowerCase().includes('wizard') || className.includes('Bishop')) {
+    category = 'mage';
+  } else if (className.toLowerCase().includes('archer') || className.includes('Bowmaster') || className.includes('Marksman') || className.includes('Pathfinder')) {
+    category = 'archer';
+  } else if (className.toLowerCase().includes('lord') || className.toLowerCase().includes('shadower') || className.includes('Dual Blade')) {
+    category = 'thief';
+  } else if (className.toLowerCase().includes('buccaneer') || className.toLowerCase().includes('corsair') || className.includes('Cannoneer')) {
+    category = 'pirate';
+  }
+  
+  return {
+    url: placeholders[category as keyof typeof placeholders],
+    width: 80,
+    height: 80
+  };
 }

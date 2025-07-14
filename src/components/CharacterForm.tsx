@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
-import { fetchCharacterSprite, REGIONS, SKIN_IDS, type CharacterSprite } from '@/lib/maplestoryApi';
+import { fetchCharacterSprite, getPlaceholderSprite, REGIONS, SKIN_IDS, type CharacterSprite } from '@/lib/maplestoryApi';
 import {
   Dialog,
   DialogContent,
@@ -108,13 +108,23 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
   useEffect(() => {
     const subscription = form.watch((value) => {
       if (value.class) {
+        console.log('Character class changed to:', value.class);
         setSpriteLoading(true);
         fetchCharacterSprite(value.class)
           .then((sprite) => {
-            setCharacterSprite(sprite);
+            console.log('Received sprite:', sprite);
+            if (sprite) {
+              setCharacterSprite(sprite);
+            } else {
+              // Fallback to placeholder when API fails
+              console.log('Using placeholder sprite for:', value.class);
+              const placeholder = getPlaceholderSprite(value.class);
+              setCharacterSprite(placeholder);
+            }
             setSpriteLoading(false);
           })
-          .catch(() => {
+          .catch((error) => {
+            console.error('Error in fetchCharacterSprite:', error);
             setCharacterSprite(null);
             setSpriteLoading(false);
           });
