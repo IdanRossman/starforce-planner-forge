@@ -67,24 +67,17 @@ export default function Dashboard() {
     
     // Try to load from localStorage, fallback to mock data
     const stored = loadFromLocalStorage();
-    if (stored && mockCharacters.length > 0) {
+    if (stored) {
       setCharacters(stored.characters);
       setStarForceItems(stored.starForceItems);
     } else {
-      // Clear localStorage if mock data is empty (starting fresh)
-      if (mockCharacters.length === 0) {
-        localStorage.removeItem('starforce-planner-characters');
-        localStorage.removeItem('starforce-planner-starforce-items');
-      }
       setCharacters(mockCharacters);
     }
   }, [toast]);
 
   // Auto-save to localStorage when data changes
   useEffect(() => {
-    if (characters.length > 0) {
-      saveToLocalStorage(characters, starForceItems);
-    }
+    saveToLocalStorage(characters, starForceItems);
   }, [characters, starForceItems]);
 
   // Auto-select first character when characters load
