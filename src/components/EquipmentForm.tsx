@@ -52,7 +52,7 @@ const equipmentSchema = z.object({
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
-  tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const),
+  tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).optional(),
   currentStarForce: z.number().min(0).max(25),
   targetStarForce: z.number().min(0).max(25),
 }).refine((data) => data.targetStarForce >= data.currentStarForce, {
@@ -204,7 +204,7 @@ export function EquipmentForm({
         ...data,
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
-        tier: data.tier as EquipmentTier,
+        tier: data.tier as EquipmentTier | undefined,
       });
     } else {
       onSave({
@@ -212,7 +212,7 @@ export function EquipmentForm({
         type: data.type as EquipmentType,
         level: data.level,
         set: data.set,
-        tier: data.tier as EquipmentTier,
+        tier: data.tier as EquipmentTier | undefined,
         currentStarForce: data.currentStarForce,
         targetStarForce: data.targetStarForce,
       });
@@ -384,14 +384,15 @@ export function EquipmentForm({
                 name="tier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tier</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormLabel>Potential Tier (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select tier" />
+                          <SelectValue placeholder="Select potential tier (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="">No Potential</SelectItem>
                         {EQUIPMENT_TIERS.map((tier) => (
                           <SelectItem key={tier.value} value={tier.value}>
                             {tier.label}
