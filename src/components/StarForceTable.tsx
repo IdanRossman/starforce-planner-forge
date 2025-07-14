@@ -98,12 +98,12 @@ const formatMesos = (amount: number) => {
 
 const getTierColor = (tier: string) => {
   const colors = {
-    rare: 'bg-blue-500/20 text-blue-400',
-    epic: 'bg-purple-500/20 text-purple-400',
-    unique: 'bg-yellow-500/20 text-yellow-400',
-    legendary: 'bg-green-500/20 text-green-400'
+    rare: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+    epic: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+    unique: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+    legendary: 'bg-green-500/20 text-green-400 border-green-500/30'
   };
-  return colors[tier as keyof typeof colors] || 'bg-gray-500/20 text-gray-400';
+  return colors[tier as keyof typeof colors] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
 };
 
 const getDangerColor = (currentStars: number) => {
@@ -326,7 +326,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
-                            {calc.equipment.tier}
+                            {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
                           </Badge>
                           <span className="text-xs text-muted-foreground capitalize">
                             {calc.equipment.slot}

@@ -408,6 +408,11 @@ export default function Dashboard() {
                         equipment={selectedCharacter.equipment}
                         onEditEquipment={handleEditEquipment}
                         onAddEquipment={handleAddEquipment}
+                        onOpenCalculator={() => {
+                          // Switch to calculator tab
+                          const calculatorTab = document.querySelector('[value="calculator"]') as HTMLElement;
+                          calculatorTab?.click();
+                        }}
                       />
                     </CardContent>
                   </Card>
