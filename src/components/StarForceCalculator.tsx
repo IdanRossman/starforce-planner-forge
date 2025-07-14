@@ -21,16 +21,31 @@ interface StarForceCalculatorProps {
 }
 
 // Based on proven working calculator logic
-function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
-  // Accurate cost formula based on working calculator
-  if (currentStar <= 10) {
-    return Math.round(100 * ((itemLevel ** 3) * (currentStar + 1) / 25000) + 1000);
-  } else if (currentStar <= 15) {
-    return Math.round(100 * ((itemLevel ** 3) * Math.pow(currentStar + 1, 2.7) / 15000) + 100000);
-  } else {
-    // High star costs - calibrated to match 1B for 0->17* level 150
-    return Math.round(1000 * ((itemLevel ** 2.5) * Math.pow(currentStar + 1, 3.0) / 1500) + 1500000);
+// Brandon's proven cost calculation
+function makeMesoFn(divisor: number, currentStarExp = 2.7, extraMult = 1) {
+  return (currentStar: number, itemLevel: number) => 
+    100 * Math.round(extraMult * itemLevel ** 3 * ((currentStar + 1) ** currentStarExp) / divisor + 10);
+}
+
+function saviorMesoFn(currentStar: number) {
+  switch (currentStar) {
+    case 11: return makeMesoFn(22000);
+    case 12: return makeMesoFn(15000);
+    case 13: return makeMesoFn(11000);
+    case 14: return makeMesoFn(7500);
+    default: return preSaviorMesoFn(currentStar);
   }
+}
+
+function preSaviorMesoFn(currentStar: number) {
+  if (currentStar >= 15) return makeMesoFn(20000);
+  if (currentStar >= 10) return makeMesoFn(40000);
+  return makeMesoFn(2500, 1);
+}
+
+function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
+  const mesoFn = saviorMesoFn(currentStar);
+  return mesoFn(currentStar, itemLevel);
 }
 
 function attemptCost(
@@ -76,17 +91,17 @@ function determineOutcome(
     return "Success";
   }
 
-  // Base rates [success, maintain, decrease, boom] - accurate GMS rates
+  // Brandon's proven success rates (saviorRates from working calculator)
   const rates: { [key: number]: [number, number, number, number] } = {
     0: [0.95, 0.05, 0, 0], 1: [0.9, 0.1, 0, 0], 2: [0.85, 0.15, 0, 0], 
     3: [0.85, 0.15, 0, 0], 4: [0.8, 0.2, 0, 0], 5: [0.75, 0.25, 0, 0],
     6: [0.7, 0.3, 0, 0], 7: [0.65, 0.35, 0, 0], 8: [0.6, 0.4, 0, 0],
     9: [0.55, 0.45, 0, 0], 10: [0.5, 0.5, 0, 0], 11: [0.45, 0.55, 0, 0],
-    12: [0.4, 0.594, 0, 0.006], 13: [0.35, 0.637, 0, 0.013], 14: [0.3, 0.686, 0, 0.014],
-    15: [0.3, 0.679, 0, 0.021], 16: [0.3, 0.664, 0, 0.036], 17: [0.3, 0.637, 0, 0.063],
-    18: [0.3, 0.6, 0, 0.1], 19: [0.3, 0.5, 0, 0.2], 20: [0.3, 0.4, 0, 0.3],
-    21: [0.3, 0.3, 0, 0.4], 22: [0.03, 0.47, 0, 0.5], 23: [0.02, 0.38, 0, 0.6],
-    24: [0.01, 0.29, 0, 0.7], 25: [0.01, 0.19, 0, 0.8]
+    12: [0.4, 0.6, 0, 0], 13: [0.35, 0.65, 0, 0], 14: [0.3, 0.7, 0, 0],
+    15: [0.3, 0.679, 0, 0.021], 16: [0.3, 0.679, 0, 0.021], 17: [0.3, 0.679, 0, 0.021],
+    18: [0.3, 0.672, 0, 0.028], 19: [0.3, 0.672, 0, 0.028], 20: [0.3, 0.63, 0, 0.07],
+    21: [0.3, 0.63, 0, 0.07], 22: [0.03, 0.776, 0, 0.194], 23: [0.02, 0.686, 0, 0.294],
+    24: [0.01, 0.594, 0, 0.396], 25: [0.01, 0.594, 0, 0.396]
   };
 
   let [probSuccess, probMaintain, probDecrease, probBoom] = rates[currentStar] || [0.3, 0.4, 0, 0.3];
