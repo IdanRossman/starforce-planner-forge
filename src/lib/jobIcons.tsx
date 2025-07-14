@@ -17,7 +17,12 @@ export const CLASS_SUBCATEGORIES = {
   RESISTANCE: 'Resistance',
   NOVA: 'Nova',
   FLORA: 'Flora',
-  OTHER: 'Other'
+  SENGOKU: 'Sengoku',
+  JIANGHU: 'Jianghu',
+  ANIMA: 'Anima',
+  SHINE: 'Shine',
+  TRANSCENDENT: 'Transcendent',
+  FRIENDS_WORLD: 'Friends World'
 } as const;
 
 // Organized class data with subcategories
@@ -59,13 +64,43 @@ export const ORGANIZED_CLASSES = {
   [CLASS_SUBCATEGORIES.FLORA]: {
     name: 'Flora',
     classes: [
-      'Illium', 'Ark', 'Adele', 'Khali', 'Lara'
+      'Illium', 'Ark', 'Adele', 'Khali'
     ]
   },
-  [CLASS_SUBCATEGORIES.OTHER]: {
-    name: 'Other',
+  [CLASS_SUBCATEGORIES.SENGOKU]: {
+    name: 'Sengoku',
     classes: [
-      'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
+      'Hayato', 'Kanna'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.JIANGHU]: {
+    name: 'Jianghu',
+    classes: [
+      'Lynn', 'Mo Xuan'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.ANIMA]: {
+    name: 'Anima',
+    classes: [
+      'Hoyoung', 'Lara'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.SHINE]: {
+    name: 'Shine',
+    classes: [
+      'Sia'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.TRANSCENDENT]: {
+    name: 'Transcendent',
+    classes: [
+      'Zero'
+    ]
+  },
+  [CLASS_SUBCATEGORIES.FRIENDS_WORLD]: {
+    name: 'Friends World',
+    classes: [
+      'Kinesis'
     ]
   }
 };
@@ -79,7 +114,7 @@ export const getJobCategory = (className: string): string => {
   
   const mages = [
     'Fire/Poison Mage', 'Ice/Lightning Mage', 'Bishop', 'Blaze Wizard', 'Evan', 'Luminous', 
-    'Battle Mage', 'Kanna', 'Kinesis', 'Illium', 'Lara'
+    'Battle Mage', 'Kanna', 'Kinesis', 'Illium', 'Lara', 'Lynn', 'Sia'
   ];
   
   const archers = [
@@ -87,11 +122,11 @@ export const getJobCategory = (className: string): string => {
   ];
   
   const thieves = [
-    'Night Lord', 'Shadower', 'Dual Blade', 'Night Walker', 'Phantom', 'Xenon', 'Cadena', 'Khali'
+    'Night Lord', 'Shadower', 'Dual Blade', 'Night Walker', 'Phantom', 'Xenon', 'Cadena', 'Khali', 'Hoyoung'
   ];
   
   const pirates = [
-    'Buccaneer', 'Corsair', 'Cannoneer', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Beast Tamer'
+    'Buccaneer', 'Corsair', 'Cannoneer', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Mo Xuan'
   ];
   
   if (warriors.includes(className)) return JOB_CATEGORIES.WARRIOR;
