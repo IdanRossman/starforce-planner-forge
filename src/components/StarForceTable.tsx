@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment, EquipmentWithCharacter } from "@/types";
-import { starForceCalculator } from "@/lib/starforce-calculator";
+import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,65 +183,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     );
   };
 
-  const calculateAll = async () => {
-    const calculationsToPerform = calculations.map(calc => ({
-      equipment: calc.equipment,
-      starCatching: calc.starCatching,
-      safeguard: calc.safeguard,
-    }));
-
-    // Apply event modifiers
-    let costMultiplier = 1;
-    let successRateBonus = 0;
-    
-    if (events.thirtyPercentOff) {
-      costMultiplier *= 0.7;
-    }
-    if (events.fiveTenFifteen) {
-      successRateBonus = 0.1;
-    }
-
-    // Prepare batch calculation requests
-    const batchRequests = calculationsToPerform.map(({ equipment, starCatching, safeguard }) => ({
-      itemLevel: equipment.level || 150,
-      currentLevel: equipment.currentStarForce,
-      targetLevel: equipment.targetStarForce,
-      tier: equipment.tier || "epic",
-      serverType: "Regular" as const,
-      events: { 
-        costMultiplier, 
-        successRateBonus,
-        starCatching,
-        safeguard 
-      }
-    }));
-
-    try {
-      // Use batch calculation for better performance
-      const results = await starForceCalculator.calculateBatch(batchRequests);
-      
-      // Update calculations with results
-      setCalculations(prev => 
-        prev.map((calc, index) => {
-          const result = results[index];
-          const expectedSpares = Math.ceil(result.averageBooms * 1.2);
-          
-          return {
-            ...calc,
-            expectedCost: result.averageCost,
-            expectedSpares,
-            isCalculated: true,
-          };
-        })
-      );
-    } catch (error) {
-      console.error('Calculation error:', error);
-      // Fallback to individual calculations if batch fails
-      calculateAllFallback();
-    }
-  };
-
-  const calculateAllFallback = () => {
+  const calculateAll = () => {
     setCalculations(prev => 
       prev.map(calc => {
         const { equipment, starCatching, safeguard } = calc;
@@ -257,16 +199,27 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           successRateBonus = 0.1;
         }
         
-        // Simplified calculation for fallback
-        const stars = equipment.targetStarForce - equipment.currentStarForce;
-        const baseCost = Math.pow(equipment.level || 150, 1.5) * stars * 10000;
-        const adjustedCost = baseCost * costMultiplier;
-        const expectedSpares = Math.max(0, stars - 10) * 0.5;
+        const starForceCalc = calculateStarForce(
+          equipment.level || 150,
+          equipment.currentStarForce,
+          equipment.targetStarForce,
+          equipment.tier || "epic",
+          "Regular",
+          { 
+            costMultiplier, 
+            successRateBonus,
+            starCatching,
+            safeguard 
+          }
+        );
+        
+        // Estimate spares needed (simplified calculation)
+        const expectedSpares = Math.ceil(starForceCalc.averageBooms * 1.2);
         
         return {
           ...calc,
-          expectedCost: Math.round(adjustedCost),
-          expectedSpares: Math.ceil(expectedSpares),
+          expectedCost: starForceCalc.averageCost,
+          expectedSpares,
           isCalculated: true,
         };
       })
