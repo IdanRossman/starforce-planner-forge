@@ -385,7 +385,16 @@ export function EquipmentForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Potential Tier (Optional)</FormLabel>
-                    <Select onValueChange={(value) => field.onChange(value === "none" ? undefined : value)} value={field.value || "none"}>
+                    <Select 
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          field.onChange(undefined);
+                        } else {
+                          field.onChange(value);
+                        }
+                      }} 
+                      value={field.value || "none"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select potential tier (optional)" />
