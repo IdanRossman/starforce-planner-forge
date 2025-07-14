@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
+import { fetchCharacterSprite, REGIONS, SKIN_IDS, type CharacterSprite } from '@/lib/maplestoryApi';
 import {
   Dialog,
   DialogContent,
@@ -77,6 +78,8 @@ const ORGANIZED_SERVERS = {
 
 export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
+  const [characterSprite, setCharacterSprite] = useState<CharacterSprite | null>(null);
+  const [spriteLoading, setSpriteLoading] = useState(false);
 
   const form = useForm<CharacterFormData>({
     resolver: zodResolver(characterSchema),
@@ -100,6 +103,27 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       setOpen(true);
     }
   }, [editingCharacter, form]);
+
+  // Fetch character sprite when class changes
+  useEffect(() => {
+    const subscription = form.watch((value) => {
+      if (value.class) {
+        setSpriteLoading(true);
+        fetchCharacterSprite(value.class)
+          .then((sprite) => {
+            setCharacterSprite(sprite);
+            setSpriteLoading(false);
+          })
+          .catch(() => {
+            setCharacterSprite(null);
+            setSpriteLoading(false);
+          });
+      } else {
+        setCharacterSprite(null);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const onSubmit = (data: CharacterFormData) => {
     const newCharacter: Omit<Character, 'id'> = {
@@ -224,7 +248,33 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                    </FormItem>
                  );
                }}
-             />
+              />
+
+            {/* Character Sprite Preview */}
+            {(characterSprite || spriteLoading) && (
+              <div className="flex flex-col items-center space-y-2 py-4 border rounded-lg bg-card">
+                <h4 className="text-sm font-medium text-muted-foreground">Character Preview</h4>
+                {spriteLoading ? (
+                  <div className="flex items-center justify-center w-24 h-24 bg-muted rounded-lg animate-pulse">
+                    <span className="text-xs text-muted-foreground">Loading...</span>
+                  </div>
+                ) : characterSprite ? (
+                  <div className="flex items-center justify-center p-2 bg-muted rounded-lg">
+                    <img 
+                      src={characterSprite.url} 
+                      alt="Character sprite"
+                      className="max-w-[80px] max-h-[80px] object-contain"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                ) : null}
+                <p className="text-xs text-muted-foreground text-center">
+                  Powered by MapleStory.io
+                </p>
+              </div>
+            )}
 
             <FormField
               control={form.control}
