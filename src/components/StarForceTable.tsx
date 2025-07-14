@@ -47,6 +47,7 @@ interface StarForceTableProps {
 interface StarForceEvents {
   fiveTenFifteen: boolean;
   thirtyPercentOff: boolean;
+  yohiTapEvent: boolean; // The legendary luck
 }
 
 interface CalculationRow {
@@ -132,6 +133,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
   const [events, setEvents] = useState<StarForceEvents>({
     fiveTenFifteen: false,
     thirtyPercentOff: false,
+    yohiTapEvent: false, // The legendary luck starts disabled
   });
   
   const [calculations, setCalculations] = useState<CalculationRow[]>([]);
@@ -213,12 +215,21 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           }
         );
         
+        // Apply Yohi's legendary luck - halves cost and spares needed!
+        let finalCost = starForceCalc.averageCost;
+        let finalBooms = starForceCalc.averageBooms;
+        
+        if (events.yohiTapEvent) {
+          finalCost = Math.round(finalCost * 0.5); // Yohi's luck halves the cost
+          finalBooms = finalBooms * 0.5; // And the boom count
+        }
+        
         // Estimate spares needed (simplified calculation)
-        const expectedSpares = Math.ceil(starForceCalc.averageBooms * 1.2);
+        const expectedSpares = Math.ceil(finalBooms * 1.2);
         
         return {
           ...calc,
-          expectedCost: starForceCalc.averageCost,
+          expectedCost: finalCost,
           expectedSpares,
           isCalculated: true,
         };
@@ -377,6 +388,30 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                 <Label htmlFor="thirtyPercentOff" className="text-sm">
                   30% Off Event (30% cost reduction)
                 </Label>
+              </div>
+            </div>
+            
+            {/* Yohi Tap Event - The legendary luck */}
+            <div className="mt-4 p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="yohiTapEvent"
+                  checked={events.yohiTapEvent}
+                  onCheckedChange={(checked) => 
+                    setEvents(prev => ({ 
+                      ...prev, 
+                      yohiTapEvent: checked
+                    }))
+                  }
+                />
+                <div className="flex-1">
+                  <Label htmlFor="yohiTapEvent" className="text-sm font-medium text-yellow-400">
+                    🍀 Yohi Tap Event (Legendary Luck)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Activates Yohi's supernatural luck - halves all costs and spares needed!
+                  </p>
+                </div>
               </div>
             </div>
           </div>
