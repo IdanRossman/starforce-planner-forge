@@ -43,9 +43,18 @@ function preSaviorMesoFn(currentStar: number) {
   return makeMesoFn(2500, 1);
 }
 
-function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
+function saviorCost(currentStar: number, itemLevel: number): number {
   const mesoFn = saviorMesoFn(currentStar);
   return mesoFn(currentStar, itemLevel);
+}
+
+function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
+  // Use exact server mapping from Brandon's working calculator
+  if (server.toLowerCase() === "gms" || server.toLowerCase() === "Regular") {
+    return saviorCost(currentStar, itemLevel);
+  }
+  // Default to savior cost for now, but this should match Brandon's exact logic
+  return saviorCost(currentStar, itemLevel);
 }
 
 function attemptCost(
