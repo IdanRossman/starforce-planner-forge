@@ -60,11 +60,20 @@ const MAPLE_CLASSES = [
   'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
 ];
 
-const MAPLE_SERVERS = [
-  'Scania', 'Bera', 'Broa', 'Windia', 'Khaini', 'Yellonde', 'Mardia', 'Kradia',
-  'Galicia', 'El Nido', 'Zenith', 'Arcania', 'Chaos', 'Nova', 'Renegades',
-  'Aurora', 'Elysium', 'Luna', 'Reboot', 'Burning'
-];
+const ORGANIZED_SERVERS = {
+  'Interactive Servers': {
+    name: 'Interactive Servers (Regular)',
+    servers: [
+      'Scania', 'Bera', 'Aurora', 'Elysium'
+    ]
+  },
+  'Heroic Servers': {
+    name: 'Heroic Servers (Reboot)',
+    servers: [
+      'Hyperion', 'Kronos'
+    ]
+  }
+};
 
 export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
@@ -244,10 +253,23 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {MAPLE_SERVERS.map((server) => (
-                        <SelectItem key={server} value={server}>
-                          {server}
-                        </SelectItem>
+                      {Object.entries(ORGANIZED_SERVERS).map(([key, serverGroup]) => (
+                        <div key={key}>
+                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
+                            {serverGroup.name}
+                          </div>
+                          {serverGroup.servers.map((server) => (
+                            <SelectItem key={server} value={server} className="pl-6">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 rounded-full ${key === 'Interactive Servers' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+                                <span>{server}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${key === 'Interactive Servers' ? 'bg-blue-500/20 text-blue-600' : 'bg-orange-500/20 text-orange-600'}`}>
+                                  {key === 'Interactive Servers' ? 'Interactive' : 'Heroic'}
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </div>
                       ))}
                     </SelectContent>
                   </Select>
