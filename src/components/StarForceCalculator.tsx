@@ -176,6 +176,12 @@ function performExperiment(
 
   while (currentStar < desiredStar) {
     const chanceTime = decreaseCount === 2;
+    
+    // Debug for 16→17★ progression
+    if (currentStar === 16) {
+      console.log(`Attempting 16→17★, chanceTime: ${chanceTime}`);
+    }
+    
     totalMesos += attemptCost(currentStar, itemLevel, boomProtect, thirtyOff, starCatch, mvpDiscount, chanceTime, server);
 
     if (chanceTime) {
