@@ -325,9 +325,11 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                           }
                         </div>
                         <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
-                            {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
-                          </Badge>
+                          {calc.equipment.tier && (
+                            <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
+                              {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground capitalize">
                             {calc.equipment.slot}
                           </span>
