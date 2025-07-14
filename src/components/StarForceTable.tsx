@@ -242,7 +242,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
       'Current Spares',
       'Star Catching',
       'Safeguard',
-      'Expected Cost (Mesos)',
+      'Expected Cost',
       'Expected Spares Needed',
       'Total Available',
       'Status'
@@ -267,7 +267,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           calc.sparesCount,
           calc.starCatching ? 'Yes' : 'No',
           calc.safeguard ? 'Yes' : 'No',
-          calc.expectedCost,
+          formatMesos(calc.expectedCost),
           calc.expectedSpares,
           totalAvailable,
           status
@@ -277,7 +277,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     // Add summary row
     rows.push([]);
     rows.push(['SUMMARY']);
-    rows.push(['Total Expected Cost (Mesos)', ...(isOverallView ? [''] : []), '', '', '', '', '', '', '', totalCost]);
+    rows.push(['Total Expected Cost', ...(isOverallView ? [''] : []), '', '', '', '', '', '', '', formatMesos(totalCost)]);
     rows.push(['Additional Spares Needed', ...(isOverallView ? [''] : []), '', '', '', '', '', '', '', totalSparesNeeded]);
     
     // Convert to CSV string
