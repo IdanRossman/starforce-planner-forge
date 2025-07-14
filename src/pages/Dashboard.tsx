@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Character, Equipment, EquipmentSlot } from "@/types";
+import { Character, Equipment, EquipmentSlot, EquipmentWithCharacter } from "@/types";
 import { mockCharacters } from "@/data/mockData";
 import { CharacterCard } from "@/components/CharacterCard";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
@@ -456,7 +456,9 @@ export default function Dashboard() {
 
               <TabsContent value="overview" className="space-y-6">
                 <StarForceTable 
-                  equipment={characters.flatMap(char => char.equipment)} 
+                  equipment={characters.flatMap(char => 
+                    char.equipment.map(eq => ({ ...eq, characterName: char.name } as EquipmentWithCharacter))
+                  )} 
                   starForceItems={starForceItems}
                   onAddStarForceItem={handleAddStarForceItem}
                   onRemoveStarForceItem={handleRemoveStarForceItem}

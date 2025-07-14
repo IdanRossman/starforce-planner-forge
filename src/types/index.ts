@@ -18,6 +18,10 @@ export interface Equipment {
   tier?: EquipmentTier | null;
 }
 
+export interface EquipmentWithCharacter extends Equipment {
+  characterName: string;
+}
+
 export type EquipmentSlot = 
   | 'weapon'
   | 'secondary'

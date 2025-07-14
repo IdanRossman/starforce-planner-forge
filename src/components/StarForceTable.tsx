@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Equipment } from "@/types";
+import { Equipment, EquipmentWithCharacter } from "@/types";
 import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 
 interface StarForceTableProps {
-  equipment: Equipment[];
+  equipment: Equipment[] | EquipmentWithCharacter[];
   starForceItems: Equipment[];
   onAddStarForceItem: () => void;
   onRemoveStarForceItem: (id: string) => void;
@@ -308,6 +308,9 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               <TableHeader>
                 <TableRow>
                   <TableHead>Equipment</TableHead>
+                  {(equipment.length > 0 && 'characterName' in equipment[0]) && (
+                    <TableHead className="text-center">Character</TableHead>
+                  )}
                   <TableHead className="text-center">Current ★</TableHead>
                   <TableHead className="text-center">Target ★</TableHead>
                   <TableHead className="text-center">Current Spares</TableHead>
@@ -346,6 +349,14 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                       </div>
                     </div>
                   </TableCell>
+                  
+                  {('characterName' in calc.equipment) && (
+                    <TableCell className="text-center">
+                      <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                        {(calc.equipment as EquipmentWithCharacter).characterName}
+                      </Badge>
+                    </TableCell>
+                  )}
                   
                   <TableCell className="text-center">
                     <Badge variant="outline" className={`${getDangerColor(calc.equipment.currentStarForce)}`}>
