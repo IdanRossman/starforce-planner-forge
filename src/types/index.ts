@@ -39,6 +39,7 @@ export type EquipmentSlot =
   | 'ring4'
   | 'pendant1'
   | 'pendant2'
+  | 'pocket'
   | 'heart'
   | 'badge';
 
