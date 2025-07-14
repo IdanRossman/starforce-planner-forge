@@ -11,6 +11,8 @@ export const EQUIPMENT_BY_SLOT = {
   ],
   secondary: [
     { name: 'Generic', level: 100, tier: null },
+    { name: 'Deimos Sage Shield', level: 130, tier: null },
+    { name: 'Deimos Shadow Shield', level: 130, tier: null },
     { name: 'Princess No', level: 140, tier: null },
     { name: 'Sweetwater', level: 160, tier: null },
     { name: 'Absolab', level: 160, tier: null },
