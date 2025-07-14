@@ -44,7 +44,6 @@ interface StarForceTableProps {
 interface StarForceEvents {
   fiveTenFifteen: boolean;
   thirtyPercentOff: boolean;
-  shiningStarForce: boolean;
 }
 
 interface CalculationRow {
@@ -130,7 +129,6 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
   const [events, setEvents] = useState<StarForceEvents>({
     fiveTenFifteen: false,
     thirtyPercentOff: false,
-    shiningStarForce: false,
   });
   
   const [calculations, setCalculations] = useState<CalculationRow[]>([]);
@@ -191,16 +189,11 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
         let costMultiplier = 1;
         let successRateBonus = 0;
         
-        if (events.shiningStarForce) {
-          costMultiplier *= 0.7; // 30% off
-          successRateBonus = 0.1; // 10% bonus for 5/10/15
-        } else {
-          if (events.thirtyPercentOff) {
-            costMultiplier *= 0.7;
-          }
-          if (events.fiveTenFifteen) {
-            successRateBonus = 0.1;
-          }
+        if (events.thirtyPercentOff) {
+          costMultiplier *= 0.7;
+        }
+        if (events.fiveTenFifteen) {
+          successRateBonus = 0.1;
         }
         
         const starForceCalc = calculateStarForce(
@@ -261,7 +254,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
         <div className="space-y-4 pt-4">
           <div>
             <h4 className="text-sm font-medium mb-3 text-foreground">StarForce Events</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center space-x-2">
                 <Switch
                   id="fiveTenFifteen"
@@ -269,14 +262,12 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   onCheckedChange={(checked) => 
                     setEvents(prev => ({ 
                       ...prev, 
-                      fiveTenFifteen: checked,
-                      shiningStarForce: checked ? false : prev.shiningStarForce 
+                      fiveTenFifteen: checked
                     }))
                   }
-                  disabled={events.shiningStarForce}
                 />
                 <Label htmlFor="fiveTenFifteen" className="text-sm">
-                  5/10/15 Event
+                  5/10/15 Event (+10% success at ★5, ★10, ★15)
                 </Label>
               </div>
               
@@ -287,40 +278,15 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   onCheckedChange={(checked) => 
                     setEvents(prev => ({ 
                       ...prev, 
-                      thirtyPercentOff: checked,
-                      shiningStarForce: checked ? false : prev.shiningStarForce 
+                      thirtyPercentOff: checked
                     }))
                   }
-                  disabled={events.shiningStarForce}
                 />
                 <Label htmlFor="thirtyPercentOff" className="text-sm">
-                  30% Off Event
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="shiningStarForce"
-                  checked={events.shiningStarForce}
-                  onCheckedChange={(checked) => 
-                    setEvents(prev => ({
-                      fiveTenFifteen: false,
-                      thirtyPercentOff: false,
-                      shiningStarForce: checked,
-                    }))
-                  }
-                />
-                <Label htmlFor="shiningStarForce" className="text-sm">
-                  Shining StarForce
+                  30% Off Event (30% cost reduction)
                 </Label>
               </div>
             </div>
-            
-            {events.shiningStarForce && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Shining StarForce combines 5/10/15 bonuses and 30% cost reduction
-              </p>
-            )}
           </div>
           <Separator />
         </div>
