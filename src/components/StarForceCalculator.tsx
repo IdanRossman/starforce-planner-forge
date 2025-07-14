@@ -57,6 +57,16 @@ function getBaseCost(server: string, currentStar: number, itemLevel: number): nu
   return saviorCost(currentStar, itemLevel);
 }
 
+function getSafeguardMultiplierIncrease(currentStar: number, server: string): number {
+  if (server === "kms" && currentStar >= 15 && currentStar <= 17) {
+    return 2;
+  }
+  if (server !== "kms" && currentStar >= 15 && currentStar <= 16) {
+    return 1;
+  }
+  return 0;
+}
+
 function attemptCost(
   currentStar: number, 
   itemLevel: number, 
@@ -79,9 +89,9 @@ function attemptCost(
     multiplier = multiplier - 0.3;
   }
 
-  // Safeguard cost increase
-  if (boomProtect && !chanceTime && currentStar >= 12 && currentStar <= 16) {
-    multiplier = multiplier + 1; // 2x cost with safeguard
+  // Safeguard cost increase - using Brandon's exact logic
+  if (boomProtect && !chanceTime) {
+    multiplier = multiplier + getSafeguardMultiplierIncrease(currentStar, server);
   }
 
   const cost = getBaseCost(server, currentStar, itemLevel) * multiplier;
@@ -242,9 +252,10 @@ export function calculateStarForce(
   const mvpDiscount = 0; // Could be extracted from costMultiplier if needed
   const server = "gms"; // Default to GMS
 
-  // Run simulations using the proven algorithm
+  // Run simulations using Brandon's exact algorithm - double experiments per trial
   for (let i = 0; i < trials; i++) {
-    const [cost, booms] = performExperiment(
+    // Brandon runs TWO separate experiments per trial for better accuracy
+    const [mesoResult] = performExperiment(
       currentLevel, 
       targetLevel, 
       itemLevel, 
@@ -255,8 +266,19 @@ export function calculateStarForce(
       mvpDiscount, 
       server
     );
-    totalCost += cost;
-    totalBooms += booms;
+    const [, boomResult] = performExperiment(
+      currentLevel, 
+      targetLevel, 
+      itemLevel, 
+      safeguard, 
+      thirtyOff, 
+      starCatching, 
+      fiveTenFifteen, 
+      mvpDiscount, 
+      server
+    );
+    totalCost += mesoResult;
+    totalBooms += boomResult;
   }
 
   // Calculate per-star stats
