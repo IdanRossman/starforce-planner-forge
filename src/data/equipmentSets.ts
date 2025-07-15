@@ -1,83 +1,109 @@
+// Equipment sets with colors
+export const EQUIPMENT_SETS = {
+  'Pensalir': { name: 'Pensalir', color: 'bg-green-100 text-green-800 border-green-200' },
+  'Chaos Root Abyss': { name: 'CRA', color: 'bg-red-100 text-red-800 border-red-200' },
+  'Sweetwater': { name: 'SW', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  'Absolab': { name: 'Abso', color: 'bg-purple-100 text-purple-800 border-purple-200' },
+  'Arcane Umbra': { name: 'Arcane', color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+  'Genesis Liberated': { name: 'Genesis', color: 'bg-pink-100 text-pink-800 border-pink-200' },
+  'Eternal': { name: 'Eternal', color: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
+  'Deimos': { name: 'Deimos', color: 'bg-gray-100 text-gray-800 border-gray-200' },
+  'Princess No': { name: 'Princess No', color: 'bg-pink-100 text-pink-800 border-pink-200' },
+  'MapleStory': { name: 'MapleStory', color: 'bg-orange-100 text-orange-800 border-orange-200' },
+  'Hero': { name: 'Hero', color: 'bg-red-100 text-red-800 border-red-200' },
+  'Cygnus': { name: 'Cygnus', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  'Resistance': { name: 'Resistance', color: 'bg-green-100 text-green-800 border-green-200' },
+  'Boss': { name: 'Boss', color: 'bg-red-100 text-red-800 border-red-200' },
+};
+
+// Tier colors for potential tiers
+export const TIER_COLORS = {
+  'Rare': 'border-blue-400',
+  'Epic': 'border-purple-400', 
+  'Unique': 'border-yellow-400',
+  'Legendary': 'border-green-400',
+};
+
 export const EQUIPMENT_BY_SLOT = {
   // Weapons
   weapon: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372084/icon' },
-    { name: 'Fafnir', level: 150, tier: null, set: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372082/icon' }, // CRA weapon
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372103/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372180/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372216/icon' },
-    { name: 'Genesis', level: 200, tier: null, set: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372254/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372310/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372084/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372082/icon' }, // CRA weapon
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372103/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372180/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372216/icon' },
+    { name: 'Genesis', level: 200, tier: null, setKey: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372254/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372310/icon' },
   ],
   secondary: [
-    { name: 'Generic', level: 100, tier: null, set: 'Generic', imageUrl: 'https://maplestory.io/api/GMS/238/item/1092030/icon' },
-    { name: 'Deimos Sage Shield', level: 130, tier: null, set: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098000/icon' },
-    { name: 'Deimos Shadow Shield', level: 130, tier: null, set: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098001/icon' },
-    { name: 'Princess No', level: 140, tier: null, set: 'Princess No', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098027/icon' },
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098028/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098029/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098030/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098031/icon' },
-    { name: 'Genesis', level: 200, tier: null, set: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098032/icon' },
+    { name: 'Generic', level: 100, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1092030/icon' },
+    { name: 'Deimos Sage Shield', level: 130, tier: null, setKey: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098000/icon' },
+    { name: 'Deimos Shadow Shield', level: 130, tier: null, setKey: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098001/icon' },
+    { name: 'Princess No', level: 140, tier: null, setKey: 'Princess No', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098027/icon' },
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098028/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098029/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098030/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098031/icon' },
+    { name: 'Genesis', level: 200, tier: null, setKey: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098032/icon' },
   ],
   emblem: [
-    { name: 'Gold Maple Leaf Emblem', level: 100, tier: null, set: 'MapleStory', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190000/icon' },
-    { name: 'Gold Hero Emblem', level: 100, tier: null, set: 'Hero', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190001/icon' },
-    { name: 'Gold Cygnus Emblem', level: 100, tier: null, set: 'Cygnus', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190002/icon' },
-    { name: 'Gold Resistance Emblem', level: 100, tier: null, set: 'Resistance', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190003/icon' },
-    { name: 'Mitras Rage', level: 100, tier: null, set: 'Boss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190010/icon' },
+    { name: 'Gold Maple Leaf Emblem', level: 100, tier: null, setKey: 'MapleStory', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190000/icon' },
+    { name: 'Gold Hero Emblem', level: 100, tier: null, setKey: 'Hero', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190001/icon' },
+    { name: 'Gold Cygnus Emblem', level: 100, tier: null, setKey: 'Cygnus', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190002/icon' },
+    { name: 'Gold Resistance Emblem', level: 100, tier: null, setKey: 'Resistance', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190003/icon' },
+    { name: 'Mitras Rage', level: 100, tier: null, setKey: 'Boss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1190010/icon' },
   ],
 
   // Armor pieces
   hat: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1003735/icon' },
-    { name: 'Fafnir', level: 150, tier: null, set: 'Chaos Root Abyss', imageUrl: 'https://static.wikia.nocookie.net/maplestory/images/a/a1/Eqp_Royal_Warrior_Helm.png/revision/latest?cb=20150112211030' }, // CRA hat
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1003998/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004341/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004404/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004450/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1003735/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://static.wikia.nocookie.net/maplestory/images/a/a1/Eqp_Royal_Warrior_Helm.png/revision/latest?cb=20150112211030' }, // CRA hat
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1003998/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004341/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004404/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1004450/icon' },
   ],
   top: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042180/icon' },
-    { name: 'Fafnir', level: 150, tier: null, set: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042181/icon' }, // CRA top
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042259/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042309/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042356/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042400/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042180/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042181/icon' }, // CRA top
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042259/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042309/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042356/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1042400/icon' },
   ],
   bottom: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062115/icon' },
-    { name: 'Fafnir', level: 150, tier: null, set: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062116/icon' }, // CRA bottom
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062165/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062208/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062255/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062300/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062115/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062116/icon' }, // CRA bottom
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062165/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062208/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062255/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1062300/icon' },
   ],
   overall: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052357/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052681/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052729/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052357/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052681/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1052729/icon' },
   ],
   shoes: [
-    { name: 'Pensalir', level: 140, tier: null, set: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072455/icon' },
-    { name: 'Fafnir', level: 150, tier: null, set: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072456/icon' }, // CRA shoes
-    { name: 'Sweetwater', level: 160, tier: null, set: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072743/icon' },
-    { name: 'Absolab', level: 160, tier: null, set: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072761/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, set: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072808/icon' },
-    { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072850/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072455/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072456/icon' }, // CRA shoes
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072743/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072761/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072808/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1072850/icon' },
   ],
   gloves: [
-    { name: 'Pensalir', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082268/icon' },
-    { name: 'Fafnir', level: 150, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082269/icon' }, // CRA gloves
-    { name: 'Sweetwater', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082543/icon' },
-    { name: 'Absolab', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082587/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082634/icon' },
-    { name: 'Eternal', level: 250, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1082680/icon' },
+    { name: 'Pensalir', level: 140, tier: null, setKey: 'Pensalir', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082268/icon' },
+    { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082269/icon' }, // CRA gloves
+    { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082543/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082587/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082634/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1082680/icon' },
   ],
   cape: [
-    { name: 'Absolab', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1102481/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1102528/icon' },
-    { name: 'Eternal', level: 250, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1102570/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1102481/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1102528/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1102570/icon' },
   ],
   belt: [
     { name: 'Pink Bean', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1132040/icon' },
@@ -88,23 +114,23 @@ export const EQUIPMENT_BY_SLOT = {
   ],
   shoulder: [
     { name: 'Royal Black Metal Shoulder', level: 120, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1152087/icon' },
-    { name: 'Absolab', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1152174/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1152221/icon' },
-    { name: 'Eternal', level: 250, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1152260/icon' },
+    { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1152174/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1152221/icon' },
+    { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1152260/icon' },
   ],
 
   // Face & Eye accessories
   face: [
     { name: 'Aquatic Letter Face Accessory', level: 50, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1012057/icon' },
     { name: 'Twilight Mark', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1012316/icon' },
-    { name: 'Sweetwater Tattoo', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1012432/icon' },
+    { name: 'Sweetwater Tattoo', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1012432/icon' },
     { name: 'Berserked', level: 200, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1012632/icon' },
   ],
   eye: [
     { name: 'Aquatic Letter Eye Accessory', level: 100, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1022082/icon' },
     { name: 'Black Bean Mark', level: 135, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1022211/icon' },
     { name: 'Papulatus Mark', level: 145, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1022231/icon' },
-    { name: 'Sweetwater Monocle', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1022278/icon' },
+    { name: 'Sweetwater Monocle', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1022278/icon' },
     { name: 'Magic Eyepatch', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1022279/icon' },
   ],
 
@@ -204,7 +230,7 @@ export const EQUIPMENT_BY_SLOT = {
   badge: [
     { name: 'Crystal Ventus Badge', level: 100, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1182000/icon' },
     { name: 'Sengoku Hakase Badge', level: 160, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1182087/icon' },
-    { name: 'Genesis Badge', level: 200, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1182285/icon' },
+    { name: 'Genesis Badge', level: 200, tier: null, setKey: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1182285/icon' },
   ],
   medal: [
     { name: 'Zakum Slayer', level: 50, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1142010/icon' },
