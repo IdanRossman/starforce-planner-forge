@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="arcaneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="50%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+    <filter id="arcaneGlow">
+      <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Main hat shape -->
+  <ellipse cx="16" cy="24" rx="14" ry="6" fill="url(#arcaneGradient)"/>
+  
+  <!-- Hat crown -->
+  <ellipse cx="16" cy="16" rx="10" ry="8" fill="url(#arcaneGradient)"/>
+  
+  <!-- Decorative band -->
+  <ellipse cx="16" cy="20" rx="12" ry="2" fill="#64748B"/>
+  
+  <!-- Mystical orb/gem on front -->
+  <circle cx="16" cy="16" r="3" fill="#7C3AED" filter="url(#arcaneGlow)"/>
+  <circle cx="16" cy="16" r="2" fill="#A855F7"/>
+  <circle cx="16" cy="16" r="1" fill="#DDD6FE"/>
+  
+  <!-- Shadow/depth -->
+  <ellipse cx="16" cy="24" rx="12" ry="4" fill="#0F172A" opacity="0.3"/>
+  
+  <!-- Side decorations -->
+  <circle cx="8" cy="18" r="1" fill="#64748B"/>
+  <circle cx="24" cy="18" r="1" fill="#64748B"/>
+  
+  <!-- Top ornament -->
+  <polygon points="16,8 14,12 18,12" fill="#7C3AED"/>
+  <circle cx="16" cy="10" r="1" fill="#A855F7"/>
+</svg>

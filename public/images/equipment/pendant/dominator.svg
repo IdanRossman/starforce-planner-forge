@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dominatorGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="50%" stop-color="#A855F7" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Pendant chain -->
+  <rect x="15" y="2" width="2" height="8" fill="#C0C0C0" rx="1"/>
+  
+  <!-- Main pendant body -->
+  <ellipse cx="16" cy="20" rx="12" ry="10" fill="url(#dominatorGradient)" filter="url(#glow)"/>
+  
+  <!-- Inner gem -->
+  <ellipse cx="16" cy="20" rx="8" ry="6" fill="#DDD6FE"/>
+  <ellipse cx="16" cy="20" rx="5" ry="4" fill="#8B5CF6"/>
+  
+  <!-- Crown-like decoration on top -->
+  <polygon points="16,12 12,16 20,16" fill="url(#dominatorGradient)"/>
+  <circle cx="16" cy="14" r="2" fill="#DDD6FE"/>
+  <circle cx="16" cy="14" r="1" fill="#8B5CF6"/>
+  
+  <!-- Side gems -->
+  <circle cx="8" cy="20" r="2" fill="#A855F7" opacity="0.8"/>
+  <circle cx="24" cy="20" r="2" fill="#A855F7" opacity="0.8"/>
+  
+  <!-- Bottom point -->
+  <polygon points="16,28 12,26 20,26" fill="url(#dominatorGradient)"/>
+</svg>

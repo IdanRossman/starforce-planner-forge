@@ -17,6 +17,7 @@ export interface Equipment {
   targetStarForce: number;
   tier?: EquipmentTier | null;
   starforceable: boolean;
+  image?: string; // Path to equipment image
 }
 
 export interface EquipmentWithCharacter extends Equipment {

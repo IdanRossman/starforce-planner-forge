@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
+import { EquipmentImage } from '@/components/EquipmentImage';
 import { 
   Sword, 
   Shield, 
@@ -84,7 +85,7 @@ interface EquipmentFormProps {
 }
 
 const getSlotIcon = (slotValue: string) => {
-  const iconMap: Record<string, React.ComponentType<any>> = {
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     weapon: Sword,
     secondary: Shield,
     emblem: Badge,
@@ -233,6 +234,10 @@ export function EquipmentForm({
   const currentSlot = form.watch('slot');
 
   const onSubmit = (data: EquipmentFormData) => {
+    // Find the selected equipment to get its image
+    const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
+    const equipmentImage = selectedEquipment?.image;
+
     if (isEditing && equipment) {
       onSave({
         ...equipment,
@@ -240,6 +245,7 @@ export function EquipmentForm({
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
         tier: data.tier as EquipmentTier | null | undefined,
+        image: equipmentImage,
       });
     } else {
       onSave({
@@ -251,6 +257,7 @@ export function EquipmentForm({
         currentStarForce: data.starforceable ? data.currentStarForce : 0,
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
         starforceable: data.starforceable,
+        image: equipmentImage,
       });
     }
     onOpenChange(false);
@@ -369,7 +376,15 @@ export function EquipmentForm({
                     <SelectContent>
                       {availableEquipment.map((equipment) => (
                         <SelectItem key={equipment.name} value={equipment.name}>
-                          {equipment.name} (Lv.{equipment.level})
+                          <div className="flex items-center gap-2">
+                            <EquipmentImage 
+                              src={equipment.image} 
+                              alt={equipment.name}
+                              size="sm"
+                              fallbackIcon={getSlotIcon(selectedSlot)}
+                            />
+                            <span>{equipment.name} (Lv.{equipment.level})</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>

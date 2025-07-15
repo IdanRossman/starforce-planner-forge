@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
+import { EquipmentImage } from "@/components/EquipmentImage";
+import { useState, useEffect } from "react";
 import { 
   Plus, 
   Edit, 
@@ -87,7 +89,7 @@ const EQUIPMENT_SLOTS: {
 
 // Equipment slot icons mapping
 const getSlotIcon = (slot: string) => {
-  const iconMap: { [key: string]: any } = {
+  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
     weapon: Sword,
     secondary: Shield,
     emblem: Star,
@@ -117,6 +119,95 @@ const getSlotIcon = (slot: string) => {
   
   const IconComponent = iconMap[slot] || Package;
   return <IconComponent className="w-4 h-4" />;
+};
+
+// Component to handle equipment display with image state
+const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
+  const [hasImage, setHasImage] = useState(false);
+  
+  // Reset image state when equipment changes
+  useEffect(() => {
+    setHasImage(false);
+  }, [equipment.id, equipment.set, equipment.image]);
+  
+  return (
+    <div className="space-y-2">
+      {/* Hidden image detector */}
+      <div className="hidden">
+        <EquipmentImage 
+          src={equipment.image} 
+          alt={equipment.set || "Equipment"}
+          size="sm"
+          onImageStatusChange={setHasImage}
+          showFallback={false}
+        />
+      </div>
+      
+      {hasImage ? (
+        // Image-centered layout: image with centered StarForce below
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <EquipmentImage 
+            src={equipment.image} 
+            alt={equipment.set || "Equipment"}
+            size="lg"
+            showFallback={false}
+            className="shrink-0"
+          />
+          {/* StarForce display - centered below image */}
+          {equipment.starforceable && (
+            <div className="flex items-center justify-center gap-1 text-xs">
+              <Star className="w-3 h-3 text-yellow-400" />
+              <span className="text-yellow-400 font-medium">
+                {equipment.currentStarForce}
+              </span>
+              {equipment.targetStarForce > equipment.currentStarForce && (
+                <>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="text-primary font-medium">
+                    {equipment.targetStarForce}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ) : (
+        // Text layout: no image, show equipment details with slot icon
+        <div className="space-y-2">
+          <div className="flex items-start gap-2">
+            <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded shrink-0">
+              {getSlotIcon(slot)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-foreground truncate">
+                {equipment.set || `Lv.${equipment.level} Equipment`}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {label}
+              </p>
+            </div>
+          </div>
+          {/* StarForce display - normal layout for text mode */}
+          {equipment.starforceable && (
+            <div className="flex items-center gap-1 text-xs">
+              <Star className="w-3 h-3 text-yellow-400" />
+              <span className="text-yellow-400 font-medium">
+                {equipment.currentStarForce}
+              </span>
+              {equipment.targetStarForce > equipment.currentStarForce && (
+                <>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="text-primary font-medium">
+                    {equipment.targetStarForce}
+                  </span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator }: EquipmentGridProps) {
@@ -198,36 +289,12 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-2">
-                  {getSlotIcon(slot)}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-foreground truncate">
-                      {equipment.set || `Lv.${equipment.level} Equipment`}
-                    </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {label}
-                    </p>
-                  </div>
-                </div>
+                <EquipmentDisplay 
+                  equipment={equipment}
+                  slot={slot}
+                  label={label}
+                />
               </div>
-              
-              {/* StarForce display - only show if starforceable */}
-              {equipment.starforceable && (
-                <div className="flex items-center gap-1 text-xs">
-                  <Star className="w-3 h-3 text-yellow-400" />
-                  <span className="text-yellow-400 font-medium">
-                    {equipment.currentStarForce}
-                  </span>
-                  {equipment.targetStarForce > equipment.currentStarForce && (
-                    <>
-                      <span className="text-muted-foreground">→</span>
-                      <span className="text-primary font-medium">
-                        {equipment.targetStarForce}
-                      </span>
-                    </>
-                  )}
-                </div>
-              )}
             </>
           ) : (
             <Button
