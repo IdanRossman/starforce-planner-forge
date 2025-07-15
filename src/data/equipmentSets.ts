@@ -181,7 +181,7 @@ export const EQUIPMENT_BY_SLOT = {
   pendant2: [
     { name: 'Chaos Horntail Necklace', level: 120, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122000/icon' },
     { name: 'Mechinator Pendent', level: 120, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122076/icon' },
-    { name: 'Dominator Pendant', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122019/icon' },
+    { name: 'Dominator Pendant', level: 140, tier: null, imageUrl: 'https://static.wikia.nocookie.net/maplestory/images/c/c3/Eqp_Dominator_Pendant.png/revision/latest?cb=20160106061857' },
     { name: 'Reinforced Gollux Pendent', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122017/icon' },
     { name: 'Daybreak Pendant', level: 140, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122020/icon' },
     { name: 'Superior Gollux', level: 150, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1122021/icon' },
