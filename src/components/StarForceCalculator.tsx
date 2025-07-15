@@ -327,7 +327,7 @@ export function StarForceCalculator({ initialCalculation }: StarForceCalculatorP
   const [server, setServer] = useState("GMS");
   const [itemType, setItemType] = useState("regular");
   const [safeguard, setSafeguard] = useState(false);
-  const [starCatching, setStarCatching] = useState(false);
+  const [starCatching, setStarCatching] = useState(true);
   const [eventType, setEventType] = useState<string>("");
   const [costDiscount, setCostDiscount] = useState(0);
   const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck

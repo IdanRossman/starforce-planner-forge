@@ -145,7 +145,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
       existingCalcs.get(eq.id) || {
         equipment: eq,
         sparesCount: 0,
-        starCatching: false,
+        starCatching: true,
         safeguard: false,
         expectedCost: 0,
         expectedSpares: 0,
