@@ -373,17 +373,22 @@ export function EquipmentForm({
                         <SelectValue placeholder="Select equipment">
                           {field.value && availableEquipment.find(eq => eq.name === field.value) && (
                             <div className="flex items-center gap-2">
-                              {availableEquipment.find(eq => eq.name === field.value)?.imageUrl && (
-                                <img 
-                                  src={availableEquipment.find(eq => eq.name === field.value)?.imageUrl} 
-                                  alt={field.value} 
-                                  className="w-4 h-4 object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
-                              )}
+                              <div className="w-6 h-6 flex items-center justify-center">
+                                {availableEquipment.find(eq => eq.name === field.value)?.imageUrl ? (
+                                  <img 
+                                    src={availableEquipment.find(eq => eq.name === field.value)?.imageUrl} 
+                                    alt={field.value} 
+                                    className="w-6 h-6 object-contain"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.parentElement!.innerHTML = '<span class="text-sm">⚔️</span>';
+                                    }}
+                                  />
+                                ) : (
+                                  <span className="text-sm">⚔️</span>
+                                )}
+                              </div>
                               <span>{field.value}</span>
                             </div>
                           )}
