@@ -48,7 +48,7 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Fafnir', level: 150, tier: null, setKey: 'Chaos Root Abyss', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372082/icon' },
     { name: 'Sweetwater', level: 160, tier: null, setKey: 'Sweetwater', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372103/icon' },
     { name: 'Absolab', level: 160, tier: null, setKey: 'Absolab', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372180/icon' },
-    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372216/icon' },
+    { name: 'Arcane Umbra', level: 200, tier: null, setKey: 'Arcane Umbra', imageUrl: undefined },
     { name: 'Genesis', level: 200, tier: null, setKey: 'Genesis Liberated', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372254/icon' },
     { name: 'Eternal', level: 250, tier: null, setKey: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372310/icon' },
   ],
