@@ -404,7 +404,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   }
                 />
                 <Label htmlFor="yohiTapEvent" className="text-sm font-medium text-yellow-400">
-                  🍀 Yohi Tap Event (Legendary Luck)
+                  🍀 Yohi Tap Event (Inside Joke -50% Cost)
                 </Label>
               </div>
             </div>
@@ -503,9 +503,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   <TableCell className="text-center">
                     <Switch
                       checked={calc.safeguard}
-                      onCheckedChange={(checked) => updateSafeguard(calc.equipment.id, checked)}
-                      disabled={calc.equipment.currentStarForce >= 17} // Only useful for 15->16 and 16->17
-                    />
+                      onCheckedChange={(checked) => updateSafeguard(calc.equipment.id, checked)}/>
                   </TableCell>
                   
                   <TableCell className="text-center">
