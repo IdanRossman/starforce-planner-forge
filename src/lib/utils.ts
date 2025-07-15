@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Helper function to get max star force based on equipment level
+export const getMaxStarForce = (level: number): number => {
+  if (level <= 94) return 5;
+  if (level <= 107) return 8;
+  if (level <= 117) return 10;
+  if (level <= 127) return 15;
+  if (level <= 137) return 20;
+  return 23; // 138 and above (adjusted to current system max of 23)
+};
+
 interface ExportData {
   version: string;
   characters: Character[];

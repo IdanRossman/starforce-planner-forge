@@ -48,6 +48,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
+import { getMaxStarForce } from '@/lib/utils';
 
 const equipmentSchema = z.object({
   slot: z.string().min(1, 'Equipment slot is required'),
@@ -55,9 +56,17 @@ const equipmentSchema = z.object({
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
   tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
-  currentStarForce: z.number().min(0).max(23),
-  targetStarForce: z.number().min(0).max(23),
+  currentStarForce: z.number().min(0),
+  targetStarForce: z.number().min(0),
   starforceable: z.boolean(),
+}).refine((data) => {
+  // Only validate StarForce levels if the item is starforceable
+  if (!data.starforceable) return true;
+  const maxStars = getMaxStarForce(data.level);
+  return data.currentStarForce <= maxStars && data.targetStarForce <= maxStars;
+}, {
+  message: "StarForce levels cannot exceed the maximum for this equipment level",
+  path: ["targetStarForce"],
 }).refine((data) => {
   // Only validate StarForce levels if the item is starforceable
   if (!data.starforceable) return true;
@@ -183,6 +192,29 @@ export function EquipmentForm({
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
   const watchSlot = form.watch('slot');
+  const watchLevel = form.watch('level');
+
+  // Update target StarForce when level changes (for new equipment only)
+  useEffect(() => {
+    if (watchLevel && !equipment && watchStarforceable) {
+      const maxStars = getMaxStarForce(watchLevel);
+      const currentTarget = form.getValues('targetStarForce');
+      const currentCurrent = form.getValues('currentStarForce');
+      
+      // Update target to max if it's currently above the new max
+      if (currentTarget > maxStars) {
+        form.setValue('targetStarForce', maxStars);
+      } else if (currentTarget === 0) {
+        // If target is 0, set it to the max for this level
+        form.setValue('targetStarForce', maxStars);
+      }
+      
+      // Update current StarForce if it's above the new max
+      if (currentCurrent > maxStars) {
+        form.setValue('currentStarForce', maxStars);
+      }
+    }
+  }, [watchLevel, equipment, watchStarforceable, form]);
 
   // Update starforceable default when slot changes
   useEffect(() => {
@@ -194,6 +226,11 @@ export function EquipmentForm({
       if (!defaultStarforceable) {
         form.setValue('currentStarForce', 0);
         form.setValue('targetStarForce', 0);
+      } else {
+        // If turning on starforceable, set target to max for current level
+        const currentLevel = form.getValues('level');
+        const maxStars = getMaxStarForce(currentLevel);
+        form.setValue('targetStarForce', maxStars);
       }
     }
   }, [watchSlot, equipment, form]);
@@ -213,14 +250,16 @@ export function EquipmentForm({
           starforceable: equipment.starforceable,
         });
       } else {
+        const defaultLevel = 200;
+        const maxStars = getMaxStarForce(defaultLevel);
         form.reset({
           slot: defaultSlot || '',
           type: 'armor',
-          level: 200,
+          level: defaultLevel,
           set: '',
           tier: null,
           currentStarForce: 0,
-          targetStarForce: 22,
+          targetStarForce: maxStars,
           starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
         });
       }
@@ -512,43 +551,49 @@ export function EquipmentForm({
             <FormField
               control={form.control}
               name="currentStarForce"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Current StarForce: {field.value}★</FormLabel>
-                  <FormControl>
-                    <Slider
-                      min={0}
-                      max={23}
-                      step={1}
-                      value={[field.value]}
-                      onValueChange={(value) => field.onChange(value[0])}
-                      className="w-full"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const maxStars = getMaxStarForce(watchLevel);
+                return (
+                  <FormItem>
+                    <FormLabel>Current StarForce: {field.value}★</FormLabel>
+                    <FormControl>
+                      <Slider
+                        min={0}
+                        max={maxStars}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
               control={form.control}
               name="targetStarForce"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Target StarForce: {field.value}★</FormLabel>
-                  <FormControl>
-                    <Slider
-                      min={0}
-                      max={23}
-                      step={1}
-                      value={[field.value]}
-                      onValueChange={(value) => field.onChange(value[0])}
-                      className="w-full"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const maxStars = getMaxStarForce(watchLevel);
+                return (
+                  <FormItem>
+                    <FormLabel>Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
+                    <FormControl>
+                      <Slider
+                        min={0}
+                        max={maxStars}
+                        step={1}
+                        value={[field.value]}
+                        onValueChange={(value) => field.onChange(value[0])}
+                        className="w-full"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
               </>
             )}
