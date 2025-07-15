@@ -47,6 +47,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
+import { EquipmentSelectItem } from './EquipmentSelectItem';
 
 const equipmentSchema = z.object({
   slot: z.string().min(1, 'Equipment slot is required'),
@@ -391,22 +392,11 @@ export function EquipmentForm({
                     </FormControl>
                     <SelectContent>
                       {availableEquipment.map((equipment) => (
-                        <SelectItem key={equipment.name} value={equipment.name}>
-                          <div className="flex items-center gap-2">
-                            {equipment.imageUrl && (
-                              <img 
-                                src={equipment.imageUrl} 
-                                alt={equipment.name} 
-                                className="w-4 h-4 object-contain"
-                                onError={(e) => {
-                                  const target = e.target as HTMLImageElement;
-                                  target.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <span>{equipment.name} (Lv.{equipment.level})</span>
-                          </div>
-                        </SelectItem>
+                        <EquipmentSelectItem 
+                          key={equipment.name} 
+                          equipment={equipment} 
+                          value={equipment.name} 
+                        />
                       ))}
                     </SelectContent>
                   </Select>
