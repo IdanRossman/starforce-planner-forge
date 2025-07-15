@@ -46,7 +46,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
+import { EQUIPMENT_BY_SLOT, EQUIPMENT_SETS } from '@/data/equipmentSets';
 import { EquipmentSelectItem } from './EquipmentSelectItem';
 
 const equipmentSchema = z.object({
@@ -347,7 +347,7 @@ export function EquipmentForm({
                      form.setValue('tier', equipData.tier);
                      form.setValue('level', equipData.level);
                      form.setValue('imageUrl', equipData.imageUrl || '');
-                     form.setValue('set', equipData.set || '');
+                     form.setValue('set', equipData.setKey ? EQUIPMENT_SETS[equipData.setKey]?.name || '' : '');
                       // Auto-determine type based on slot
                       const slot = form.getValues('slot');
                       if (['weapon', 'secondary', 'emblem'].includes(slot)) {

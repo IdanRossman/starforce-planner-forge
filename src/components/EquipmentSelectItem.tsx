@@ -1,11 +1,12 @@
 import React from 'react';
 import { SelectItem } from '@/components/ui/select';
+import { EQUIPMENT_SETS } from '@/data/equipmentSets';
 
 interface EquipmentSelectItemProps {
   equipment: {
     name: string;
     level: number;
-    set?: string;
+    setKey?: string;
     imageUrl?: string;
   };
   value: string;
@@ -29,19 +30,16 @@ export const EquipmentSelectItem: React.FC<EquipmentSelectItemProps> = ({ equipm
             <span className="text-2xl">⚔️</span>
           )}
         </div>
-        <div className="flex flex-col">
-          <span className="font-medium">{equipment.name}</span>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Lv.{equipment.level}</span>
-            {equipment.set && (
-              <>
-                <span>•</span>
-                <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-medium">
-                  {equipment.set}
-                </span>
-              </>
-            )}
+        <div className="flex items-center justify-between flex-1 gap-3">
+          <div className="flex flex-col">
+            <span className="font-medium">{equipment.name}</span>
+            <span className="text-xs text-muted-foreground">Lv.{equipment.level}</span>
           </div>
+          {equipment.setKey && EQUIPMENT_SETS[equipment.setKey] && (
+            <span className={`px-1.5 py-0.5 rounded text-xs font-medium border whitespace-nowrap ${EQUIPMENT_SETS[equipment.setKey].color}`}>
+              {EQUIPMENT_SETS[equipment.setKey].name}
+            </span>
+          )}
         </div>
       </div>
     </SelectItem>
