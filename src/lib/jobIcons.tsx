@@ -22,8 +22,7 @@ export const CLASS_SUBCATEGORIES = {
   ANIMA: 'Anima',
   SHINE: 'Shine',
   TRANSCENDENT: 'Transcendent',
-  FRIENDS_WORLD: 'Friends World',
-  OTHER: 'Other'
+  FRIENDS_WORLD: 'Friends World'
 } as const;
 
 // Organized class data with subcategories
@@ -146,7 +145,7 @@ export const getClassSubcategory = (className: string): string => {
       return category.name;
     }
   }
-  return 'Other';
+  return CLASS_SUBCATEGORIES.OTHER;
 };
 
 // Get job icon component

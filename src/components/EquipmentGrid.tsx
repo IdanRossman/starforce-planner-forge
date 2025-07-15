@@ -1,5 +1,4 @@
 import { Equipment, EquipmentSlot } from "@/types";
-import { TIER_COLORS } from '@/data/equipmentSets';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -163,7 +162,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
         key={slot} 
         className={`relative transition-all duration-200 group ${position} ${
           equipment 
-            ? `bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md border-2 ${equipment.tier ? TIER_COLORS[equipment.tier] : 'border-border'}`
+            ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
             : isDisabled
               ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
               : "bg-muted/30 border-dashed border-muted"
@@ -172,10 +171,14 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
         <CardContent className="p-3 h-full flex flex-col justify-between">
           {equipment ? (
             <>
-              {/* Simplified display when image exists - just image + stars */}
-              {equipment.imageUrl?.trim() ? (
-                <div className="flex flex-col items-center justify-center h-full gap-2">
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-1">
+                  {equipment.tier && (
+                    <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
+                      {equipment.tier.charAt(0).toUpperCase()}
+                    </Badge>
+                  )}
+                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -193,84 +196,35 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                       <X className="w-2.5 h-2.5" />
                     </Button>
                   </div>
-                  
-                  <img 
-                    src={equipment.imageUrl} 
-                    alt={equipment.set || label} 
-                    className="w-8 h-8 object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.style.display = 'none';
-                    }}
-                  />
-                  
-                  {equipment.starforceable && (
-                    <div className="flex items-center gap-1 text-xs">
-                      <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                      <span className="text-yellow-400 font-medium">
-                        {equipment.currentStarForce}
-                      </span>
-                      {equipment.targetStarForce > equipment.currentStarForce && (
-                        <>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="text-primary font-medium">
-                            {equipment.targetStarForce}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-start justify-between gap-1">
-                    <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-0.5 h-auto w-auto"
-                        onClick={() => onEditEquipment(equipment)}
-                      >
-                        <Edit className="w-2.5 h-2.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                        onClick={() => onClearEquipment(equipment.slot)}
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </Button>
-                    </div>
+                
+                <div className="flex items-start gap-2">
+                  {getSlotIcon(slot)}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-foreground truncate">
+                      {equipment.set || `Lv.${equipment.level} Equipment`}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {label}
+                    </p>
                   </div>
-                  
-                  <div className="flex items-start gap-2">
-                    <div>{getSlotIcon(slot)}</div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-foreground truncate">
-                        {equipment.set || `Lv.${equipment.level} Equipment`}
-                      </p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {label}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {equipment.starforceable && (
-                    <div className="flex items-center gap-1 text-xs">
-                      <Star className="w-3 h-3 text-yellow-400" />
-                      <span className="text-yellow-400 font-medium">
-                        {equipment.currentStarForce}
+                </div>
+              </div>
+              
+              {/* StarForce display - only show if starforceable */}
+              {equipment.starforceable && (
+                <div className="flex items-center gap-1 text-xs">
+                  <Star className="w-3 h-3 text-yellow-400" />
+                  <span className="text-yellow-400 font-medium">
+                    {equipment.currentStarForce}
+                  </span>
+                  {equipment.targetStarForce > equipment.currentStarForce && (
+                    <>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="text-primary font-medium">
+                        {equipment.targetStarForce}
                       </span>
-                      {equipment.targetStarForce > equipment.currentStarForce && (
-                        <>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="text-primary font-medium">
-                            {equipment.targetStarForce}
-                          </span>
-                        </>
-                      )}
-                    </div>
+                    </>
                   )}
                 </div>
               )}
@@ -349,7 +303,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                       key={slot} 
                       className={`relative transition-all duration-200 group ${
                         equipment 
-                          ? `bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md border-2 ${equipment.tier ? TIER_COLORS[equipment.tier] : 'border-border'}`
+                          ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
                           : isDisabled
                             ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
                             : "bg-muted/30 border-dashed border-muted"
@@ -358,10 +312,14 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                       <CardContent className="p-3 h-full flex flex-col justify-between min-h-[100px]">
                         {equipment ? (
                           <>
-                            {/* Simplified display when image exists - just image + stars */}
-                            {equipment.imageUrl?.trim() ? (
-                              <div className="flex flex-col items-center justify-center h-full gap-2">
-                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
+                            <div className="space-y-2">
+                              <div className="flex items-start justify-between gap-1">
+                                {equipment.tier && (
+                                  <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
+                                    {equipment.tier.charAt(0).toUpperCase()}
+                                  </Badge>
+                                )}
+                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -379,84 +337,35 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                                     <X className="w-2.5 h-2.5" />
                                   </Button>
                                 </div>
-                                
-                                <img 
-                                  src={equipment.imageUrl} 
-                                  alt={equipment.set || label} 
-                                  className="w-8 h-8 object-contain"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
-                                
-                                {equipment.starforceable && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                                    <span className="text-yellow-400 font-medium">
-                                      {equipment.currentStarForce}
-                                    </span>
-                                    {equipment.targetStarForce > equipment.currentStarForce && (
-                                      <>
-                                        <span className="text-muted-foreground">→</span>
-                                        <span className="text-primary font-medium">
-                                          {equipment.targetStarForce}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                )}
                               </div>
-                            ) : (
-                              <div className="space-y-2">
-                                <div className="flex items-start justify-between gap-1">
-                                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="p-0.5 h-auto w-auto"
-                                      onClick={() => onEditEquipment(equipment)}
-                                    >
-                                      <Edit className="w-2.5 h-2.5" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                                      onClick={() => onClearEquipment(equipment.slot)}
-                                    >
-                                      <X className="w-2.5 h-2.5" />
-                                    </Button>
-                                  </div>
+                              
+                              <div className="flex items-start gap-2">
+                                {getSlotIcon(slot)}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium text-foreground truncate">
+                                    {equipment.set || `Lv.${equipment.level} Equipment`}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {label}
+                                  </p>
                                 </div>
-                                
-                                <div className="flex items-start gap-2">
-                                  <div>{getSlotIcon(slot)}</div>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-medium text-foreground truncate">
-                                      {equipment.set || `Lv.${equipment.level} Equipment`}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {label}
-                                    </p>
-                                  </div>
-                                </div>
-                                
-                                {equipment.starforceable && (
-                                  <div className="flex items-center gap-1 text-xs">
-                                    <Star className="w-3 h-3 text-yellow-400" />
-                                    <span className="text-yellow-400 font-medium">
-                                      {equipment.currentStarForce}
+                              </div>
+                            </div>
+                            
+                            {/* StarForce display - only show if starforceable */}
+                            {equipment.starforceable && (
+                              <div className="flex items-center gap-1 text-xs">
+                                <Star className="w-3 h-3 text-yellow-400" />
+                                <span className="text-yellow-400 font-medium">
+                                  {equipment.currentStarForce}
+                                </span>
+                                {equipment.targetStarForce > equipment.currentStarForce && (
+                                  <>
+                                    <span className="text-muted-foreground">→</span>
+                                    <span className="text-primary font-medium">
+                                      {equipment.targetStarForce}
                                     </span>
-                                    {equipment.targetStarForce > equipment.currentStarForce && (
-                                      <>
-                                        <span className="text-muted-foreground">→</span>
-                                        <span className="text-primary font-medium">
-                                          {equipment.targetStarForce}
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
+                                  </>
                                 )}
                               </div>
                             )}

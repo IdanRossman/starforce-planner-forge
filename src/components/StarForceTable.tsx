@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment, EquipmentWithCharacter } from "@/types";
-import { TIER_COLORS } from '@/data/equipmentSets';
 import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -438,36 +437,29 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                 {calculations.map((calc) => (
                 <TableRow key={calc.equipment.id}>
                   <TableCell>
-                    {calc.equipment.imageUrl ? (
-                      <div className="flex justify-center">
-                        <img 
-                          src={calc.equipment.imageUrl} 
-                          alt={calc.equipment.set || `${calc.equipment.slot} equipment`} 
-                          className="w-8 h-8 object-contain"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
+                    <div className="flex items-center gap-3">
+                      <div className="text-muted-foreground">
+                        {getSlotIcon(calc.equipment.slot)}
                       </div>
-                    ) : (
-                      <div className="flex items-center gap-3">
-                        <div className="text-muted-foreground">
-                          {getSlotIcon(calc.equipment.slot)}
+                      <div>
+                        <div className="font-medium">
+                          {calc.equipment.set 
+                            ? `${calc.equipment.set}` 
+                            : `Lv.${calc.equipment.level} Equipment`
+                          }
                         </div>
-                        <div>
-                          <div className="font-medium">
-                            {calc.equipment.set 
-                              ? `${calc.equipment.set}` 
-                              : `Lv.${calc.equipment.level} Equipment`
-                            }
-                          </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          {calc.equipment.tier && (
+                            <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
+                              {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
+                            </Badge>
+                          )}
                           <span className="text-xs text-muted-foreground capitalize">
                             {calc.equipment.slot}
                           </span>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </TableCell>
                   
                   {('characterName' in calc.equipment) && (
