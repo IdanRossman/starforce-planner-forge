@@ -344,9 +344,10 @@ export function EquipmentForm({
                     // Auto-update tier, level, and imageUrl based on equipment selection
                     const equipData = availableEquipment.find(eq => eq.name === value);
                     if (equipData) {
-                      form.setValue('tier', equipData.tier);
-                      form.setValue('level', equipData.level);
-                      form.setValue('imageUrl', equipData.imageUrl || '');
+                     form.setValue('tier', equipData.tier);
+                     form.setValue('level', equipData.level);
+                     form.setValue('imageUrl', equipData.imageUrl || '');
+                     form.setValue('set', equipData.set || '');
                       // Auto-determine type based on slot
                       const slot = form.getValues('slot');
                       if (['weapon', 'secondary', 'emblem'].includes(slot)) {

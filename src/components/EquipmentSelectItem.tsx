@@ -5,6 +5,7 @@ interface EquipmentSelectItemProps {
   equipment: {
     name: string;
     level: number;
+    set?: string;
     imageUrl?: string;
   };
   value: string;
@@ -30,7 +31,17 @@ export const EquipmentSelectItem: React.FC<EquipmentSelectItemProps> = ({ equipm
         </div>
         <div className="flex flex-col">
           <span className="font-medium">{equipment.name}</span>
-          <span className="text-xs text-muted-foreground">Lv.{equipment.level}</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Lv.{equipment.level}</span>
+            {equipment.set && (
+              <>
+                <span>•</span>
+                <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-xs font-medium">
+                  {equipment.set}
+                </span>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </SelectItem>

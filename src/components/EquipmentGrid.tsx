@@ -219,9 +219,16 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                     <p className="text-xs font-medium text-foreground truncate">
                       {equipment.set || `Lv.${equipment.level} Equipment`}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {label}
-                    </p>
+                    <div className="flex items-center gap-1">
+                      <p className="text-xs text-muted-foreground truncate">
+                        {label}
+                      </p>
+                      {equipment.set && (
+                        <span className="bg-primary/10 text-primary px-1 py-0.5 rounded text-xs font-medium whitespace-nowrap">
+                          {equipment.set}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -375,9 +382,16 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                                   <p className="text-xs font-medium text-foreground truncate">
                                     {equipment.set || `Lv.${equipment.level} Equipment`}
                                   </p>
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {label}
-                                  </p>
+                                  <div className="flex items-center gap-1">
+                                    <p className="text-xs text-muted-foreground truncate">
+                                      {label}
+                                    </p>
+                                    {equipment.set && (
+                                      <span className="bg-primary/10 text-primary px-1 py-0.5 rounded text-xs font-medium whitespace-nowrap">
+                                        {equipment.set}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
