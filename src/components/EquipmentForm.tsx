@@ -340,11 +340,12 @@ export function EquipmentForm({
                   <FormLabel>Equipment</FormLabel>
                   <Select onValueChange={(value) => {
                     field.onChange(value);
-                    // Auto-update tier and level based on equipment selection
+                    // Auto-update tier, level, and imageUrl based on equipment selection
                     const equipData = availableEquipment.find(eq => eq.name === value);
                     if (equipData) {
                       form.setValue('tier', equipData.tier);
                       form.setValue('level', equipData.level);
+                      form.setValue('imageUrl', equipData.imageUrl || '');
                       // Auto-determine type based on slot
                       const slot = form.getValues('slot');
                       if (['weapon', 'secondary', 'emblem'].includes(slot)) {
@@ -368,13 +369,43 @@ export function EquipmentForm({
                   }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder="Select equipment">
+                          {field.value && availableEquipment.find(eq => eq.name === field.value) && (
+                            <div className="flex items-center gap-2">
+                              {availableEquipment.find(eq => eq.name === field.value)?.imageUrl && (
+                                <img 
+                                  src={availableEquipment.find(eq => eq.name === field.value)?.imageUrl} 
+                                  alt={field.value} 
+                                  className="w-4 h-4 object-contain"
+                                  onError={(e) => {
+                                    const target = e.target as HTMLImageElement;
+                                    target.style.display = 'none';
+                                  }}
+                                />
+                              )}
+                              <span>{field.value}</span>
+                            </div>
+                          )}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {availableEquipment.map((equipment) => (
                         <SelectItem key={equipment.name} value={equipment.name}>
-                          {equipment.name} (Lv.{equipment.level})
+                          <div className="flex items-center gap-2">
+                            {equipment.imageUrl && (
+                              <img 
+                                src={equipment.imageUrl} 
+                                alt={equipment.name} 
+                                className="w-4 h-4 object-contain"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <span>{equipment.name} (Lv.{equipment.level})</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -465,27 +496,6 @@ export function EquipmentForm({
                 )}
               />
             </div>
-
-            {/* Equipment Image URL */}
-            <FormField
-              control={form.control}
-              name="imageUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Equipment Image URL (Optional)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="https://example.com/equipment-image.png" 
-                      {...field}
-                    />
-                  </FormControl>
-                  <div className="text-sm text-muted-foreground">
-                    Add an image URL to display the equipment icon in slots and tables
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* StarForce Toggle */}
             <FormField
