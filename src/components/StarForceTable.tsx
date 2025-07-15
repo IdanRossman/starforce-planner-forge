@@ -349,7 +349,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
             )}
             <Button onClick={calculateAll} className="flex items-center gap-2 h-8 px-3" size="sm">
               <Calculator className="w-3 h-3" />
-              <span className="text-xs">{hasCalculations ? 'Recalculate' : 'Calculate'}</span>
+              <span className="text-xs">{'Calculate'}</span>
             </Button>
           </div>
         </div>
