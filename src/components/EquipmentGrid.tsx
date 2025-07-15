@@ -173,7 +173,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           {equipment ? (
             <>
               {/* Simplified display when image exists - just image + stars */}
-              {equipment.imageUrl ? (
+              {equipment.imageUrl?.trim() ? (
                 <div className="flex flex-col items-center justify-center h-full gap-2">
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
                     <Button
@@ -359,7 +359,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                         {equipment ? (
                           <>
                             {/* Simplified display when image exists - just image + stars */}
-                            {equipment.imageUrl ? (
+                            {equipment.imageUrl?.trim() ? (
                               <div className="flex flex-col items-center justify-center h-full gap-2">
                                 <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity absolute top-1 right-1">
                                   <Button
