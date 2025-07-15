@@ -436,13 +436,10 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               </TableHeader>
               <TableBody>
                 {calculations.map((calc) => (
-                <TableRow 
-                  key={calc.equipment.id} 
-                  className={`${calc.equipment.tier ? TIER_COLORS[calc.equipment.tier] : ''} border-l-4`}
-                >
+                <TableRow key={calc.equipment.id}>
                   <TableCell>
                     {calc.equipment.imageUrl ? (
-                      <div className="flex items-center gap-3">
+                      <div className="flex justify-center">
                         <img 
                           src={calc.equipment.imageUrl} 
                           alt={calc.equipment.set || `${calc.equipment.slot} equipment`} 
@@ -452,16 +449,6 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                             target.style.display = 'none';
                           }}
                         />
-                        <div className="flex items-center gap-2">
-                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-yellow-400 font-medium">
-                            {calc.equipment.currentStarForce}
-                          </span>
-                          <span className="text-muted-foreground">→</span>
-                          <span className="text-primary font-medium">
-                            {calc.equipment.targetStarForce}
-                          </span>
-                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
