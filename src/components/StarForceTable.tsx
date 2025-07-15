@@ -439,7 +439,22 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="text-muted-foreground">
-                        {getSlotIcon(calc.equipment.slot)}
+                        {calc.equipment.imageUrl ? (
+                          <img 
+                            src={calc.equipment.imageUrl} 
+                            alt={calc.equipment.set || `${calc.equipment.slot} equipment`} 
+                            className="w-4 h-4 object-contain"
+                            onError={(e) => {
+                              // Fallback to icon if image fails to load
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              target.nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={calc.equipment.imageUrl ? "hidden" : ""}>
+                          {getSlotIcon(calc.equipment.slot)}
+                        </div>
                       </div>
                       <div>
                         <div className="font-medium">

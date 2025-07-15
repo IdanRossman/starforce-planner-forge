@@ -57,6 +57,7 @@ const equipmentSchema = z.object({
   currentStarForce: z.number().min(0).max(23),
   targetStarForce: z.number().min(0).max(23),
   starforceable: z.boolean(),
+  imageUrl: z.string().optional(),
 }).refine((data) => {
   // Only validate StarForce levels if the item is starforceable
   if (!data.starforceable) return true;
@@ -176,6 +177,7 @@ export function EquipmentForm({
       currentStarForce: 0,
       targetStarForce: 22,
       starforceable: true,
+      imageUrl: '',
     },
   });
 
@@ -210,6 +212,7 @@ export function EquipmentForm({
           currentStarForce: equipment.currentStarForce,
           targetStarForce: equipment.targetStarForce,
           starforceable: equipment.starforceable,
+          imageUrl: equipment.imageUrl || '',
         });
       } else {
         form.reset({
@@ -221,6 +224,7 @@ export function EquipmentForm({
           currentStarForce: 0,
           targetStarForce: 22,
           starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
+          imageUrl: '',
         });
       }
     }
@@ -251,6 +255,7 @@ export function EquipmentForm({
         currentStarForce: data.starforceable ? data.currentStarForce : 0,
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
         starforceable: data.starforceable,
+        imageUrl: data.imageUrl,
       });
     }
     onOpenChange(false);
@@ -460,6 +465,27 @@ export function EquipmentForm({
                 )}
               />
             </div>
+
+            {/* Equipment Image URL */}
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Equipment Image URL (Optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="https://example.com/equipment-image.png" 
+                      {...field}
+                    />
+                  </FormControl>
+                  <div className="text-sm text-muted-foreground">
+                    Add an image URL to display the equipment icon in slots and tables
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* StarForce Toggle */}
             <FormField

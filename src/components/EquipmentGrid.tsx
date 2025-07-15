@@ -199,7 +199,22 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                 </div>
                 
                 <div className="flex items-start gap-2">
-                  {getSlotIcon(slot)}
+                  {equipment.imageUrl ? (
+                    <img 
+                      src={equipment.imageUrl} 
+                      alt={equipment.set || label} 
+                      className="w-4 h-4 object-contain"
+                      onError={(e) => {
+                        // Fallback to icon if image fails to load
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={equipment.imageUrl ? "hidden" : ""}>
+                    {getSlotIcon(slot)}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-foreground truncate">
                       {equipment.set || `Lv.${equipment.level} Equipment`}
@@ -340,7 +355,22 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                               </div>
                               
                               <div className="flex items-start gap-2">
-                                {getSlotIcon(slot)}
+                                {equipment.imageUrl ? (
+                                  <img 
+                                    src={equipment.imageUrl} 
+                                    alt={equipment.set || label} 
+                                    className="w-4 h-4 object-contain"
+                                    onError={(e) => {
+                                      // Fallback to icon if image fails to load
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={equipment.imageUrl ? "hidden" : ""}>
+                                  {getSlotIcon(slot)}
+                                </div>
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-medium text-foreground truncate">
                                     {equipment.set || `Lv.${equipment.level} Equipment`}

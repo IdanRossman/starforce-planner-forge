@@ -22,7 +22,8 @@ export const CLASS_SUBCATEGORIES = {
   ANIMA: 'Anima',
   SHINE: 'Shine',
   TRANSCENDENT: 'Transcendent',
-  FRIENDS_WORLD: 'Friends World'
+  FRIENDS_WORLD: 'Friends World',
+  OTHER: 'Other'
 } as const;
 
 // Organized class data with subcategories
