@@ -10,7 +10,7 @@ export const EQUIPMENT_BY_SLOT = {
     { name: 'Eternal', level: 250, tier: null, set: 'Eternal', imageUrl: 'https://maplestory.io/api/GMS/238/item/1372310/icon' },
   ],
   secondary: [
-    { name: 'Generic', level: 100, tier: null, set: 'Generic', imageUrl: 'https://maplestory.io/api/GMS/238/item/1092030/icon' },
+    { name: 'Generic', level: 100, tier: null, imageUrl: 'https://maplestory.io/api/GMS/238/item/1092030/icon' },
     { name: 'Deimos Sage Shield', level: 130, tier: null, set: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098000/icon' },
     { name: 'Deimos Shadow Shield', level: 130, tier: null, set: 'Deimos', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098001/icon' },
     { name: 'Princess No', level: 140, tier: null, set: 'Princess No', imageUrl: 'https://maplestory.io/api/GMS/238/item/1098027/icon' },
