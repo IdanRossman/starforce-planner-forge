@@ -33,6 +33,14 @@ export const EQUIPMENT_SETS = {
   'Android': { name: 'Android', color: 'bg-neutral-500/20 text-neutral-700 border-neutral-200' },
 } as const;
 
+// Potential Tier Colors for borders
+export const TIER_COLORS = {
+  rare: 'border-blue-400',
+  epic: 'border-purple-400', 
+  unique: 'border-yellow-400',
+  legendary: 'border-green-400',
+} as const;
+
 export const EQUIPMENT_BY_SLOT = {
   // Weapons
   weapon: [

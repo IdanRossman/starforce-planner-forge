@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment, EquipmentWithCharacter } from "@/types";
+import { TIER_COLORS } from '@/data/equipmentSets';
 import { calculateStarForce } from "@/components/StarForceCalculator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -435,46 +436,51 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
               </TableHeader>
               <TableBody>
                 {calculations.map((calc) => (
-                <TableRow key={calc.equipment.id}>
+                <TableRow 
+                  key={calc.equipment.id} 
+                  className={`${calc.equipment.tier ? TIER_COLORS[calc.equipment.tier] : ''} border-l-4`}
+                >
                   <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="text-muted-foreground">
-                        {calc.equipment.imageUrl ? (
-                          <img 
-                            src={calc.equipment.imageUrl} 
-                            alt={calc.equipment.set || `${calc.equipment.slot} equipment`} 
-                            className="w-4 h-4 object-contain"
-                            onError={(e) => {
-                              // Fallback to icon if image fails to load
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = 'none';
-                              target.nextElementSibling?.classList.remove('hidden');
-                            }}
-                          />
-                        ) : null}
-                        <div className={calc.equipment.imageUrl ? "hidden" : ""}>
-                          {getSlotIcon(calc.equipment.slot)}
+                    {calc.equipment.imageUrl ? (
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={calc.equipment.imageUrl} 
+                          alt={calc.equipment.set || `${calc.equipment.slot} equipment`} 
+                          className="w-8 h-8 object-contain"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                        <div className="flex items-center gap-2">
+                          <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                          <span className="text-yellow-400 font-medium">
+                            {calc.equipment.currentStarForce}
+                          </span>
+                          <span className="text-muted-foreground">→</span>
+                          <span className="text-primary font-medium">
+                            {calc.equipment.targetStarForce}
+                          </span>
                         </div>
                       </div>
-                      <div>
-                        <div className="font-medium">
-                          {calc.equipment.set 
-                            ? `${calc.equipment.set}` 
-                            : `Lv.${calc.equipment.level} Equipment`
-                          }
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <div className="text-muted-foreground">
+                          {getSlotIcon(calc.equipment.slot)}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {calc.equipment.tier && (
-                            <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
-                              {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
-                            </Badge>
-                          )}
+                        <div>
+                          <div className="font-medium">
+                            {calc.equipment.set 
+                              ? `${calc.equipment.set}` 
+                              : `Lv.${calc.equipment.level} Equipment`
+                            }
+                          </div>
                           <span className="text-xs text-muted-foreground capitalize">
                             {calc.equipment.slot}
                           </span>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </TableCell>
                   
                   {('characterName' in calc.equipment) && (
