@@ -7,7 +7,6 @@ import { EquipmentImage } from "@/components/EquipmentImage";
 import { useState, useEffect } from "react";
 import { 
   Plus, 
-  Edit, 
   Star,
   Calculator,
   Sword,
@@ -256,8 +255,15 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
             ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
             : isDisabled
               ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
-              : "bg-muted/30 border-dashed border-muted"
+              : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
         }`}
+        onClick={() => {
+          if (equipment) {
+            onEditEquipment(equipment);
+          } else if (!isDisabled) {
+            onAddEquipment(slot);
+          }
+        }}
       >
         <CardContent className="p-3 h-full flex flex-col justify-between">
           {equipment ? (
@@ -273,16 +279,11 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="p-0.5 h-auto w-auto"
-                      onClick={() => onEditEquipment(equipment)}
-                    >
-                      <Edit className="w-2.5 h-2.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
                       className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                      onClick={() => onClearEquipment(equipment.slot)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onClearEquipment(equipment.slot);
+                      }}
                     >
                       <X className="w-2.5 h-2.5" />
                     </Button>
@@ -297,19 +298,14 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
               </div>
             </>
           ) : (
-            <Button
-              variant="ghost"
-              className={`h-full w-full border-0 bg-transparent flex flex-col gap-2 ${
-                isDisabled 
-                  ? "text-muted-foreground/50 cursor-not-allowed" 
-                  : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-              }`}
-              onClick={() => !isDisabled && onAddEquipment(slot)}
-              disabled={isDisabled}
-            >
+            <div className={`h-full w-full flex flex-col gap-2 items-center justify-center ${
+              isDisabled 
+                ? "text-muted-foreground/50" 
+                : "text-muted-foreground"
+            }`}>
               <Plus className="w-4 h-4" />
               <span className="text-xs">{label}</span>
-            </Button>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -373,8 +369,15 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                           ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
                           : isDisabled
                             ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
-                            : "bg-muted/30 border-dashed border-muted"
+                            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
                       }`}
+                      onClick={() => {
+                        if (equipment) {
+                          onEditEquipment(equipment);
+                        } else if (!isDisabled) {
+                          onAddEquipment(slot);
+                        }
+                      }}
                     >
                       <CardContent className="p-3 h-full flex flex-col justify-between min-h-[100px]">
                         {equipment ? (
@@ -390,16 +393,11 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    className="p-0.5 h-auto w-auto"
-                                    onClick={() => onEditEquipment(equipment)}
-                                  >
-                                    <Edit className="w-2.5 h-2.5" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
                                     className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                                    onClick={() => onClearEquipment(equipment.slot)}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onClearEquipment(equipment.slot);
+                                    }}
                                   >
                                     <X className="w-2.5 h-2.5" />
                                   </Button>
@@ -438,19 +436,14 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                             )}
                           </>
                         ) : (
-                          <Button
-                            variant="ghost"
-                            className={`h-full w-full border-0 bg-transparent flex flex-col gap-2 ${
-                              isDisabled 
-                                ? "text-muted-foreground/50 cursor-not-allowed" 
-                                : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                            }`}
-                            onClick={() => !isDisabled && onAddEquipment(slot)}
-                            disabled={isDisabled}
-                          >
+                          <div className={`h-full w-full flex flex-col gap-2 items-center justify-center ${
+                            isDisabled 
+                              ? "text-muted-foreground/50" 
+                              : "text-muted-foreground"
+                          }`}>
                             <Plus className="w-4 h-4" />
                             <span className="text-xs">{label}</span>
-                          </Button>
+                          </div>
                         )}
                       </CardContent>
                     </Card>
