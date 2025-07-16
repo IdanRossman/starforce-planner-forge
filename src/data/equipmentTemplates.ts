@@ -1,5 +1,6 @@
 import { Equipment, EquipmentSlot } from "@/types";
 import { getMaxStarForce } from "@/lib/utils";
+import { findEquipmentByName, EquipmentData } from "./equipmentDatabase";
 
 export interface EquipmentTemplate {
   id: string;
@@ -9,205 +10,448 @@ export interface EquipmentTemplate {
   equipment: Equipment[];
 }
 
-// Helper function to create equipment with proper IDs and star limits
+// Simplified helper function - just provide slot and name, everything else comes from database
+const createFromDB = (
+  slot: EquipmentSlot,
+  equipmentName: string,
+  tier: "rare" | "epic" | "unique" | "legendary" = "epic",
+  currentStars: number = 0,
+  targetStars?: number
+): Equipment => {
+  const equipmentData = findEquipmentByName(slot, equipmentName);
+
+  if (!equipmentData) {
+    throw new Error(
+      `Equipment "${equipmentName}" not found for slot "${slot}"`
+    );
+  }
+
+  const maxStars = getMaxStarForce(equipmentData.level);
+  const finalTargetStars =
+    targetStars !== undefined ? Math.min(maxStars, targetStars) : currentStars;
+
+  return {
+    id: `template-${slot}-${Date.now()}-${Math.random()}`,
+    slot,
+    type: ["weapon", "secondary"].includes(slot)
+      ? "weapon"
+      : [
+          "hat",
+          "top",
+          "bottom",
+          "overall",
+          "shoes",
+          "gloves",
+          "cape",
+          "belt",
+          "shoulder",
+        ].includes(slot)
+      ? "armor"
+      : "accessory",
+    level: equipmentData.level,
+    set: equipmentData.name,
+    tier,
+    currentStarForce: currentStars,
+    targetStarForce: finalTargetStars,
+    starforceable: ![
+      "pocket",
+      "emblem",
+      "badge",
+      "medal",
+      "secondary",
+    ].includes(slot),
+    image: equipmentData.image,
+  };
+};
+
+// Helper function to create equipment from database with proper IDs and star limits
+const createEquipmentFromDatabase = (
+  slot: EquipmentSlot,
+  equipmentName: string,
+  tier: "rare" | "epic" | "unique" | "legendary",
+  currentStars: number = 0,
+  targetStars?: number
+): Equipment => {
+  const equipmentData = findEquipmentByName(slot, equipmentName);
+
+  if (!equipmentData) {
+    throw new Error(
+      `Equipment "${equipmentName}" not found for slot "${slot}"`
+    );
+  }
+
+  const maxStars = getMaxStarForce(equipmentData.level);
+  const finalTargetStars =
+    targetStars !== undefined ? Math.min(maxStars, targetStars) : currentStars;
+
+  return {
+    id: `template-${slot}-${Date.now()}-${Math.random()}`,
+    slot,
+    type: ["weapon", "secondary"].includes(slot)
+      ? "weapon"
+      : [
+          "hat",
+          "top",
+          "bottom",
+          "overall",
+          "shoes",
+          "gloves",
+          "cape",
+          "belt",
+          "shoulder",
+        ].includes(slot)
+      ? "armor"
+      : "accessory",
+    level: equipmentData.level,
+    set: equipmentData.name,
+    tier,
+    currentStarForce: currentStars,
+    targetStarForce: finalTargetStars,
+    starforceable: ![
+      "pocket",
+      "emblem",
+      "badge",
+      "medal",
+      "secondary",
+    ].includes(slot),
+    image: equipmentData.image,
+  };
+};
+
+// Legacy helper function for backward compatibility (now uses database)
 const createEquipment = (
   slot: EquipmentSlot,
   level: number,
   set: string,
-  tier: 'rare' | 'epic' | 'unique' | 'legendary',
+  tier: "rare" | "epic" | "unique" | "legendary",
   currentStars: number = 0,
   targetStars?: number,
   image?: string
 ): Equipment => {
   const maxStars = getMaxStarForce(level);
-  const finalTargetStars = targetStars !== undefined 
-    ? Math.min(maxStars, targetStars) 
-    : Math.min(maxStars, Math.max(currentStars, Math.floor(maxStars * 0.8))); // Default to 80% of max
-  
+  const finalTargetStars =
+    targetStars !== undefined ? Math.min(maxStars, targetStars) : currentStars;
+
   return {
     id: `template-${slot}-${Date.now()}-${Math.random()}`,
     slot,
-    type: ['weapon', 'secondary'].includes(slot) ? 'weapon' : 
-          ['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot) ? 'armor' : 'accessory',
+    type: ["weapon", "secondary"].includes(slot)
+      ? "weapon"
+      : [
+          "hat",
+          "top",
+          "bottom",
+          "overall",
+          "shoes",
+          "gloves",
+          "cape",
+          "belt",
+          "shoulder",
+        ].includes(slot)
+      ? "armor"
+      : "accessory",
     level,
     set,
     tier,
     currentStarForce: currentStars,
     targetStarForce: finalTargetStars,
-    starforceable: !['pocket', 'emblem', 'badge'].includes(slot),
-    image
+    starforceable: !["pocket", "emblem", "badge", "medal"].includes(slot),
+    image,
   };
 };
 
 export const EQUIPMENT_TEMPLATES: EquipmentTemplate[] = [
   {
-    id: 'early-game',
-    name: 'Newbie',
-    description: 'Root Abyss, basic boss accessories and penslair filler',
+    id: "custom-empty",
+    name: "Custom/Empty Set",
+    description: "Start with an empty template and add your own equipment",
     level: 200,
+    equipment: [],
+  },
+  {
+    id: "early-game",
+    name: "Newbie",
+    description: "Root Abyss, basic boss accessories and penslair filler",
+    level: 210,
     equipment: [
       // CRA Set
-      createEquipment('hat', 150, 'Fafnir', 'epic', 10, 17, 'https://maplestory.io/api/GMS/255/item/1003799/icon'),
-      createEquipment('top', 150, 'Fafnir', 'epic', 10, 17, 'https://maplestory.io/api/GMS/255/item/1042256/icon'),
-      createEquipment('bottom', 150, 'Fafnir', 'epic', 10, 17, 'https://maplestory.io/api/GMS/255/item/1062255/icon'),
-      createEquipment('weapon', 150, 'Fafnir', 'unique', 10, 17, 'https://maplestory.io/api/GMS/255/item/1522094/icon'),
-      
+      createFromDB("hat", "Fafnir", "epic", 10, 17),
+      createFromDB("top", "Fafnir", "epic", 10, 17),
+      createFromDB("bottom", "Fafnir", "epic", 10, 17),
+      createFromDB("weapon", "Fafnir", "epic", 10, 17),
+
       // Pensalir
-      createEquipment('gloves', 140, 'Pensalir', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1082610/icon'),
-      createEquipment('shoes', 140, 'Pensalir', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1072969/icon'),
-      createEquipment('cape', 140, 'Pensalir', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1102720/icon'),
-      createEquipment('belt', 140, 'Pink Bean', 'epic', 10, 17, 'https://maplestory.io/api/GMS/255/item/1132272/icon'),
-      createEquipment('shoulder', 120, 'Royal Black Metal Shoulder', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1152170/icon'),
-      
+      createFromDB("gloves", "Pensalir", "epic", 10, undefined),
+      createFromDB("shoes", "Pensalir", "epic", 10, undefined),
+      createFromDB("cape", "Pensalir", "epic", 10, undefined),
+      createFromDB("belt", "Pink Bean", "epic", 10, 17),
+      createFromDB(
+        "shoulder",
+        "Royal Black Metal Shoulder",
+        "epic",
+        10,
+        undefined
+      ),
+
       // Accessories
-      createEquipment('face', 50, 'Condensed Power Crystal', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1012478/icon'),
-      createEquipment('eye', 100, 'Aquatic Letter Eye Accessory', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1022231/icon'),
-      createEquipment('earring', 130, 'Dea Sidus Earring', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1032241/icon'),
-      
+      createFromDB("face", "Condensed Power Crystal", "epic", 0, undefined),
+      createFromDB(
+        "eye",
+        "Aquatic Letter Eye Accessory",
+        "epic",
+        10,
+        undefined
+      ),
+      createFromDB("earring", "Dea Sidus Earring", "epic", 10, undefined),
+
       // Jewelry
-      createEquipment('ring1', 120, 'Noble Ifia Ring', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1113282/icon'),
-      createEquipment('ring2', 110, 'Silver Blossom Ring', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1113149/icon'),
-      createEquipment('ring3', 125, 'Treasure Hunter John Ring', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1113236/icon'),
-      createEquipment('pendant1', 120, 'Mechanator Pendant', 'epic', 10, undefined, 'https://maplestory.io/api/GMS/255/item/1122254/icon'),
-      createEquipment('pendant2', 120, 'Fake Dominator Pendant', 'epic', 15, undefined, 'https://maplestory.io/api/GMS/255/item/1122372/icon'),
-      
+      createFromDB("ring1", "Noble Ifia Ring", "epic", 10, undefined),
+      createFromDB("ring2", "Silver Blossom Ring", "epic", 10, undefined),
+      createFromDB("ring3", "Treasure Hunter John Ring", "epic", 10, undefined),
+      createFromDB("pendant1", "Mechanator Pendant", "epic", 10, undefined),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 10, 17),
+
       // Special
-      createEquipment('secondary', 100, 'Generic Secondary', 'legendary', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1352003/icon'),
-      createEquipment('emblem', 100, 'Luminous Emblem', 'legendary', 0),
-      createEquipment('badge', 30, 'Genesis Badge', 'legendary', 0),
-      createEquipment('heart', 100, 'Magnificent Magnus Heart', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1672047/icon'),
-    ]
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Gold Maple Leaf Emblem", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Lidium Heart", "epic", 0, undefined),
+      createFromDB("pocket", "Stone of Eternal Life", "epic", 0, undefined),
+    ],
   },
-  
+
   {
-    id: 'midgame-160',
-    name: 'Level 160 Mid-Game Set',
-    description: 'Pensalir + Boss accessories progression',
-    level: 160,
+    id: "early-mid-game-absolab",
+    name: "Early Game",
+    description: "Root Abyss, Absolab and more advanced boss accessories",
+    level: 220,
     equipment: [
-      // Pensalir Set
-      createEquipment('hat', 140, 'Pensalir Miser Hood', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1003169/icon'),
-      createEquipment('top', 140, 'Pensalir Battle Mail', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1042025/icon'),
-      createEquipment('bottom', 140, 'Pensalir Battle Pants', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1062007/icon'),
-      createEquipment('gloves', 140, 'Pensalir Miser Gloves', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1082268/icon'),
-      createEquipment('shoes', 140, 'Pensalir Miser Boots', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1072393/icon'),
-      createEquipment('weapon', 140, 'Pensalir Bow', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1452102/icon'),
-      
-      // Boss Accessories
-      createEquipment('cape', 120, 'Pink Bean Holy Cup', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1102226/icon'),
-      createEquipment('belt', 120, 'Pink Bean Holy Cup', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1132112/icon'),
-      createEquipment('shoulder', 140, 'Royal Black Metal Shoulder', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1152087/icon'),
-      
-      // Basic Accessories
-      createEquipment('face', 100, 'Zakum Face Accessory', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1012058/icon'),
-      createEquipment('eye', 100, 'Zakum Eye Accessory', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1022082/icon'),
-      createEquipment('earring', 100, 'Zakum Earring', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1032061/icon'),
-      
+      createFromDB("hat", "Fafnir", "epic", 17, 19),
+      createFromDB("top", "Fafnir", "epic", 17, 19),
+      createFromDB("bottom", "Fafnir", "epic", 17, 19),
+      createFromDB("weapon", "Absolab", "epic", 10, 17),
+
+      createFromDB("gloves", "Absolab", "epic", 10, 17),
+      createFromDB("shoes", "Absolab", "epic", 10, 17),
+      createFromDB("cape", "Absolab", "epic", 10, 17),
+      createFromDB("belt", "Reinforced Gollux", "epic", 10, 17),
+      createFromDB("shoulder", "Absolab", "epic", 10, 17),
+
+      createFromDB("face", "Condensed Power Crystal", "epic", 5, undefined),
+      createFromDB("eye", "Black Bean Mark", "epic", 17, 20),
+      createFromDB("earring", "Reinforced Gollux", "epic", 10, 17),
+
       // Jewelry
-      createEquipment('ring1', 120, 'Cracked Gollux Ring', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112807/icon'),
-      createEquipment('ring2', 50, 'Horntail Ring', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112985/icon'),
-      createEquipment('ring3', 30, 'Zakum Ring', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112413/icon'),
-      createEquipment('ring4', 35, 'Magnus Ring', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1113074/icon'),
-      createEquipment('pendant1', 120, 'Cracked Gollux Pendant', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1122019/icon'),
-      createEquipment('pendant2', 50, 'Horntail Pendant', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1122000/icon'),
-      
+      createFromDB("ring1", "Meister Ring", "epic", 10, 17),
+      createFromDB("ring2", "Kanna's Treasure", "epic", 10, 17),
+      createFromDB("ring3", "Treasure Hunter John Ring", "epic", 12, undefined),
+      createFromDB("ring4", "Silver Blossom Ring", "epic", 10, undefined),
+      createFromDB("pendant1", "Mechanator Pendant", "epic", 15, undefined),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 10, 17),
+
       // Special
-      createEquipment('secondary', 100, 'Deimos Warrior Shield', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1352003/icon'),
-      createEquipment('emblem', 100, 'Adventurer Emblem', 'epic', 0),
-      createEquipment('badge', 30, 'Crystal Ventus Badge', 'rare', 0),
-      createEquipment('heart', 100, 'Titanium Heart', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1672000/icon'),
-    ]
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Gold Maple Leaf Emblem", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Lidium Heart", "epic", 0, undefined),
+      createFromDB("pocket", "Pink Holy Cup", "epic", 0, undefined),
+    ],
   },
-  
+
   {
-    id: 'training-140',
-    name: 'Level 140 Training Set',
-    description: 'Necro/Empress equipment for training',
-    level: 140,
+    id: "early-mid-game",
+    name: "Early-Mid Game",
+    description: "Root Abyss, Arcane Umbra and Gollux accessories",
+    level: 220,
     equipment: [
-      // Necro/Empress Set
-      createEquipment('hat', 140, 'Empress Warrior Helm', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1003172/icon'),
-      createEquipment('overall', 140, 'Empress Warrior Suit', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1051098/icon'),
-      createEquipment('gloves', 140, 'Empress Warrior Glove', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1082271/icon'),
-      createEquipment('shoes', 140, 'Empress Warrior Boots', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1072396/icon'),
-      createEquipment('weapon', 140, 'Empress Bow', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1452101/icon'),
-      
-      // Basic Accessories
-      createEquipment('cape', 100, 'Maple Cape', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1102041/icon'),
-      createEquipment('belt', 100, 'Gold Maple Belt', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1132000/icon'),
-      createEquipment('shoulder', 100, 'Royal Shoulder', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1152000/icon'),
-      
-      // Accessories
-      createEquipment('face', 90, 'Maple Leaf', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1012057/icon'),
-      createEquipment('eye', 90, 'Maple Eye Accessory', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1022081/icon'),
-      createEquipment('earring', 90, 'Maple Earrings', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1032060/icon'),
-      
-      // Basic Jewelry
-      createEquipment('ring1', 30, 'Basic Ring', 'rare', 0),
-      createEquipment('ring2', 30, 'Basic Ring', 'rare', 0),
-      createEquipment('ring3', 30, 'Basic Ring', 'rare', 0),
-      createEquipment('ring4', 30, 'Basic Ring', 'rare', 0),
-      createEquipment('pendant1', 30, 'Basic Pendant', 'rare', 0),
-      createEquipment('pendant2', 30, 'Basic Pendant', 'rare', 0),
-      
+      createFromDB("hat", "Fafnir", "epic", 19, 21),
+      createFromDB("top", "Fafnir", "epic", 19, 21),
+      createFromDB("bottom", "Fafnir", "epic", 19, 21),
+      createFromDB("weapon", "Arcane Umbra", "epic", 10, 17),
+
+      createFromDB("gloves", "Arcane Umbra", "epic", 10, 17),
+      createFromDB("shoes", "Arcane Umbra", "epic", 10, 17),
+      createFromDB("cape", "Arcane Umbra", "epic", 10, 17),
+      createFromDB("belt", "Reinforced Gollux", "epic", 17, 21),
+      createFromDB("shoulder", "Arcane Umbra", "epic", 10, 17),
+
+      createFromDB("face", "Sweetwater Tattoo", "epic", 10, 18),
+      createFromDB("eye", "Sweetwater Monocle", "epic", 10, 18),
+      createFromDB("earring", "Reinforced Gollux", "epic", 17, 21),
+
+      // Jewelry
+      createFromDB("ring1", "Meister Ring", "epic", 17, 19),
+      createFromDB("ring2", "Kanna's Treasure", "epic", 17, 19),
+      createFromDB("ring3", "Guardian Angel Ring", "epic", 10, 17),
+      createFromDB("ring4", "Oz Ring", "epic", 0, undefined),
+      createFromDB("pendant1", "Sweetwater Pendant", "epic", 10, 18),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 17, 19),
+
       // Special
-      createEquipment('secondary', 100, 'Basic Shield', 'rare', 0),
-      createEquipment('emblem', 100, 'Basic Emblem', 'rare', 0),
-      createEquipment('badge', 30, 'Basic Badge', 'rare', 0),
-    ]
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Gold Maple Leaf Emblem", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Lidium Heart", "epic", 0, undefined),
+      createFromDB("pocket", "Pink Holy Cup", "epic", 0, undefined),
+    ],
   },
-  
+
   {
-    id: 'reboot-progression',
-    name: 'Reboot Progression Set',
-    description: 'Typical Reboot server progression path',
-    level: 180,
+    id: "mid-game-abso",
+    name: "Mid Game (Absolab)",
+    description: "Root Abyss, Absolab, full gollux set",
+    level: 220,
     equipment: [
-      // Mixed progression set
-      createEquipment('hat', 150, 'Royal Warrior Helm (3L)', 'legendary', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1003797/icon'),
-      createEquipment('top', 150, 'Royal Warrior Mail (3L)', 'legendary', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1042180/icon'),
-      createEquipment('bottom', 150, 'Royal Warrior Pants (3L)', 'legendary', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1062154/icon'),
-      createEquipment('weapon', 150, 'Fafnir Weapon (3L)', 'legendary', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1212061/icon'),
-      
-      // Von Leon/Pensalir mix
-      createEquipment('gloves', 130, 'Von Leon Warrior Gloves', 'unique', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1082241/icon'),
-      createEquipment('shoes', 130, 'Von Leon Warrior Boots', 'unique', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1072369/icon'),
-      createEquipment('cape', 110, 'Von Leon Warrior Cape', 'unique', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1102172/icon'),
-      createEquipment('belt', 130, 'Hayato Belt', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1132149/icon'),
-      createEquipment('shoulder', 130, 'Von Leon Warrior Shoulder', 'unique', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1152045/icon'),
-      
-      // Boss Accessories (Epic tier for Reboot)
-      createEquipment('face', 130, 'Sweetwater Face Accessory', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1012438/icon'),
-      createEquipment('eye', 130, 'Sweetwater Eye Accessory', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1022231/icon'),
-      createEquipment('earring', 130, 'Sweetwater Earring', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1032241/icon'),
-      
-      // Gollux Set (Reboot accessible)
-      createEquipment('ring1', 140, 'Superior Gollux Ring', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1113149/icon'),
-      createEquipment('ring2', 120, 'Reinforced Gollux Ring', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112926/icon'),
-      createEquipment('ring3', 120, 'Solid Gollux Ring', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112924/icon'),
-      createEquipment('ring4', 120, 'Cracked Gollux Ring', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1112807/icon'),
-      createEquipment('pendant1', 140, 'Superior Gollux Pendant', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1122268/icon'),
-      createEquipment('pendant2', 120, 'Reinforced Gollux Pendant', 'epic', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1122267/icon'),
-      
+      createFromDB("hat", "Fafnir", "epic", 19, 21),
+      createFromDB("top", "Fafnir", "epic", 19, 21),
+      createFromDB("bottom", "Fafnir", "epic", 19, 21),
+      createFromDB("weapon", "Absolab", "epic", 17, 21),
+
+      createFromDB("gloves", "Absolab", "epic", 17, 21),
+      createFromDB("shoes", "Absolab", "epic", 17, 21),
+      createFromDB("cape", "Absolab", "epic", 17, 21),
+      createFromDB("belt", "Superior Gollux", "epic", 20, 21),
+      createFromDB("shoulder", "Absolab", "epic", 17, 21),
+
+      createFromDB("face", "Twilight Mark", "epic", 19, 21),
+      createFromDB("eye", "Sweetwater Monocle", "epic", 18, 21),
+      createFromDB("earring", "Superior Gollux", "epic", 20, 21),
+
+      // Jewelry
+      createFromDB("ring1", "Meister Ring", "epic", 21, undefined),
+      createFromDB("ring2", "Guardian Angel Ring", "epic", 17, 21),
+      createFromDB("ring3", "Superior Gollux", "epic", 20, 21),
+      createFromDB("ring4", "Oz Ring", "epic", undefined, undefined),
+      createFromDB("pendant1", "Superior Gollux", "epic", 20, 21),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 21, undefined),
+
       // Special
-      createEquipment('secondary', 140, 'Deimos Sage Shield', 'unique', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1352100/icon'),
-      createEquipment('emblem', 100, 'Luminous Emblem', 'unique', 0),
-      createEquipment('badge', 30, 'Genesis Badge', 'unique', 0),
-      createEquipment('heart', 100, 'Magnificent Magnus Heart', 'rare', 0, undefined, 'https://maplestory.io/api/GMS/255/item/1672047/icon'),
-    ]
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Gold Maple Leaf Emblem", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Fairy Heart", "epic", 0, undefined),
+      createFromDB("pocket", "Pink Holy Cup", "epic", 8, undefined),
+    ],
   },
-  
+
   {
-    id: 'custom-empty',
-    name: 'Custom/Empty Set',
-    description: 'Start with an empty template and add your own equipment',
-    level: 200,
-    equipment: []
-  }
+    id: "mid-game-arcane",
+    name: "Mid Game (Arcane)",
+    description: "Root Abyss, Arcane, full gollux set",
+    level: 220,
+    equipment: [
+      createFromDB("hat", "Fafnir", "epic", 19, 21),
+      createFromDB("top", "Fafnir", "epic", 19, 21),
+      createFromDB("bottom", "Fafnir", "epic", 19, 21),
+      createFromDB("weapon", "Arcane Umbra", "epic", 17, 19),
+
+      createFromDB("gloves", "Arcane Umbra", "epic", 17, 19),
+      createFromDB("shoes", "Arcane Umbra", "epic", 17, 19),
+      createFromDB("cape", "Arcane Umbra", "epic", 17, 19),
+      createFromDB("belt", "Superior Gollux", "epic", 20, 21),
+      createFromDB("shoulder", "Arcane Umbra", "epic", 17, 19),
+
+      createFromDB("face", "Twilight Mark", "epic", 19, 21),
+      createFromDB("eye", "Sweetwater Monocle", "epic", 18, 21),
+      createFromDB("earring", "Superior Gollux", "epic", 20, 21),
+
+      // Jewelry
+      createFromDB("ring1", "Meister Ring", "epic", 21, undefined),
+      createFromDB("ring2", "Guardian Angel Ring", "epic", 17, 21),
+      createFromDB("ring3", "Superior Gollux", "epic", 20, 21),
+      createFromDB("ring4", "Oz Ring", "epic", undefined, undefined),
+      createFromDB("pendant1", "Superior Gollux", "epic", 20, 21),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 21, undefined),
+
+      // Special
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Gold Maple Leaf Emblem", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Fairy Heart", "epic", 0, undefined),
+      createFromDB("pocket", "Pink Holy Cup", "epic", 8, undefined),
+    ],
+  },
+
+  {
+    id: "mid-late-game",
+    name: "Mid-Late Game",
+    description:
+      "Liberated, pushing arcanes and maybe some pitched accessories",
+    level: 220,
+    equipment: [
+      createFromDB("hat", "Fafnir", "epic", 21, 22),
+      createFromDB("top", "Fafnir", "epic", 21, 22),
+      createFromDB("bottom", "Fafnir", "epic", 21, 22),
+      createFromDB("weapon", "Genesis", "epic", 22, undefined),
+
+      createFromDB("gloves", "Arcane Umbra", "epic", 19, 21),
+      createFromDB("shoes", "Arcane Umbra", "epic", 19, 21),
+      createFromDB("cape", "Arcane Umbra", "epic", 19, 21),
+      createFromDB("belt", "Superior Gollux", "epic", 22, undefined),
+      createFromDB("shoulder", "Arcane Umbra", "epic", 19, 21),
+
+      createFromDB("face", "Twilight Mark", "epic", 21, 22),
+      createFromDB("eye", "Sweetwater Monocle", "epic", 21, 22),
+      createFromDB("earring", "Superior Gollux", "epic", 22, undefined),
+
+      // Jewelry
+      createFromDB("ring1", "Meister Ring", "epic", 22, undefined),
+      createFromDB("ring2", "Guardian Angel Ring", "epic", 21, 22),
+      createFromDB("ring3", "Superior Gollux", "epic", 21, 22),
+      createFromDB("ring4", "Oz Ring", "epic", undefined, undefined),
+      createFromDB("pendant1", "Superior Gollux", "epic", 21, 22),
+      createFromDB("pendant2", "Dominator Pendant", "epic", 22, undefined),
+
+      // Special
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Mitras Rage", "legendary", 0),
+      createFromDB("badge", "Crystal Ventus Badge", "legendary", 0),
+      createFromDB("heart", "Black Heart", "epic", 15, undefined),
+      createFromDB("pocket", "Cursed Magical Book", "epic", 0, undefined),
+    ],
+  },
+
+  {
+    id: "late-game",
+    name: "Late Game",
+    description: "Eternals, and in the pitched waiting room",
+    level: 220,
+    equipment: [
+      createFromDB("hat", "Eternal", "epic", 18, 22),
+      createFromDB("top", "Eternal", "epic", 18, 22),
+      createFromDB("bottom", "Eternal", "epic", 18, 22),
+      createFromDB("weapon", "Genesis", "epic", 22, undefined),
+
+      createFromDB("gloves", "Arcane Umbra", "epic", 21, 22),
+      createFromDB("shoes", "Arcane Umbra", "epic", 21, 22),
+      createFromDB("cape", "Arcane Umbra", "epic", 21, 22),
+      createFromDB("belt", "Dreamy Belt", "epic", 22, undefined),
+      createFromDB("shoulder", "Eternal", "epic", 18, 22),
+
+      createFromDB("face", "Berserked", "epic", 17, 22),
+      createFromDB("eye", "Magic Eyepatch", "epic", 17, 22),
+      createFromDB("earring", "Commanding Force Earring", "epic", 17, 22),
+
+      // Jewelry
+      createFromDB("ring1", "Endless Terror", "epic", 17, 22),
+      createFromDB("ring2", "Guardian Angel Ring", "epic", 22, undefined),
+      createFromDB("ring3", "Superior Gollux", "epic", 22, undefined),
+      createFromDB("ring4", "Oz Ring", "epic", undefined, undefined),
+      createFromDB("pendant1", "Source of Suffering", "epic", 17, 22),
+      createFromDB("pendant2", "Daybreak Pendant", "epic", 22, undefined),
+
+      // Special
+      createFromDB("secondary", "Generic Secondary", "legendary", 0, undefined),
+      createFromDB("emblem", "Mitras Rage", "legendary", 0),
+      createFromDB("badge", "Genesis Badge", "legendary", 0),
+      createFromDB("heart", "Black Heart", "epic", 15, undefined),
+      createFromDB("pocket", "Cursed Magical Book", "epic", 0, undefined),
+    ],
+  },
 ];
 
 export const getTemplateById = (id: string): EquipmentTemplate | undefined => {
-  return EQUIPMENT_TEMPLATES.find(template => template.id === id);
+  return EQUIPMENT_TEMPLATES.find((template) => template.id === id);
 };
 
 export const getDefaultTemplate = (): EquipmentTemplate => {

@@ -31,13 +31,35 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
   const [isEquipmentFormOpen, setIsEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
   // Load template equipment when template changes
   useEffect(() => {
     const template = getTemplateById(selectedTemplateId);
     if (template) {
-      setEquipment([...template.equipment]);
+      setIsLoadingTemplate(true);
+      setLoadedImages(new Set()); // Reset loaded images
+      
+      // Clear equipment immediately to prevent conflicts
+      setEquipment([]);
       setStarForceItems([]);
+      
+      // Add a small delay to ensure smooth transition
+      setTimeout(() => {
+        // Create fresh equipment with new IDs to avoid conflicts between templates
+        const freshEquipment = template.equipment.map(eq => ({
+          ...eq,
+          id: `template-${eq.slot}-${Date.now()}-${Math.random()}`
+        }));
+        
+        setEquipment(freshEquipment);
+        
+        // Give a moment for the equipment to render, then remove loading
+        setTimeout(() => {
+          setIsLoadingTemplate(false);
+        }, 500);
+      }, 100);
     }
   }, [selectedTemplateId]);
 
@@ -66,17 +88,24 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
   };
 
   const handleSaveEquipment = (equipmentData: Equipment) => {
+    console.log('Saving equipment:', equipmentData);
+    
     if (editingEquipment) {
-      // Update existing equipment
-      setEquipment(prev => 
-        prev.map(eq => eq.id === editingEquipment.id ? equipmentData : eq)
-      );
+      console.log('Updating existing equipment:', editingEquipment.id);
+      setEquipment(prev => {
+        const updated = prev.map(eq => eq.id === editingEquipment.id ? equipmentData : eq);
+        const updatedEquipment = updated.find(eq => eq.id === editingEquipment.id);
+        console.log('Updated equipment:', updatedEquipment);
+        return updated;
+      });
     } else {
-      // Add new equipment
-      setEquipment(prev => [
-        ...prev.filter(eq => eq.slot !== equipmentData.slot),
-        equipmentData
-      ]);
+      console.log('Adding new equipment to slot:', equipmentData.slot);
+      setEquipment(prev => {
+        const filtered = prev.filter(eq => eq.slot !== equipmentData.slot);
+        const newEquipment = [...filtered, equipmentData];
+        console.log('New equipment array:', newEquipment);
+        return newEquipment;
+      });
     }
   };
 
@@ -159,7 +188,13 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
             
             {/* Template Selector */}
             <div className="max-w-md mx-auto">
-              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+              <Select 
+                value={selectedTemplateId} 
+                onValueChange={(value) => {
+                  setSelectedTemplateId(value);
+                }}
+                disabled={isLoadingTemplate}
+              >
                 <SelectTrigger className="w-full h-14 text-lg border-primary/30 bg-background/80 backdrop-blur-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -223,7 +258,15 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
             </p>
           </CardHeader>
           <CardContent className="p-6 overflow-hidden">
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center relative">
+              {isLoadingTemplate && (
+                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <p className="text-sm text-muted-foreground">Loading equipment...</p>
+                  </div>
+                </div>
+              )}
               <EquipmentGrid
                 equipment={equipment}
                 onEditEquipment={handleEditEquipment}
