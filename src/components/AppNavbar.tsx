@@ -1,8 +1,9 @@
-import { Users, Target, Settings, BarChart3, Upload, Leaf } from "lucide-react";
+import { Users, Target, Settings, BarChart3, Upload, Leaf, Home } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 const mainItems = [
-  { title: "Overview", url: "/", icon: BarChart3 },
+  { title: "Home", url: "/", icon: Home },
+  { title: "Overview", url: "/overview", icon: BarChart3 },
   { title: "Characters", url: "/characters", icon: Users },
   { title: "Planning", url: "/planning", icon: Target },
 ];
