@@ -149,6 +149,35 @@ export default function Characters() {
     setStarForceItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const handleMarkAsDone = (equipmentId: string) => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        const updatedEquipment = char.equipment.map(eq => {
+          if (eq.id === equipmentId && eq.starforceable && eq.currentStarForce < eq.targetStarForce) {
+            // Update current StarForce to match target StarForce
+            return { ...eq, currentStarForce: eq.targetStarForce };
+          }
+          return eq;
+        });
+        return { ...char, equipment: updatedEquipment };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
+
+    toast({
+      title: "Equipment Completed",
+      description: "StarForce goal achieved! Equipment updated.",
+    });
+  };
+
   const handleClearEquipment = (slot: EquipmentSlot) => {
     if (!selectedCharacter) return;
 
@@ -491,6 +520,7 @@ export default function Characters() {
                   starForceItems={starForceItems}
                   onAddStarForceItem={handleAddStarForceItem}
                   onRemoveStarForceItem={handleRemoveStarForceItem}
+                  onMarkAsDone={handleMarkAsDone}
                   title={`${selectedCharacter.name}'s StarForce Calculator`}
                   subtitle="Calculate upgrade costs and chances"
                 />

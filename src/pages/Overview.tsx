@@ -5,11 +5,13 @@ import { StarForceTable } from "@/components/StarForceTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, Target, Coins } from "lucide-react";
-import { loadFromLocalStorage } from "@/lib/utils";
+import { loadFromLocalStorage, saveToLocalStorage } from "@/lib/utils";
 import { getJobIcon, getJobColors, getJobCategoryName } from "@/lib/jobIcons";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Overview() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [characters, setCharacters] = useState<Character[]>([]);
   const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
 
@@ -37,6 +39,29 @@ export default function Overview() {
 
   const handleRemoveStarForceItem = (id: string) => {
     setStarForceItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleMarkAsDone = (equipmentId: string) => {
+    const updatedCharacters = characters.map(char => {
+      const updatedEquipment = char.equipment.map(eq => {
+        if (eq.id === equipmentId && eq.starforceable && eq.currentStarForce < eq.targetStarForce) {
+          // Update current StarForce to match target StarForce
+          return { ...eq, currentStarForce: eq.targetStarForce };
+        }
+        return eq;
+      });
+      return { ...char, equipment: updatedEquipment };
+    });
+
+    setCharacters(updatedCharacters);
+    
+    // Save to localStorage
+    saveToLocalStorage(updatedCharacters, starForceItems);
+    
+    toast({
+      title: "Equipment Completed",
+      description: "StarForce goal achieved! Equipment updated.",
+    });
   };
 
   return (
@@ -164,6 +189,7 @@ export default function Overview() {
         starForceItems={starForceItems}
         onAddStarForceItem={handleAddStarForceItem}
         onRemoveStarForceItem={handleRemoveStarForceItem}
+        onMarkAsDone={handleMarkAsDone}
         title="Overall StarForce Calculator"
         subtitle="All characters combined"
       />

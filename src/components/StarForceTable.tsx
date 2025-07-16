@@ -32,7 +32,8 @@ import {
   Ear,
   Heart,
   Star,
-  Download
+  Download,
+  Check
 } from "lucide-react";
 
 interface StarForceTableProps {
@@ -40,6 +41,7 @@ interface StarForceTableProps {
   starForceItems: Equipment[];
   onAddStarForceItem: () => void;
   onRemoveStarForceItem: (id: string) => void;
+  onMarkAsDone?: (equipmentId: string) => void;
   title?: string;
   subtitle?: string;
 }
@@ -62,7 +64,7 @@ interface CalculationRow {
 
 // Equipment slot icons mapping
 const getSlotIcon = (slot: string) => {
-  const iconMap: { [key: string]: any } = {
+  const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
     weapon: Sword,
     secondary: Shield,
     emblem: Star,
@@ -116,7 +118,7 @@ const getDangerColor = (currentStars: number) => {
   return 'text-green-400';
 };
 
-export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, title, subtitle }: StarForceTableProps) {
+export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, onMarkAsDone, title, subtitle }: StarForceTableProps) {
   // Filter equipped items that haven't reached target stars AND are starforceable
   const incompleteEquipment = useMemo(
     () => equipment.filter(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce),
@@ -153,6 +155,7 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
       }
     );
     setCalculations(newCalculations);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allStarForceItems]);
 
   const updateSparesCount = (equipmentId: string, count: number) => {
@@ -548,16 +551,45 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
                    </TableCell>
                   
                   <TableCell className="text-center">
-                    {starForceItems.some(item => item.id === calc.equipment.id) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onRemoveStarForceItem(calc.equipment.id)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                      >
-                        Remove
-                      </Button>
-                    )}
+                    <div className="flex items-center justify-center gap-1">
+                      {/* Done button for all equipment that needs starforcing */}
+                      {calc.equipment.starforceable && calc.equipment.currentStarForce < calc.equipment.targetStarForce && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            // If it's a standalone starforce item, just remove it from the list
+                            if (starForceItems.some(item => item.id === calc.equipment.id)) {
+                              onRemoveStarForceItem(calc.equipment.id);
+                            }
+                            // If it's equipped to a character and we have the callback, update the equipment
+                            else if (onMarkAsDone) {
+                              onMarkAsDone(calc.equipment.id);
+                            }
+                          }}
+                          className="text-green-400 hover:text-green-300 hover:bg-green-500/20"
+                          title={starForceItems.some(item => item.id === calc.equipment.id) 
+                            ? "Mark as completed - remove from list" 
+                            : "Mark as completed - set current stars to target"
+                          }
+                        >
+                          <Check className="w-4 h-4" />
+                        </Button>
+                      )}
+                      
+                      {/* Remove button for standalone starforce items (separate from Done) */}
+                      {starForceItems.some(item => item.id === calc.equipment.id) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onRemoveStarForceItem(calc.equipment.id)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                          title="Remove from list without completing"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
                   </TableCell>
                   </TableRow>
                 ))}

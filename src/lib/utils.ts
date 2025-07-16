@@ -16,6 +16,16 @@ export const getMaxStarForce = (level: number): number => {
   return 23; // 138 and above (adjusted to current system max of 23)
 };
 
+// Helper function to get default target star force (22 for level 140+, max otherwise)
+export const getDefaultTargetStarForce = (level: number): number => {
+  const maxStars = getMaxStarForce(level);
+  // For level 140+ items, default to 22 instead of max (23)
+  if (level > 140 && maxStars === 23) {
+    return 22;
+  }
+  return maxStars;
+};
+
 interface ExportData {
   version: string;
   characters: Character[];

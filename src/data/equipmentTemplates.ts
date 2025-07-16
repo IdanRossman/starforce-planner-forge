@@ -1,5 +1,5 @@
 import { Equipment, EquipmentSlot } from "@/types";
-import { getMaxStarForce } from "@/lib/utils";
+import { getMaxStarForce, getDefaultTargetStarForce } from "@/lib/utils";
 import { findEquipmentByName, EquipmentData } from "./equipmentDatabase";
 
 export interface EquipmentTemplate {

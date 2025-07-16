@@ -52,38 +52,37 @@ const EQUIPMENT_SLOTS: {
 }[] = [
   // Weapons & Secondary
   { slot: 'weapon', label: 'Weapon', position: 'col-start-2 row-start-4', mobileOrder: 1, category: 'Weapons' },
-  { slot: 'secondary', label: 'Secondary', position: 'col-start-6 row-start-4', mobileOrder: 2, category: 'Weapons' },
+  { slot: 'secondary', label: 'Secondary', position: 'col-start-5 row-start-4', mobileOrder: 2, category: 'Weapons' },
   
   // Armor
   { slot: 'hat', label: 'Hat', position: 'col-start-3 row-start-1', mobileOrder: 3, category: 'Armor' },
   { slot: 'top', label: 'Top', position: 'col-start-3 row-start-4', mobileOrder: 4, category: 'Armor' },
   { slot: 'bottom', label: 'Bottom', position: 'col-start-3 row-start-5', mobileOrder: 5, category: 'Armor' },
-  { slot: 'overall', label: 'Overall', position: 'col-start-4 row-start-4', mobileOrder: 6, category: 'Armor' },
-  { slot: 'shoes', label: 'Shoes', position: 'col-start-3 row-start-6', mobileOrder: 7, category: 'Armor' },
-  { slot: 'gloves', label: 'Gloves', position: 'col-start-5 row-start-5', mobileOrder: 8, category: 'Armor' },
-  { slot: 'cape', label: 'Cape', position: 'col-start-6 row-start-5', mobileOrder: 9, category: 'Armor' },
-  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-5', mobileOrder: 10, category: 'Armor' },
-  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-5 row-start-4', mobileOrder: 11, category: 'Armor' },
+  { slot: 'shoes', label: 'Shoes', position: 'col-start-3 row-start-6', mobileOrder: 6, category: 'Armor' },
+  { slot: 'gloves', label: 'Gloves', position: 'col-start-4 row-start-5', mobileOrder: 7, category: 'Armor' },
+  { slot: 'cape', label: 'Cape', position: 'col-start-5 row-start-5', mobileOrder: 8, category: 'Armor' },
+  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-5', mobileOrder: 9, category: 'Armor' },
+  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-4 row-start-4', mobileOrder: 10, category: 'Armor' },
   
   // Accessories
-  { slot: 'face', label: 'Face', position: 'col-start-3 row-start-2', mobileOrder: 12, category: 'Accessories' },
-  { slot: 'eye', label: 'Eye', position: 'col-start-3 row-start-3', mobileOrder: 13, category: 'Accessories' },
-  { slot: 'earring', label: 'Earring', position: 'col-start-5 row-start-3', mobileOrder: 14, category: 'Accessories' },
+  { slot: 'face', label: 'Face', position: 'col-start-3 row-start-2', mobileOrder: 11, category: 'Accessories' },
+  { slot: 'eye', label: 'Eye', position: 'col-start-3 row-start-3', mobileOrder: 12, category: 'Accessories' },
+  { slot: 'earring', label: 'Earring', position: 'col-start-4 row-start-3', mobileOrder: 13, category: 'Accessories' },
   
   // Jewelry
-  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-2', mobileOrder: 15, category: 'Jewelry' },
-  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-3', mobileOrder: 16, category: 'Jewelry' },
-  { slot: 'ring1', label: 'Ring 1', position: 'col-start-1 row-start-1', mobileOrder: 17, category: 'Jewelry' },
-  { slot: 'ring2', label: 'Ring 2', position: 'col-start-1 row-start-2', mobileOrder: 18, category: 'Jewelry' },
-  { slot: 'ring3', label: 'Ring 3', position: 'col-start-1 row-start-3', mobileOrder: 19, category: 'Jewelry' },
-  { slot: 'ring4', label: 'Ring 4', position: 'col-start-1 row-start-4', mobileOrder: 20, category: 'Jewelry' },
+  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-2', mobileOrder: 14, category: 'Jewelry' },
+  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-3', mobileOrder: 15, category: 'Jewelry' },
+  { slot: 'ring1', label: 'Ring 1', position: 'col-start-1 row-start-1', mobileOrder: 16, category: 'Jewelry' },
+  { slot: 'ring2', label: 'Ring 2', position: 'col-start-1 row-start-2', mobileOrder: 17, category: 'Jewelry' },
+  { slot: 'ring3', label: 'Ring 3', position: 'col-start-1 row-start-3', mobileOrder: 18, category: 'Jewelry' },
+  { slot: 'ring4', label: 'Ring 4', position: 'col-start-1 row-start-4', mobileOrder: 19, category: 'Jewelry' },
   
   // Special Items
-  { slot: 'emblem', label: 'Emblem', position: 'col-start-6 row-start-1', mobileOrder: 21, category: 'Special' },
-  { slot: 'badge', label: 'Badge', position: 'col-start-6 row-start-2', mobileOrder: 22, category: 'Special' },
-  { slot: 'medal', label: 'Medal', position: 'col-start-6 row-start-3', mobileOrder: 23, category: 'Special' },
-  { slot: 'heart', label: 'Heart', position: 'col-start-6 row-start-6', mobileOrder: 24, category: 'Special' },
-  { slot: 'pocket', label: 'Pocket', position: 'col-start-1 row-start-5', mobileOrder: 25, category: 'Special' },
+  { slot: 'emblem', label: 'Emblem', position: 'col-start-5 row-start-1', mobileOrder: 20, category: 'Special' },
+  { slot: 'badge', label: 'Badge', position: 'col-start-5 row-start-2', mobileOrder: 21, category: 'Special' },
+  { slot: 'medal', label: 'Medal', position: 'col-start-5 row-start-3', mobileOrder: 22, category: 'Special' },
+  { slot: 'heart', label: 'Heart', position: 'col-start-5 row-start-6', mobileOrder: 23, category: 'Special' },
+  { slot: 'pocket', label: 'Pocket', position: 'col-start-1 row-start-5', mobileOrder: 24, category: 'Special' },
 ];
 
 // Equipment slot icons mapping
@@ -228,39 +227,18 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
     const { slot, label, position } = slotData;
     const equipment = equipmentBySlot[slot];
     
-    // Check for conflicting equipment (overall vs top/bottom)
-    const hasOverall = equipmentBySlot['overall'];
-    const hasTopOrBottom = equipmentBySlot['top'] || equipmentBySlot['bottom'];
-    
-    const isDisabled = !equipment && (
-      (slot === 'overall' && !!hasTopOrBottom) ||
-      ((slot === 'top' || slot === 'bottom') && !!hasOverall)
-    );
-    
-    const getTooltipMessage = () => {
-      if (slot === 'overall' && hasTopOrBottom) {
-        return "Cannot equip Overall when Top or Bottom is equipped";
-      }
-      if ((slot === 'top' || slot === 'bottom') && hasOverall) {
-        return "Cannot equip Top/Bottom when Overall is equipped";
-      }
-      return "";
-    };
-    
     const cardContent = (
       <Card 
         key={slot} 
         className={`relative transition-all duration-200 group ${position} ${
           equipment 
             ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
-            : isDisabled
-              ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
-              : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
+            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
         }`}
         onClick={() => {
           if (equipment) {
             onEditEquipment(equipment);
-          } else if (!isDisabled) {
+          } else {
             onAddEquipment(slot);
           }
         }}
@@ -298,11 +276,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
               </div>
             </>
           ) : (
-            <div className={`h-full w-full flex flex-col gap-2 items-center justify-center ${
-              isDisabled 
-                ? "text-muted-foreground/50" 
-                : "text-muted-foreground"
-            }`}>
+            <div className="h-full w-full flex flex-col gap-2 items-center justify-center text-muted-foreground">
               <Plus className="w-4 h-4" />
               <span className="text-xs">{label}</span>
             </div>
@@ -311,18 +285,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
       </Card>
     );
 
-    return isDisabled ? (
-      <TooltipProvider key={slot}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            {cardContent}
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{getTooltipMessage()}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    ) : cardContent;
+    return cardContent;
   };
 
   return (
@@ -330,7 +293,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
       <div className="space-y-6">
         {/* Desktop Grid Layout */}
         <div className="hidden lg:block">
-          <div className="grid grid-cols-6 grid-rows-6 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
+          <div className="grid grid-cols-5 grid-rows-6 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
             {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
           </div>
         </div>
@@ -352,29 +315,18 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                   const { slot, label } = slotData;
                   const equipment = equipmentBySlot[slot];
                   
-                  // Check for conflicting equipment (overall vs top/bottom)
-                  const hasOverall = equipmentBySlot['overall'];
-                  const hasTopOrBottom = equipmentBySlot['top'] || equipmentBySlot['bottom'];
-                  
-                  const isDisabled = !equipment && (
-                    (slot === 'overall' && !!hasTopOrBottom) ||
-                    ((slot === 'top' || slot === 'bottom') && !!hasOverall)
-                  );
-                  
                   return (
                     <Card 
                       key={slot} 
                       className={`relative transition-all duration-200 group ${
                         equipment 
                           ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
-                          : isDisabled
-                            ? "bg-muted/10 border-dashed border-muted/50 opacity-50"
-                            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
+                          : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
                       }`}
                       onClick={() => {
                         if (equipment) {
                           onEditEquipment(equipment);
-                        } else if (!isDisabled) {
+                        } else {
                           onAddEquipment(slot);
                         }
                       }}
@@ -436,11 +388,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                             )}
                           </>
                         ) : (
-                          <div className={`h-full w-full flex flex-col gap-2 items-center justify-center ${
-                            isDisabled 
-                              ? "text-muted-foreground/50" 
-                              : "text-muted-foreground"
-                          }`}>
+                          <div className="h-full w-full flex flex-col gap-2 items-center justify-center text-muted-foreground">
                             <Plus className="w-4 h-4" />
                             <span className="text-xs">{label}</span>
                           </div>

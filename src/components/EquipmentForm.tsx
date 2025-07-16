@@ -20,7 +20,8 @@ import {
   Badge,
   Eye,
   Circle,
-  Square
+  Square,
+  Info
 } from 'lucide-react';
 import {
   Dialog,
@@ -48,7 +49,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
-import { getMaxStarForce } from '@/lib/utils';
+import { getMaxStarForce, getDefaultTargetStarForce } from '@/lib/utils';
 
 const equipmentSchema = z.object({
   slot: z.string().min(1, 'Equipment slot is required'),
@@ -191,30 +192,43 @@ export function EquipmentForm({
 
   // State to track the selected equipment's image
   const [selectedEquipmentImage, setSelectedEquipmentImage] = useState<string>('');
+  // State to track if star force values were auto-adjusted
+  const [autoAdjusted, setAutoAdjusted] = useState<{current?: boolean, target?: boolean}>({});
 
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
   const watchSlot = form.watch('slot');
   const watchLevel = form.watch('level');
 
-  // Update target StarForce when level changes (for new equipment only)
+  // Update StarForce values when level changes
   useEffect(() => {
-    if (watchLevel && !equipment && watchStarforceable) {
+    if (watchLevel && watchStarforceable) {
       const maxStars = getMaxStarForce(watchLevel);
+      const defaultTarget = getDefaultTargetStarForce(watchLevel);
       const currentTarget = form.getValues('targetStarForce');
       const currentCurrent = form.getValues('currentStarForce');
+      let adjustments = {};
       
-      // Update target to max if it's currently above the new max
-      if (currentTarget > maxStars) {
-        form.setValue('targetStarForce', maxStars);
-      } else if (currentTarget === 0) {
-        // If target is 0, set it to the max for this level
-        form.setValue('targetStarForce', maxStars);
-      }
-      
-      // Update current StarForce if it's above the new max
+      // Always update current StarForce if it's above the new max
       if (currentCurrent > maxStars) {
         form.setValue('currentStarForce', maxStars);
+        adjustments = { ...adjustments, current: true };
+      }
+      
+      // Update target StarForce logic
+      if (currentTarget > maxStars) {
+        // If target is above new max, clamp it to max
+        form.setValue('targetStarForce', maxStars);
+        adjustments = { ...adjustments, target: true };
+      } else if (!equipment && currentTarget === 0) {
+        // For new equipment only: if target is 0, set it to default
+        form.setValue('targetStarForce', defaultTarget);
+      }
+      
+      // Set auto-adjustment tracking and clear after 3 seconds
+      if (Object.keys(adjustments).length > 0) {
+        setAutoAdjusted(adjustments);
+        setTimeout(() => setAutoAdjusted({}), 3000);
       }
     }
   }, [watchLevel, equipment, watchStarforceable, form]);
@@ -230,10 +244,10 @@ export function EquipmentForm({
         form.setValue('currentStarForce', 0);
         form.setValue('targetStarForce', 0);
       } else {
-        // If turning on starforceable, set target to max for current level
+        // If turning on starforceable, set target to default for current level (22 for 140+, max otherwise)
         const currentLevel = form.getValues('level');
-        const maxStars = getMaxStarForce(currentLevel);
-        form.setValue('targetStarForce', maxStars);
+        const defaultTarget = getDefaultTargetStarForce(currentLevel);
+        form.setValue('targetStarForce', defaultTarget);
       }
     }
   }, [watchSlot, equipment, form]);
@@ -257,7 +271,7 @@ export function EquipmentForm({
         setSelectedEquipmentImage(equipment.image || '');
       } else {
         const defaultLevel = 200;
-        const maxStars = getMaxStarForce(defaultLevel);
+        const defaultTarget = getDefaultTargetStarForce(defaultLevel);
         form.reset({
           slot: defaultSlot || '',
           type: 'armor',
@@ -265,7 +279,7 @@ export function EquipmentForm({
           set: '',
           tier: null,
           currentStarForce: 0,
-          targetStarForce: maxStars,
+          targetStarForce: defaultTarget,
           starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
         });
         // Reset image state for new equipment
@@ -563,6 +577,19 @@ export function EquipmentForm({
             {/* StarForce Sliders - Only show if starforceable */}
             {watchStarforceable && (
               <>
+              {/* Auto-adjustment notification */}
+              {(autoAdjusted.current || autoAdjusted.target) && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-sm text-blue-700 dark:text-blue-300">
+                      Star force values auto-adjusted to match level {watchLevel} limits
+                      {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
+                       autoAdjusted.current ? ' (current)' : ' (target)'}
+                    </span>
+                  </div>
+                </div>
+              )}
 
             <FormField
               control={form.control}
@@ -572,16 +599,34 @@ export function EquipmentForm({
                 return (
                   <FormItem>
                     <FormLabel>Current StarForce: {field.value}★</FormLabel>
-                    <FormControl>
-                      <Slider
-                        min={0}
-                        max={maxStars}
-                        step={1}
-                        value={[field.value]}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <div className="space-y-3">
+                      <FormControl>
+                        <Slider
+                          min={0}
+                          max={maxStars}
+                          step={1}
+                          value={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Direct input:</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={maxStars}
+                          value={field.value}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            const clampedValue = Math.min(Math.max(value, 0), maxStars);
+                            field.onChange(clampedValue);
+                          }}
+                          className="w-20 text-center"
+                        />
+                        <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                      </div>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 );
@@ -596,16 +641,34 @@ export function EquipmentForm({
                 return (
                   <FormItem>
                     <FormLabel>Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
-                    <FormControl>
-                      <Slider
-                        min={0}
-                        max={maxStars}
-                        step={1}
-                        value={[field.value]}
-                        onValueChange={(value) => field.onChange(value[0])}
-                        className="w-full"
-                      />
-                    </FormControl>
+                    <div className="space-y-3">
+                      <FormControl>
+                        <Slider
+                          min={0}
+                          max={maxStars}
+                          step={1}
+                          value={[field.value]}
+                          onValueChange={(value) => field.onChange(value[0])}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-muted-foreground">Direct input:</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={maxStars}
+                          value={field.value}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 0;
+                            const clampedValue = Math.min(Math.max(value, 0), maxStars);
+                            field.onChange(clampedValue);
+                          }}
+                          className="w-20 text-center"
+                        />
+                        <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                      </div>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 );
