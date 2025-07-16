@@ -1,14 +1,15 @@
-import { Users, Target, Settings, BarChart3, Upload, Leaf } from "lucide-react";
+import { Users, Target, Settings, BarChart3, Leaf, Home, Calculator } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 const mainItems = [
-  { title: "Overview", url: "/", icon: BarChart3 },
+  { title: "Home", url: "/", icon: Home },
+  { title: "Quick Planning", url: "/quick-planning", icon: Calculator },
+  { title: "Overview", url: "/overview", icon: BarChart3 },
   { title: "Characters", url: "/characters", icon: Users },
   { title: "Planning", url: "/planning", icon: Target },
 ];
 
 const toolItems = [
-  { title: "Import/Export", url: "/import-export", icon: Upload },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 
@@ -18,7 +19,7 @@ export function AppNavbar() {
 
   const isActive = (path: string) => currentPath === path;
   const getNavCls = (path: string) =>
-    `px-4 py-2 rounded-md transition-colors ${
+    `px-4 py-2 rounded-md transition-colors min-w-[100px] text-center ${
       isActive(path) 
         ? "bg-primary text-primary-foreground font-medium" 
         : "text-muted-foreground hover:text-foreground hover:bg-muted/50"

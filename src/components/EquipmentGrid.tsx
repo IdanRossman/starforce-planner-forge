@@ -144,25 +144,25 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
       
       {hasImage ? (
         // Image-centered layout: image with centered StarForce below
-        <div className="flex flex-col items-center justify-center space-y-2">
+        <div className="flex flex-col items-center justify-center space-y-1">
           <EquipmentImage 
             src={equipment.image} 
             alt={equipment.set || "Equipment"}
-            size="lg"
+            size="md"
             showFallback={false}
             className="shrink-0"
           />
           {/* StarForce display - centered below image */}
           {equipment.starforceable && (
-            <div className="flex items-center justify-center gap-1 text-xs">
-              <Star className="w-3 h-3 text-yellow-400" />
-              <span className="text-yellow-400 font-medium">
+            <div className="flex items-center justify-center gap-0.5 text-xs">
+              <Star className="w-2.5 h-2.5 text-yellow-400" />
+              <span className="text-yellow-400 font-medium text-xs">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="text-primary font-medium">
+                  <span className="text-muted-foreground text-xs">→</span>
+                  <span className="text-primary font-medium text-xs">
                     {equipment.targetStarForce}
                   </span>
                 </>

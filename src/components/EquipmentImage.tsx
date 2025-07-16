@@ -9,6 +9,7 @@ interface EquipmentImageProps {
   size?: 'sm' | 'md' | 'lg';
   onImageStatusChange?: (hasImage: boolean) => void;
   showFallback?: boolean; // If false, don't show fallback icon when image fails/missing
+  maxRetries?: number; // Maximum number of retry attempts
 }
 
 const sizeClasses = {
@@ -24,10 +25,38 @@ export const EquipmentImage = ({
   fallbackIcon: FallbackIcon = Gem,
   size = 'md',
   onImageStatusChange,
-  showFallback = true
+  showFallback = true,
+  maxRetries = 3
 }: EquipmentImageProps) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [currentSrc, setCurrentSrc] = useState(src);
+
+  // Reset image state when src changes
+  useEffect(() => {
+    setImageError(false);
+    setImageLoaded(false);
+    setRetryCount(0);
+    setCurrentSrc(src);
+  }, [src]);
+
+  // Retry logic for failed images
+  const handleImageError = () => {
+    if (retryCount < maxRetries) {
+      const newRetryCount = retryCount + 1;
+      setRetryCount(newRetryCount);
+      
+      // Add a small delay before retry to avoid rapid retries
+      setTimeout(() => {
+        // Force image reload by adding a cache-busting parameter
+        const separator = currentSrc?.includes('?') ? '&' : '?';
+        setCurrentSrc(`${src}${separator}_retry=${newRetryCount}&_t=${Date.now()}`);
+      }, 1000 * newRetryCount); // Exponential backoff: 1s, 2s, 3s
+    } else {
+      setImageError(true);
+    }
+  };
 
   const sizeClass = sizeClasses[size];
 
@@ -36,9 +65,9 @@ export const EquipmentImage = ({
   
   useEffect(() => {
     onImageStatusChange?.(hasActualImage);
-  }, [hasActualImage, onImageStatusChange]);
+  }, [hasActualImage, onImageStatusChange, src, imageError, imageLoaded]);
 
-  // If no src provided or image failed to load
+  // If no src provided or image failed to load after all retries
   if (!src || imageError) {
     if (!showFallback) {
       return null; // Don't render anything
@@ -46,6 +75,10 @@ export const EquipmentImage = ({
     return (
       <div className={`${sizeClass} flex items-center justify-center bg-gray-100 rounded ${className}`}>
         <FallbackIcon className="w-4 h-4 text-gray-400" />
+        {retryCount > 0 && retryCount <= maxRetries && (
+          <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse" 
+               title={`Retrying... (${retryCount}/${maxRetries})`} />
+        )}
       </div>
     );
   }
@@ -57,12 +90,18 @@ export const EquipmentImage = ({
           <FallbackIcon className="w-4 h-4 text-gray-400" />
         </div>
       )}
+      {retryCount > 0 && retryCount <= maxRetries && !imageLoaded && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full animate-pulse" 
+             title={`Retrying... (${retryCount}/${maxRetries})`} />
+      )}
       <img
-        src={src}
+        src={currentSrc}
         alt={alt || "Equipment"}
         className={`${sizeClass} object-contain rounded ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}
-        onLoad={() => setImageLoaded(true)}
-        onError={() => setImageError(true)}
+        onLoad={() => {
+          setImageLoaded(true);
+        }}
+        onError={handleImageError}
       />
     </div>
   );

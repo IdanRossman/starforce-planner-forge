@@ -189,6 +189,9 @@ export function EquipmentForm({
     },
   });
 
+  // State to track the selected equipment's image
+  const [selectedEquipmentImage, setSelectedEquipmentImage] = useState<string>('');
+
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
   const watchSlot = form.watch('slot');
@@ -249,6 +252,9 @@ export function EquipmentForm({
           targetStarForce: equipment.targetStarForce,
           starforceable: equipment.starforceable,
         });
+        
+        // Set the image state for existing equipment
+        setSelectedEquipmentImage(equipment.image || '');
       } else {
         const defaultLevel = 200;
         const maxStars = getMaxStarForce(defaultLevel);
@@ -262,6 +268,8 @@ export function EquipmentForm({
           targetStarForce: maxStars,
           starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
         });
+        // Reset image state for new equipment
+        setSelectedEquipmentImage('');
       }
     }
   }, [open, equipment, defaultSlot, form]);
@@ -273,9 +281,9 @@ export function EquipmentForm({
   const currentSlot = form.watch('slot');
 
   const onSubmit = (data: EquipmentFormData) => {
-    // Find the selected equipment to get its image
+    // Find the selected equipment to get its image, prioritizing tracked state
     const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
-    const equipmentImage = selectedEquipment?.image;
+    const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
 
     if (isEditing && equipment) {
       onSave({
@@ -330,7 +338,12 @@ export function EquipmentForm({
                   <FormItem>
                     <FormLabel>Equipment Slot</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Clear equipment selection when slot changes since equipment might not be valid for new slot
+                        form.setValue('set', '');
+                        setSelectedEquipmentImage('');
+                      }} 
                       value={field.value}
                       disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
                     >
@@ -386,6 +399,9 @@ export function EquipmentForm({
                     if (equipData) {
                       form.setValue('tier', equipData.tier);
                       form.setValue('level', equipData.level);
+                      // Update the image state immediately
+                      setSelectedEquipmentImage(equipData.image);
+                      
                       // Auto-determine type based on slot
                       const slot = form.getValues('slot');
                       if (['weapon', 'secondary', 'emblem'].includes(slot)) {
