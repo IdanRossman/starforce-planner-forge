@@ -10,7 +10,6 @@ import {
   Target, 
   Coins, 
   Calculator,
-  Import,
   Settings,
   BarChart3,
   Zap,
@@ -47,36 +46,31 @@ export default function Homepage() {
 
   const quickActions = [
     {
-      title: "Manage Characters",
-      description: "Add, edit, and organize your MapleStory characters and their equipment",
-      icon: Users,
-      color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-      route: "/characters",
-      stats: `${totalCharacters} characters`
-    },
-    {
-      title: "StarForce Planning",
-      description: "Calculate costs and plan your StarForce upgrades across all characters",
+      title: "Quick Planning",
+      description: "Try our instant StarForce calculator with preset templates. Perfect for quick calculations that reset each session.",
       icon: Calculator,
       color: "bg-purple-500/20 text-purple-400 border-purple-500/30", 
-      route: "/planning",
-      stats: `${incompleteEquipment} items pending`
+      route: "/quick-planning",
+      stats: "No signup required",
+      featured: true
     },
     {
       title: "Progress Overview",
-      description: "View detailed statistics and progress across your entire account",
+      description: "View detailed statistics and progress across your entire account with comprehensive data insights",
       icon: BarChart3,
       color: "bg-green-500/20 text-green-400 border-green-500/30",
       route: "/overview",
-      stats: `${Math.round(completionRate)}% complete`
+      stats: `${Math.round(completionRate)}% complete`,
+      featured: true
     },
     {
-      title: "Import & Export",
-      description: "Backup your data or share configurations with other players",
-      icon: Import,
-      color: "bg-orange-500/20 text-orange-400 border-orange-500/30",
-      route: "/import-export",
-      stats: "Data management"
+      title: "Character Management",
+      description: "Create and manage characters with equipment tracking, spare management, and cost estimation. All data stored locally for future use.",
+      icon: Users,
+      color: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+      route: "/characters",
+      stats: `${totalCharacters} characters`,
+      featured: true
     }
   ];
 
@@ -132,24 +126,36 @@ export default function Homepage() {
               </div>
             )}
 
-            {/* CTA Button */}
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-              onClick={() => navigate(totalCharacters > 0 ? '/overview' : '/characters')}
-            >
-              {totalCharacters > 0 ? (
-                <>
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  View Overview
-                </>
-              ) : (
-                <>
-                  <Users className="w-5 h-5 mr-2" />
-                  Get Started
-                </>
-              )}
-            </Button>
+            {/* Main Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                onClick={() => navigate('/quick-planning')}
+              >
+                <Calculator className="w-5 h-5 mr-2" />
+                Quick Planning
+              </Button>
+              
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                onClick={() => navigate(totalCharacters > 0 ? '/overview' : '/characters')}
+              >
+                {totalCharacters > 0 ? (
+                  <>
+                    <BarChart3 className="w-5 h-5 mr-2" />
+                    View Overview
+                  </>
+                ) : (
+                  <>
+                    <Users className="w-5 h-5 mr-2" />
+                    Characters
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -157,10 +163,46 @@ export default function Homepage() {
       {/* Quick Actions Grid */}
       <div className="px-6 pb-16">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Quick Actions</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Choose Your Path</h2>
+          <p className="text-muted-foreground text-center mb-8">Get started with quick planning or dive into full character management</p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            {quickActions.map((action, index) => (
+          {/* Featured Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 max-w-4xl mx-auto">
+            {quickActions.filter(action => action.featured).map((action, index) => (
+              <Card 
+                key={index}
+                className="group cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-xl bg-gradient-to-br from-card to-card/80 border-2 border-primary/20 hover:border-primary/50 relative overflow-hidden"
+                onClick={() => navigate(action.route)}
+              >
+                {/* Background gradient effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                <CardHeader className="pb-4 relative z-10">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className={`p-3 rounded-xl ${action.color} shrink-0`}>
+                      <action.icon className="w-6 h-6" />
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                  </div>
+                  <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                    {action.title}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="relative z-10">
+                  <p className="text-muted-foreground mb-4 text-base">
+                    {action.description}
+                  </p>
+                  <Badge variant="secondary" className="text-sm px-3 py-1">
+                    {action.stats}
+                  </Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            {quickActions.filter(action => !action.featured).map((action, index) => (
               <Card 
                 key={index}
                 className="group cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg bg-gradient-to-br from-card to-card/80 border-border/50 hover:border-primary/50"

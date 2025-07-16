@@ -2,17 +2,27 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AppNavbar } from "@/components/AppNavbar";
 import Homepage from "./pages/Homepage";
 import Overview from "./pages/Overview";
 import Characters from "./pages/Characters";
 import Planning from "./pages/Planning";
-import ImportExport from "./pages/ImportExport";
+import { QuickPlanning } from "./pages/QuickPlanning";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function QuickPlanningWrapper() {
+  const navigate = useNavigate();
+  return (
+    <QuickPlanning 
+      onNavigateHome={() => navigate('/')}
+      onNavigateToOverview={() => navigate('/overview')}
+    />
+  );
+}
 
 function AppContent() {
   const location = useLocation();
@@ -29,7 +39,7 @@ function AppContent() {
           <Route path="/overview" element={<Overview />} />
           <Route path="/characters" element={<Characters />} />
           <Route path="/planning" element={<Planning />} />
-          <Route path="/import-export" element={<ImportExport />} />
+          <Route path="/quick-planning" element={<QuickPlanningWrapper />} />
           <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
