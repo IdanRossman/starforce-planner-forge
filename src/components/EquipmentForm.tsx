@@ -6,6 +6,7 @@ import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types'
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { EquipmentImage } from '@/components/EquipmentImage';
+import { getEquipmentBySlot } from '@/services/equipmentService';
 import { 
   Sword, 
   Shield, 
@@ -48,7 +49,6 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
 import { getMaxStarForce, getDefaultTargetStarForce } from '@/lib/utils';
 
 const equipmentSchema = z.object({
@@ -194,6 +194,10 @@ export function EquipmentForm({
   const [selectedEquipmentImage, setSelectedEquipmentImage] = useState<string>('');
   // State to track if star force values were auto-adjusted
   const [autoAdjusted, setAutoAdjusted] = useState<{current?: boolean, target?: boolean}>({});
+  // State for equipment data from API
+  const [availableEquipment, setAvailableEquipment] = useState<Equipment[]>([]);
+  const [equipmentLoading, setEquipmentLoading] = useState<boolean>(false);
+  const [equipmentSource, setEquipmentSource] = useState<'api' | 'local'>('local');
 
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
@@ -289,14 +293,34 @@ export function EquipmentForm({
   }, [open, equipment, defaultSlot, form]);
 
   const selectedSlot = form.watch('slot');
-  const availableEquipment = selectedSlot ? EQUIPMENT_BY_SLOT[selectedSlot as keyof typeof EQUIPMENT_BY_SLOT] || [] : [];
+  
+  // Fetch equipment data when slot changes
+  useEffect(() => {
+    if (selectedSlot) {
+      setEquipmentLoading(true);
+      getEquipmentBySlot(selectedSlot as EquipmentSlot)
+        .then(({ equipment, source }) => {
+          setAvailableEquipment(equipment);
+          setEquipmentSource(source);
+        })
+        .catch((error) => {
+          console.error('Failed to load equipment:', error);
+          setAvailableEquipment([]);
+        })
+        .finally(() => {
+          setEquipmentLoading(false);
+        });
+    } else {
+      setAvailableEquipment([]);
+    }
+  }, [selectedSlot]);
   
   // Watch for overall/top/bottom conflicts
   const currentSlot = form.watch('slot');
 
   const onSubmit = (data: EquipmentFormData) => {
     // Find the selected equipment to get its image, prioritizing tracked state
-    const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
+    const selectedEquipment = availableEquipment.find(eq => eq.set === data.set);
     const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
 
     if (isEditing && equipment) {
@@ -409,7 +433,7 @@ export function EquipmentForm({
                   <Select onValueChange={(value) => {
                     field.onChange(value);
                     // Auto-update tier and level based on equipment selection
-                    const equipData = availableEquipment.find(eq => eq.name === value);
+                    const equipData = availableEquipment.find(eq => eq.set === value);
                     if (equipData) {
                       form.setValue('tier', equipData.tier);
                       form.setValue('level', equipData.level);
@@ -439,23 +463,40 @@ export function EquipmentForm({
                   }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableEquipment.map((equipment) => (
-                        <SelectItem key={equipment.name} value={equipment.name}>
+                      {equipmentLoading ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          Loading equipment...
+                        </div>
+                      ) : availableEquipment.length === 0 ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          No equipment found for this slot
+                        </div>
+                      ) : (
+                        <>
+                          {equipmentSource === 'local' && (
+                            <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b">
+                              ⚠️ Using local data (API unavailable)
+                            </div>
+                          )}
+                          {availableEquipment.map((equipment) => (
+                        <SelectItem key={equipment.id} value={equipment.set || equipment.id}>
                           <div className="flex items-center gap-2">
                             <EquipmentImage 
                               src={equipment.image} 
-                              alt={equipment.name}
+                              alt={equipment.set || `Equipment ${equipment.id}`}
                               size="sm"
                               fallbackIcon={getSlotIcon(selectedSlot)}
                             />
-                            <span>{equipment.name} (Lv.{equipment.level})</span>
+                            <span>{equipment.set || `Equipment ${equipment.id}`} (Lv.{equipment.level})</span>
                           </div>
                         </SelectItem>
                       ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
