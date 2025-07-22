@@ -6,6 +6,7 @@ import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types'
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { EquipmentImage } from '@/components/EquipmentImage';
+import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
 import { 
   Sword, 
   Shield, 
@@ -48,7 +49,6 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { EQUIPMENT_BY_SLOT } from '@/data/equipmentSets';
 import { getMaxStarForce, getDefaultTargetStarForce } from '@/lib/utils';
 
 const equipmentSchema = z.object({
@@ -92,6 +92,7 @@ interface EquipmentFormProps {
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
   allowSlotEdit?: boolean;
+  selectedJob?: string;
 }
 
 const getSlotIcon = (slotValue: string) => {
@@ -172,7 +173,8 @@ export function EquipmentForm({
   equipment, 
   defaultSlot, 
   onSave,
-  allowSlotEdit = false
+  allowSlotEdit = false,
+  selectedJob
 }: EquipmentFormProps) {
   const isEditing = !!equipment;
 
@@ -194,6 +196,10 @@ export function EquipmentForm({
   const [selectedEquipmentImage, setSelectedEquipmentImage] = useState<string>('');
   // State to track if star force values were auto-adjusted
   const [autoAdjusted, setAutoAdjusted] = useState<{current?: boolean, target?: boolean}>({});
+  // State for equipment data from API
+  const [availableEquipment, setAvailableEquipment] = useState<Equipment[]>([]);
+  const [equipmentLoading, setEquipmentLoading] = useState<boolean>(false);
+  const [equipmentSource, setEquipmentSource] = useState<'api' | 'local'>('local');
 
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
@@ -236,19 +242,10 @@ export function EquipmentForm({
   // Update starforceable default when slot changes
   useEffect(() => {
     if (watchSlot && !equipment) { // Only for new equipment, not editing
-      const defaultStarforceable = getDefaultStarforceable(watchSlot);
-      form.setValue('starforceable', defaultStarforceable);
-      
-      // Reset StarForce values if turning off starforceable
-      if (!defaultStarforceable) {
-        form.setValue('currentStarForce', 0);
-        form.setValue('targetStarForce', 0);
-      } else {
-        // If turning on starforceable, set target to default for current level (22 for 140+, max otherwise)
-        const currentLevel = form.getValues('level');
-        const defaultTarget = getDefaultTargetStarForce(currentLevel);
-        form.setValue('targetStarForce', defaultTarget);
-      }
+      // Always start with StarForce off for new equipment
+      form.setValue('starforceable', false);
+      form.setValue('currentStarForce', 0);
+      form.setValue('targetStarForce', 0);
     }
   }, [watchSlot, equipment, form]);
 
@@ -280,7 +277,7 @@ export function EquipmentForm({
           tier: null,
           currentStarForce: 0,
           targetStarForce: defaultTarget,
-          starforceable: defaultSlot ? getDefaultStarforceable(defaultSlot) : true,
+          starforceable: false, // Start with StarForce off for new equipment
         });
         // Reset image state for new equipment
         setSelectedEquipmentImage('');
@@ -289,14 +286,40 @@ export function EquipmentForm({
   }, [open, equipment, defaultSlot, form]);
 
   const selectedSlot = form.watch('slot');
-  const availableEquipment = selectedSlot ? EQUIPMENT_BY_SLOT[selectedSlot as keyof typeof EQUIPMENT_BY_SLOT] || [] : [];
+  
+  // Fetch equipment data when slot changes
+  useEffect(() => {
+    if (selectedSlot) {
+      setEquipmentLoading(true);
+      
+      // Use job-specific API if job is selected, otherwise use slot-only
+      const fetchEquipment = selectedJob 
+        ? getEquipmentBySlotAndJob(selectedSlot as EquipmentSlot, selectedJob)
+        : getEquipmentBySlot(selectedSlot as EquipmentSlot);
+      
+      fetchEquipment
+        .then(({ equipment, source }) => {
+          setAvailableEquipment(equipment);
+          setEquipmentSource(source);
+        })
+        .catch((error) => {
+          console.error('Failed to load equipment:', error);
+          setAvailableEquipment([]);
+        })
+        .finally(() => {
+          setEquipmentLoading(false);
+        });
+    } else {
+      setAvailableEquipment([]);
+    }
+  }, [selectedSlot, selectedJob]);
   
   // Watch for overall/top/bottom conflicts
   const currentSlot = form.watch('slot');
 
   const onSubmit = (data: EquipmentFormData) => {
     // Find the selected equipment to get its image, prioritizing tracked state
-    const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
+    const selectedEquipment = availableEquipment.find(eq => eq.set === data.set);
     const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
 
     if (isEditing && equipment) {
@@ -409,7 +432,7 @@ export function EquipmentForm({
                   <Select onValueChange={(value) => {
                     field.onChange(value);
                     // Auto-update tier and level based on equipment selection
-                    const equipData = availableEquipment.find(eq => eq.name === value);
+                    const equipData = availableEquipment.find(eq => eq.set === value);
                     if (equipData) {
                       form.setValue('tier', equipData.tier);
                       form.setValue('level', equipData.level);
@@ -426,34 +449,96 @@ export function EquipmentForm({
                         form.setValue('type', 'accessory');
                       }
                       
-                      // Set starforceable default for the equipment slot
-                      const defaultStarforceable = getDefaultStarforceable(slot);
-                      form.setValue('starforceable', defaultStarforceable);
+                      // Set starforceable based on API data
+                      form.setValue('starforceable', equipData.starforceable);
                       
                       // Reset StarForce if not starforceable
-                      if (!defaultStarforceable) {
+                      if (!equipData.starforceable) {
                         form.setValue('currentStarForce', 0);
                         form.setValue('targetStarForce', 0);
+                      } else {
+                        // If starforceable, set target to default for current level and ensure current is valid
+                        const defaultTarget = getDefaultTargetStarForce(equipData.level);
+                        form.setValue('targetStarForce', defaultTarget);
+                        // Ensure current StarForce doesn't exceed the max for this level
+                        const maxStars = getMaxStarForce(equipData.level);
+                        const currentCurrent = form.getValues('currentStarForce');
+                        if (currentCurrent > maxStars) {
+                          form.setValue('currentStarForce', 0);
+                        }
                       }
                     }
                   }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableEquipment.map((equipment) => (
-                        <SelectItem key={equipment.name} value={equipment.name}>
+                      {equipmentLoading ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          Loading equipment...
+                        </div>
+                      ) : availableEquipment.length === 0 ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          No equipment found for this slot
+                        </div>
+                      ) : (
+                        <>
+                          {equipmentSource === 'local' && (
+                            <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b">
+                              ⚠️ Using local data (API unavailable)
+                            </div>
+                          )}
+                          {availableEquipment.map((equipment) => (
+                        <SelectItem key={equipment.id} value={equipment.set || equipment.id}>
                           <div className="flex items-center gap-2">
                             <EquipmentImage 
                               src={equipment.image} 
-                              alt={equipment.name}
-                              size="sm"
+                              alt={equipment.set || `Equipment ${equipment.id}`}
+                              size="md"
                               fallbackIcon={getSlotIcon(selectedSlot)}
                             />
-                            <span>{equipment.name} (Lv.{equipment.level})</span>
+                            <span>{equipment.set || `Equipment ${equipment.id}`} (Lv.{equipment.level})</span>
                           </div>
+                        </SelectItem>
+                      ))}
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Third line: Potential Tier */}
+            <FormField
+              control={form.control}
+              name="tier"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Potential Tier</FormLabel>
+                  <Select 
+                    onValueChange={(value) => {
+                      if (value === "none") {
+                        field.onChange(null);
+                      } else {
+                        field.onChange(value);
+                      }
+                    }} 
+                    value={field.value ?? "none"}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select potential tier (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">No Potential</SelectItem>
+                      {EQUIPMENT_TIERS.map((tier) => (
+                        <SelectItem key={tier.value} value={tier.value}>
+                          {tier.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -462,88 +547,6 @@ export function EquipmentForm({
                 </FormItem>
               )}
             />
-
-            {/* Third line: Level, Type, and Tier */}
-            <div className="grid grid-cols-3 gap-4">
-              <FormField
-                control={form.control}
-                name="level"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Level</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="200" 
-                        value={field.value}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {EQUIPMENT_TYPES.map((type) => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="tier"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Potential Tier</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        if (value === "none") {
-                          field.onChange(null);
-                        } else {
-                          field.onChange(value);
-                        }
-                      }} 
-                      value={field.value ?? "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select potential tier (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">No Potential</SelectItem>
-                        {EQUIPMENT_TIERS.map((tier) => (
-                          <SelectItem key={tier.value} value={tier.value}>
-                            {tier.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             {/* StarForce Toggle */}
             <FormField
@@ -557,11 +560,6 @@ export function EquipmentForm({
                     </FormLabel>
                     <div className="text-sm text-muted-foreground">
                       Can this equipment be enhanced with StarForce?
-                      {watchSlot && !getDefaultStarforceable(watchSlot) && (
-                        <div className="text-amber-600 dark:text-amber-400 mt-1">
-                          Note: {watchSlot.charAt(0).toUpperCase() + watchSlot.slice(1)} items are typically not starforceable
-                        </div>
-                      )}
                     </div>
                   </div>
                   <FormControl>

@@ -164,9 +164,6 @@ export default function Overview() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <Badge variant="outline" className="mb-1">
-                        {character.server}
-                      </Badge>
                       <p className="text-sm text-muted-foreground">
                         {completed}/{total} ({progress.toFixed(0)}%)
                       </p>

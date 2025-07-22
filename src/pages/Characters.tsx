@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Character, Equipment, EquipmentSlot } from "@/types";
 import { mockCharacters } from "@/data/mockData";
 import { CharacterCard } from "@/components/CharacterCard";
@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Target, Calculator, Download, Upload, Share2, Copy, Check, Plus } from "lucide-react";
+import { Users, Target, Calculator, Download, Upload, Share2, Copy, Check, Plus, RefreshCw } from "lucide-react";
 import { exportCharacterData, importCharacterData, saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 
 export default function Characters() {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -24,10 +25,11 @@ export default function Characters() {
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [addingToSlot, setAddingToSlot] = useState<EquipmentSlot | null>(null);
-  const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
   const [addingStarForceItem, setAddingStarForceItem] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [isRefreshingCharacters, setIsRefreshingCharacters] = useState(false);
+  const hasAutoRefreshed = useRef(false);
   
   // Import/Export state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -48,7 +50,6 @@ export default function Characters() {
       try {
         const imported = importCharacterData(urlData);
         setCharacters(imported.characters);
-        setStarForceItems(imported.starForceItems || []);
         toast({
           title: "Data Imported",
           description: "Character data loaded from URL successfully!",
@@ -69,7 +70,6 @@ export default function Characters() {
     const stored = loadFromLocalStorage();
     if (stored) {
       setCharacters(stored.characters);
-      setStarForceItems(stored.starForceItems);
     } else {
       setCharacters(mockCharacters);
     }
@@ -77,8 +77,8 @@ export default function Characters() {
 
   // Auto-save to localStorage when data changes
   useEffect(() => {
-    saveToLocalStorage(characters, starForceItems);
-  }, [characters, starForceItems]);
+    saveToLocalStorage(characters, []);
+  }, [characters]);
 
   // Auto-select first character when characters load
   useEffect(() => {
@@ -119,6 +119,7 @@ export default function Characters() {
       const character: Character = {
         ...newCharacter,
         id: crypto.randomUUID(),
+        starForceItems: [], // Initialize empty starForceItems
       };
       setCharacters(prev => [...prev, character]);
     }
@@ -146,7 +147,23 @@ export default function Characters() {
   };
 
   const handleRemoveStarForceItem = (id: string) => {
-    setStarForceItems(prev => prev.filter(item => item.id !== id));
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        return {
+          ...char,
+          starForceItems: (char.starForceItems || []).filter(item => item.id !== id)
+        };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
   };
 
   const handleMarkAsDone = (equipmentId: string) => {
@@ -196,6 +213,82 @@ export default function Characters() {
     }
   };
 
+  // Refresh all characters from MapleRanks
+  const refreshCharactersFromMapleRanks = useCallback(async () => {
+    if (characters.length === 0) return;
+
+    setIsRefreshingCharacters(true);
+    let updatedCount = 0;
+
+    try {
+      const updatedCharacters = await Promise.all(
+        characters.map(async (char) => {
+          try {
+            console.log(`Refreshing character: ${char.name}`);
+            const mapleRanksData = await fetchCharacterFromMapleRanks(char.name);
+            
+            if (mapleRanksData) {
+              updatedCount++;
+              // Keep existing equipment and ID, update other data from MapleRanks
+              return {
+                ...char,
+                class: mapleRanksData.class,
+                level: mapleRanksData.level,
+                image: mapleRanksData.image,
+              };
+            }
+            
+            return char; // Return unchanged if MapleRanks data not found
+          } catch (error) {
+            console.error(`Failed to refresh character ${char.name}:`, error);
+            return char; // Return unchanged on error
+          }
+        })
+      );
+
+      setCharacters(updatedCharacters);
+      
+      // Update selected character if it was refreshed
+      if (selectedCharacter) {
+        const updatedSelected = updatedCharacters.find(char => char.id === selectedCharacter.id);
+        if (updatedSelected) {
+          setSelectedCharacter(updatedSelected);
+        }
+      }
+
+      if (updatedCount > 0) {
+        toast({
+          title: "Characters Refreshed",
+          description: `Successfully updated ${updatedCount} character(s) from MapleRanks.`,
+        });
+      } else {
+        toast({
+          title: "No Updates",
+          description: "No character data could be refreshed from MapleRanks.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh characters:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh character data from MapleRanks.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingCharacters(false);
+    }
+  }, [characters, selectedCharacter, setCharacters, setSelectedCharacter, toast]);
+
+  // Auto-refresh characters from MapleRanks when page loads (if characters exist)
+  useEffect(() => {
+    if (characters.length > 0 && !hasAutoRefreshed.current) {
+      console.log('Auto-refreshing characters from MapleRanks...');
+      hasAutoRefreshed.current = true;
+      refreshCharactersFromMapleRanks();
+    }
+  }, [characters.length, refreshCharactersFromMapleRanks]);
+
   const handleResetAllEquipment = () => {
     if (!selectedCharacter) return;
 
@@ -220,13 +313,30 @@ export default function Characters() {
 
   const handleSaveEquipment = (equipmentData: Omit<Equipment, 'id'> | Equipment) => {
     if (addingStarForceItem) {
-      // Adding equipment for star force calculation only
+      // Adding equipment for star force calculation only to selected character
+      if (!selectedCharacter) return;
+
       const newEquipment: Equipment = {
         ...equipmentData,
         id: `sf-${Date.now()}`,
       } as Equipment;
       
-      setStarForceItems(prev => [...prev, newEquipment]);
+      const updatedCharacters = characters.map(char => {
+        if (char.id === selectedCharacter.id) {
+          return {
+            ...char,
+            starForceItems: [...(char.starForceItems || []), newEquipment]
+          };
+        }
+        return char;
+      });
+
+      setCharacters(updatedCharacters);
+      const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+      if (updatedCharacter) {
+        setSelectedCharacter(updatedCharacter);
+      }
+
       setEquipmentFormOpen(false);
       setAddingStarForceItem(false);
       return;
@@ -269,7 +379,7 @@ export default function Characters() {
   // Import/Export functions
   const handleExport = () => {
     try {
-      const exportData = exportCharacterData(characters, starForceItems);
+      const exportData = exportCharacterData(characters, []);
       setExportText(exportData);
       setExportDialogOpen(true);
     } catch (error) {
@@ -294,7 +404,6 @@ export default function Characters() {
     try {
       const imported = importCharacterData(importText.trim());
       setCharacters(imported.characters);
-      setStarForceItems(imported.starForceItems || []);
       setSelectedCharacter(null);
       setImportDialogOpen(false);
       setImportText("");
@@ -448,9 +557,22 @@ export default function Characters() {
         <div className="lg:col-span-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="w-4 h-4 text-primary" />
-                Characters ({characters.length})
+              <CardTitle className="flex items-center justify-between text-lg">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Characters ({characters.length})
+                </div>
+                {characters.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshCharactersFromMapleRanks}
+                    disabled={isRefreshingCharacters}
+                    className="h-8"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isRefreshingCharacters ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 px-4 pb-4">
@@ -517,12 +639,13 @@ export default function Characters() {
               <TabsContent value="calculator" className="space-y-6">
                 <StarForceTable 
                   equipment={selectedCharacter.equipment.filter(eq => eq.starforceable)}
-                  starForceItems={starForceItems}
+                  starForceItems={selectedCharacter.starForceItems || []}
                   onAddStarForceItem={handleAddStarForceItem}
                   onRemoveStarForceItem={handleRemoveStarForceItem}
                   onMarkAsDone={handleMarkAsDone}
                   title={`${selectedCharacter.name}'s StarForce Calculator`}
                   subtitle="Calculate upgrade costs and chances"
+                  characterId={selectedCharacter.id}
                 />
               </TabsContent>
             </Tabs>
@@ -561,6 +684,7 @@ export default function Characters() {
         }}
         onSave={handleSaveEquipment}
         defaultSlot={addingToSlot}
+        selectedJob={selectedCharacter?.class}
       />
     </div>
   );

@@ -91,3 +91,28 @@ export function loadFromLocalStorage(): { characters: Character[]; starForceItem
     return null;
   }
 }
+
+// Spares count localStorage functions
+export function saveSparesToLocalStorage(sparesData: Record<string, number>) {
+  try {
+    localStorage.setItem("maplestory-spares-data", JSON.stringify({
+      spares: sparesData,
+      timestamp: new Date().toISOString()
+    }));
+  } catch (error) {
+    console.error("Failed to save spares to localStorage:", error);
+  }
+}
+
+export function loadSparesFromLocalStorage(): Record<string, number> {
+  try {
+    const stored = localStorage.getItem("maplestory-spares-data");
+    if (!stored) return {};
+    
+    const data = JSON.parse(stored);
+    return data.spares || {};
+  } catch (error) {
+    console.error("Failed to load spares from localStorage:", error);
+    return {};
+  }
+}
