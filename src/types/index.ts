@@ -3,8 +3,8 @@ export interface Character {
   name: string;
   class: string;
   level: number;
-  server: string;
   equipment: Equipment[];
+  image?: string; // Character image from MapleRanks
 }
 
 export interface Equipment {

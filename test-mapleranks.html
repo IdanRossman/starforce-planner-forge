@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapleRanks Test</title>
+</head>
+<body>
+    <h1>MapleRanks Service Test</h1>
+    <div>
+        <input type="text" id="characterName" placeholder="Enter character name" value="OfiLynn">
+        <button onclick="testCharacter()">Test Character</button>
+    </div>
+    <div id="result"></div>
+
+    <script>
+        async function testCharacter() {
+            const characterName = document.getElementById('characterName').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://mapleranks.com/u/${encodeURIComponent(characterName)}`)}`;
+                console.log('Fetching from:', proxyUrl);
+                
+                const response = await fetch(proxyUrl);
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    resultDiv.innerHTML = `Error: ${response.status} ${response.statusText}`;
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                // Try to parse the HTML
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, 'text/html');
+                
+                // Extract character data
+                const nameElement = doc.querySelector('.character-name') || doc.querySelector('h1');
+                const classElement = doc.querySelector('.character-class') || doc.querySelector('.job-name');
+                const levelElement = doc.querySelector('.character-level') || doc.querySelector('.level');
+                const serverElement = doc.querySelector('.character-server') || doc.querySelector('.server-name');
+                const imageElement = doc.querySelector('.character-image img') || doc.querySelector('.avatar img') || doc.querySelector('img[alt*="character"]');
+                
+                const result = {
+                    name: nameElement?.textContent?.trim() || 'Not found',
+                    class: classElement?.textContent?.trim() || 'Not found',
+                    level: levelElement?.textContent?.trim() || 'Not found',
+                    server: serverElement?.textContent?.trim() || 'Not found',
+                    image: imageElement?.src || 'Not found'
+                };
+                
+                resultDiv.innerHTML = `
+                    <h3>Parsed Result:</h3>
+                    <pre>${JSON.stringify(result, null, 2)}</pre>
+                    <h3>Raw HTML (first 1000 chars):</h3>
+                    <pre>${data.contents.substring(0, 1000)}...</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

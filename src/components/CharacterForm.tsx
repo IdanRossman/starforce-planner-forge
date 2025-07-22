@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
+import { fetchCharacterFromMapleRanks } from '@/services/mapleRanksService';
 import {
   Dialog,
   DialogContent,
@@ -30,13 +31,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2, Search } from 'lucide-react';
 
 const characterSchema = z.object({
   name: z.string().min(1, 'Character name is required').max(50, 'Name too long'),
   class: z.string().min(1, 'Character class is required'),
   level: z.coerce.number().min(1, 'Level must be at least 1').max(300, 'Level cannot exceed 300'),
-  server: z.string().min(1, 'Server is required'),
+  image: z.string().optional(),
 });
 
 type CharacterFormData = z.infer<typeof characterSchema>;
@@ -60,23 +61,10 @@ const MAPLE_CLASSES = [
   'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
 ];
 
-const ORGANIZED_SERVERS = {
-  'Interactive Servers': {
-    name: 'Interactive Servers (Regular)',
-    servers: [
-      'Scania', 'Bera', 'Aurora', 'Elysium'
-    ]
-  },
-  'Heroic Servers': {
-    name: 'Heroic Servers (Reboot)',
-    servers: [
-      'Hyperion', 'Kronos'
-    ]
-  }
-};
-
 export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
   const [open, setOpen] = useState(false);
+  const [isLoadingCharacter, setIsLoadingCharacter] = useState(false);
+  const [characterNotFound, setCharacterNotFound] = useState(false);
 
   const form = useForm<CharacterFormData>({
     resolver: zodResolver(characterSchema),
@@ -84,9 +72,58 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       name: '',
       class: '',
       level: 200,
-      server: '',
+      image: '',
     },
   });
+
+  // Handle character name changes to clear image when name is cleared
+  const handleCharacterNameChange = (value: string) => {
+    // If the name is cleared or changed, remove the image and clear not found state
+    if (!value.trim()) {
+      form.setValue('image', '');
+    }
+    setCharacterNotFound(false); // Reset not found state when typing
+  };
+
+  // Handle MapleRanks character lookup
+  const handleCharacterNameBlur = async () => {
+    const characterName = form.getValues('name');
+    if (!characterName.trim()) return; // Don't fetch if name is empty
+    
+    await fetchFromMapleRanks(characterName.trim());
+  };
+
+  // Separate function for manual search
+  const fetchFromMapleRanks = async (characterName: string) => {
+    setIsLoadingCharacter(true);
+    setCharacterNotFound(false); // Reset not found state
+    try {
+      const mapleRanksData = await fetchCharacterFromMapleRanks(characterName);
+      if (mapleRanksData) {
+        // Auto-populate fields with MapleRanks data
+        form.setValue('class', mapleRanksData.class);
+        form.setValue('level', mapleRanksData.level);
+        form.setValue('image', mapleRanksData.image);
+        setCharacterNotFound(false);
+      } else {
+        // Character not found
+        setCharacterNotFound(true);
+      }
+    } catch (error) {
+      console.error('Error fetching character from MapleRanks:', error);
+      setCharacterNotFound(true);
+    } finally {
+      setIsLoadingCharacter(false);
+    }
+  };
+
+  // Handle manual search button click
+  const handleSearchClick = () => {
+    const characterName = form.getValues('name');
+    if (characterName.trim()) {
+      fetchFromMapleRanks(characterName.trim());
+    }
+  };
 
   // Update form when editing character changes
   useEffect(() => {
@@ -95,7 +132,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
         name: editingCharacter.name,
         class: editingCharacter.class,
         level: editingCharacter.level,
-        server: editingCharacter.server,
+        image: editingCharacter.image || '',
       });
       setOpen(true);
     }
@@ -106,7 +143,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       name: data.name,
       class: data.class,
       level: data.level,
-      server: data.server,
+      image: data.image,
       equipment: editingCharacter?.equipment || [], // Preserve equipment when editing
     };
     onAddCharacter(newCharacter);
@@ -119,6 +156,16 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
     setOpen(newOpen);
     if (!newOpen) {
       onEditingChange?.(null); // Reset editing state when dialog closes
+      setCharacterNotFound(false); // Reset not found state
+    } else if (!editingCharacter) {
+      // Reset form when opening for a new character (not editing)
+      form.reset({
+        name: '',
+        class: '',
+        level: 200,
+        image: '',
+      });
+      setCharacterNotFound(false); // Reset not found state
     }
   };
 
@@ -140,6 +187,26 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Character Image Preview */}
+            {form.watch('image') && (
+              <div className="flex justify-center">
+                <div className="relative">
+                  <img 
+                    src={form.watch('image')} 
+                    alt={form.watch('name') || 'Character'} 
+                    className="w-32 h-32 object-cover rounded-lg border-2 border-border"
+                    onError={(e) => {
+                      // Hide image if it fails to load
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                    MapleRanks
+                  </div>
+                </div>
+              </div>
+            )}
+
             <FormField
               control={form.control}
               name="name"
@@ -147,9 +214,48 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                 <FormItem>
                   <FormLabel>Character Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter character name" {...field} />
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input 
+                          placeholder="Enter character name" 
+                          {...field} 
+                          onChange={(e) => {
+                            field.onChange(e);
+                            handleCharacterNameChange(e.target.value);
+                          }}
+                          onBlur={handleCharacterNameBlur}
+                        />
+                        {isLoadingCharacter && (
+                          <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={handleSearchClick}
+                        disabled={isLoadingCharacter || !field.value?.trim()}
+                        title="Search on MapleRanks"
+                      >
+                        <Search className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage />
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    Auto-lookup from MapleRanks 
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      Beta
+                    </span>
+                  </p>
+                  {isLoadingCharacter && (
+                    <p className="text-sm text-muted-foreground">Looking up character on MapleRanks...</p>
+                  )}
+                  {characterNotFound && !isLoadingCharacter && (
+                    <p className="text-sm text-orange-600 dark:text-orange-400">
+                      Character not found on MapleRanks. You can still create the character manually.
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
@@ -166,7 +272,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                  return (
                    <FormItem>
                      <FormLabel>Class</FormLabel>
-                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                     <Select onValueChange={field.onChange} value={field.value}>
                        <FormControl>
                          <SelectTrigger>
                            <SelectValue placeholder="Select a class">
@@ -240,41 +346,12 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
               )}
             />
 
+            {/* Hidden field to store image */}
             <FormField
               control={form.control}
-              name="server"
+              name="image"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Server</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a server" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(ORGANIZED_SERVERS).map(([key, serverGroup]) => (
-                        <div key={key}>
-                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
-                            {serverGroup.name}
-                          </div>
-                          {serverGroup.servers.map((server) => (
-                            <SelectItem key={server} value={server} className="pl-6">
-                              <div className="flex items-center gap-2">
-                                <div className={`w-3 h-3 rounded-full ${key === 'Interactive Servers' ? 'bg-blue-500' : 'bg-orange-500'}`} />
-                                <span>{server}</span>
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${key === 'Interactive Servers' ? 'bg-blue-500/20 text-blue-600' : 'bg-orange-500/20 text-orange-600'}`}>
-                                  {key === 'Interactive Servers' ? 'Interactive' : 'Heroic'}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </div>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+                <input type="hidden" {...field} />
               )}
             />
 

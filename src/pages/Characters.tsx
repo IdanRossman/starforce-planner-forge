@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Character, Equipment, EquipmentSlot } from "@/types";
 import { mockCharacters } from "@/data/mockData";
 import { CharacterCard } from "@/components/CharacterCard";
@@ -12,9 +12,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Target, Calculator, Download, Upload, Share2, Copy, Check, Plus } from "lucide-react";
+import { Users, Target, Calculator, Download, Upload, Share2, Copy, Check, Plus, RefreshCw } from "lucide-react";
 import { exportCharacterData, importCharacterData, saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 
 export default function Characters() {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -28,6 +29,8 @@ export default function Characters() {
   const [addingStarForceItem, setAddingStarForceItem] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [isRefreshingCharacters, setIsRefreshingCharacters] = useState(false);
+  const hasAutoRefreshed = useRef(false);
   
   // Import/Export state
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -195,6 +198,82 @@ export default function Characters() {
       setSelectedCharacter(updatedCharacter);
     }
   };
+
+  // Refresh all characters from MapleRanks
+  const refreshCharactersFromMapleRanks = useCallback(async () => {
+    if (characters.length === 0) return;
+
+    setIsRefreshingCharacters(true);
+    let updatedCount = 0;
+
+    try {
+      const updatedCharacters = await Promise.all(
+        characters.map(async (char) => {
+          try {
+            console.log(`Refreshing character: ${char.name}`);
+            const mapleRanksData = await fetchCharacterFromMapleRanks(char.name);
+            
+            if (mapleRanksData) {
+              updatedCount++;
+              // Keep existing equipment and ID, update other data from MapleRanks
+              return {
+                ...char,
+                class: mapleRanksData.class,
+                level: mapleRanksData.level,
+                image: mapleRanksData.image,
+              };
+            }
+            
+            return char; // Return unchanged if MapleRanks data not found
+          } catch (error) {
+            console.error(`Failed to refresh character ${char.name}:`, error);
+            return char; // Return unchanged on error
+          }
+        })
+      );
+
+      setCharacters(updatedCharacters);
+      
+      // Update selected character if it was refreshed
+      if (selectedCharacter) {
+        const updatedSelected = updatedCharacters.find(char => char.id === selectedCharacter.id);
+        if (updatedSelected) {
+          setSelectedCharacter(updatedSelected);
+        }
+      }
+
+      if (updatedCount > 0) {
+        toast({
+          title: "Characters Refreshed",
+          description: `Successfully updated ${updatedCount} character(s) from MapleRanks.`,
+        });
+      } else {
+        toast({
+          title: "No Updates",
+          description: "No character data could be refreshed from MapleRanks.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to refresh characters:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh character data from MapleRanks.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshingCharacters(false);
+    }
+  }, [characters, selectedCharacter, setCharacters, setSelectedCharacter, toast]);
+
+  // Auto-refresh characters from MapleRanks when page loads (if characters exist)
+  useEffect(() => {
+    if (characters.length > 0 && !hasAutoRefreshed.current) {
+      console.log('Auto-refreshing characters from MapleRanks...');
+      hasAutoRefreshed.current = true;
+      refreshCharactersFromMapleRanks();
+    }
+  }, [characters.length, refreshCharactersFromMapleRanks]);
 
   const handleResetAllEquipment = () => {
     if (!selectedCharacter) return;
@@ -448,9 +527,22 @@ export default function Characters() {
         <div className="lg:col-span-4">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="w-4 h-4 text-primary" />
-                Characters ({characters.length})
+              <CardTitle className="flex items-center justify-between text-lg">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Characters ({characters.length})
+                </div>
+                {characters.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshCharactersFromMapleRanks}
+                    disabled={isRefreshingCharacters}
+                    className="h-8"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isRefreshingCharacters ? 'animate-spin' : ''}`} />
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 px-4 pb-4">
@@ -561,6 +653,7 @@ export default function Characters() {
         }}
         onSave={handleSaveEquipment}
         defaultSlot={addingToSlot}
+        selectedJob={selectedCharacter?.class}
       />
     </div>
   );

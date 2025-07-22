@@ -34,7 +34,7 @@ export const ORGANIZED_CLASSES = {
       'Fire/Poison Mage', 'Ice/Lightning Mage', 'Bishop',
       'Bowmaster', 'Marksman', 'Pathfinder',
       'Night Lord', 'Shadower', 'Dual Blade',
-      'Buccaneer', 'Corsair', 'Cannoneer'
+      'Buccaneer', 'Corsair', 'Cannon Master'
     ]
   },
   [CLASS_SUBCATEGORIES.CYGNUS_KNIGHTS]: {
@@ -126,7 +126,7 @@ export const getJobCategory = (className: string): string => {
   ];
   
   const pirates = [
-    'Buccaneer', 'Corsair', 'Cannoneer', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Mo Xuan'
+    'Buccaneer', 'Corsair', 'Cannon Master', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Mo Xuan'
   ];
   
   if (warriors.includes(className)) return JOB_CATEGORIES.WARRIOR;
@@ -256,7 +256,7 @@ export const getJobDatabaseString = (className: string): string => {
     'Dual Blade': 'dual-blade',
     'Buccaneer': 'buccaneer',
     'Corsair': 'corsair',
-    'Cannoneer': 'cannoneer',
+    'Cannon Master': 'cannoneer',
     
     // Cygnus Knights
     'Dawn Warrior': 'dawn-warrior',

@@ -35,9 +35,31 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect, isSelecte
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
-              <JobIcon className="w-5 h-5 text-white" />
-            </div>
+            {character.image ? (
+              <div className="relative">
+                <img 
+                  src={character.image} 
+                  alt={character.name} 
+                  className="w-32 h-32 rounded-full object-cover border-2 border-border"
+                  onError={(e) => {
+                    // Fallback to job icon if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                />
+                <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${jobColors.bg} items-center justify-center hidden`}>
+                  <JobIcon className="w-8 h-8 text-white" />
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                  <span className="text-xs text-white font-bold">✓</span>
+                </div>
+              </div>
+            ) : (
+              <div className={`w-16 h-16 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                <JobIcon className="w-8 h-8 text-white" />
+              </div>
+            )}
             <div>
               <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
                 {character.name}
@@ -81,13 +103,6 @@ export function CharacterCard({ character, onEdit, onDelete, onSelect, isSelecte
       
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Server</span>
-            <Badge variant="secondary" className="bg-maple-blue/20 text-maple-blue border-maple-blue/30">
-              {character.server}
-            </Badge>
-          </div>
-          
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Equipment Progress</span>
