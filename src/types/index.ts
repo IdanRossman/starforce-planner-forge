@@ -4,6 +4,7 @@ export interface Character {
   class: string;
   level: number;
   equipment: Equipment[];
+  starForceItems?: Equipment[]; // Character-specific StarForce calculator items
   image?: string; // Character image from MapleRanks
 }
 

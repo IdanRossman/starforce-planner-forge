@@ -25,7 +25,6 @@ export default function Characters() {
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [addingToSlot, setAddingToSlot] = useState<EquipmentSlot | null>(null);
-  const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
   const [addingStarForceItem, setAddingStarForceItem] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
@@ -51,7 +50,6 @@ export default function Characters() {
       try {
         const imported = importCharacterData(urlData);
         setCharacters(imported.characters);
-        setStarForceItems(imported.starForceItems || []);
         toast({
           title: "Data Imported",
           description: "Character data loaded from URL successfully!",
@@ -72,7 +70,6 @@ export default function Characters() {
     const stored = loadFromLocalStorage();
     if (stored) {
       setCharacters(stored.characters);
-      setStarForceItems(stored.starForceItems);
     } else {
       setCharacters(mockCharacters);
     }
@@ -80,8 +77,8 @@ export default function Characters() {
 
   // Auto-save to localStorage when data changes
   useEffect(() => {
-    saveToLocalStorage(characters, starForceItems);
-  }, [characters, starForceItems]);
+    saveToLocalStorage(characters, []);
+  }, [characters]);
 
   // Auto-select first character when characters load
   useEffect(() => {
@@ -122,6 +119,7 @@ export default function Characters() {
       const character: Character = {
         ...newCharacter,
         id: crypto.randomUUID(),
+        starForceItems: [], // Initialize empty starForceItems
       };
       setCharacters(prev => [...prev, character]);
     }
@@ -149,7 +147,23 @@ export default function Characters() {
   };
 
   const handleRemoveStarForceItem = (id: string) => {
-    setStarForceItems(prev => prev.filter(item => item.id !== id));
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        return {
+          ...char,
+          starForceItems: (char.starForceItems || []).filter(item => item.id !== id)
+        };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
   };
 
   const handleMarkAsDone = (equipmentId: string) => {
@@ -299,13 +313,30 @@ export default function Characters() {
 
   const handleSaveEquipment = (equipmentData: Omit<Equipment, 'id'> | Equipment) => {
     if (addingStarForceItem) {
-      // Adding equipment for star force calculation only
+      // Adding equipment for star force calculation only to selected character
+      if (!selectedCharacter) return;
+
       const newEquipment: Equipment = {
         ...equipmentData,
         id: `sf-${Date.now()}`,
       } as Equipment;
       
-      setStarForceItems(prev => [...prev, newEquipment]);
+      const updatedCharacters = characters.map(char => {
+        if (char.id === selectedCharacter.id) {
+          return {
+            ...char,
+            starForceItems: [...(char.starForceItems || []), newEquipment]
+          };
+        }
+        return char;
+      });
+
+      setCharacters(updatedCharacters);
+      const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+      if (updatedCharacter) {
+        setSelectedCharacter(updatedCharacter);
+      }
+
       setEquipmentFormOpen(false);
       setAddingStarForceItem(false);
       return;
@@ -348,7 +379,7 @@ export default function Characters() {
   // Import/Export functions
   const handleExport = () => {
     try {
-      const exportData = exportCharacterData(characters, starForceItems);
+      const exportData = exportCharacterData(characters, []);
       setExportText(exportData);
       setExportDialogOpen(true);
     } catch (error) {
@@ -373,7 +404,6 @@ export default function Characters() {
     try {
       const imported = importCharacterData(importText.trim());
       setCharacters(imported.characters);
-      setStarForceItems(imported.starForceItems || []);
       setSelectedCharacter(null);
       setImportDialogOpen(false);
       setImportText("");
@@ -609,12 +639,13 @@ export default function Characters() {
               <TabsContent value="calculator" className="space-y-6">
                 <StarForceTable 
                   equipment={selectedCharacter.equipment.filter(eq => eq.starforceable)}
-                  starForceItems={starForceItems}
+                  starForceItems={selectedCharacter.starForceItems || []}
                   onAddStarForceItem={handleAddStarForceItem}
                   onRemoveStarForceItem={handleRemoveStarForceItem}
                   onMarkAsDone={handleMarkAsDone}
                   title={`${selectedCharacter.name}'s StarForce Calculator`}
                   subtitle="Calculate upgrade costs and chances"
+                  characterId={selectedCharacter.id}
                 />
               </TabsContent>
             </Tabs>

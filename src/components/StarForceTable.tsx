@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment, EquipmentWithCharacter } from "@/types";
 import { calculateStarForce } from "@/components/StarForceCalculator";
+import { saveSparesToLocalStorage, loadSparesFromLocalStorage } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ interface StarForceTableProps {
   onMarkAsDone?: (equipmentId: string) => void;
   title?: string;
   subtitle?: string;
+  characterId?: string; // Add character ID for unique spares storage
 }
 
 interface StarForceEvents {
@@ -118,7 +120,7 @@ const getDangerColor = (currentStars: number) => {
   return 'text-green-400';
 };
 
-export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, onMarkAsDone, title, subtitle }: StarForceTableProps) {
+export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, onMarkAsDone, title, subtitle, characterId }: StarForceTableProps) {
   // Filter equipped items that haven't reached target stars AND are starforceable
   const incompleteEquipment = useMemo(
     () => equipment.filter(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce),
@@ -140,23 +142,46 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
   
   const [calculations, setCalculations] = useState<CalculationRow[]>([]);
 
-  // Update calculations when items change
+  // Load spares data from localStorage on component mount
   useEffect(() => {
+    const savedSpares = loadSparesFromLocalStorage();
+    
     const existingCalcs = new Map(calculations.map(calc => [calc.equipment.id, calc]));
-    const newCalculations = allStarForceItems.map(eq => 
-      existingCalcs.get(eq.id) || {
+    const newCalculations = allStarForceItems.map(eq => {
+      // Create unique key combining character ID and equipment ID
+      const sparesKey = characterId ? `${characterId}-${eq.id}` : eq.id;
+      return existingCalcs.get(eq.id) || {
         equipment: eq,
-        sparesCount: 0,
+        sparesCount: savedSpares[sparesKey] || 0, // Load saved spares count using unique key
         starCatching: true,
         safeguard: false,
         expectedCost: 0,
         expectedSpares: 0,
         isCalculated: false,
-      }
-    );
+      };
+    });
     setCalculations(newCalculations);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allStarForceItems]);
+  }, [allStarForceItems, characterId]);
+
+  // Save spares data to localStorage whenever spares count changes
+  useEffect(() => {
+    const sparesData: Record<string, number> = loadSparesFromLocalStorage(); // Load existing data first
+    
+    calculations.forEach(calc => {
+      // Create unique key combining character ID and equipment ID
+      const sparesKey = characterId ? `${characterId}-${calc.equipment.id}` : calc.equipment.id;
+      
+      if (calc.sparesCount > 0) {
+        sparesData[sparesKey] = calc.sparesCount;
+      } else {
+        // Remove entry if spares count is 0
+        delete sparesData[sparesKey];
+      }
+    });
+    
+    saveSparesToLocalStorage(sparesData);
+  }, [calculations, characterId]);
 
   const updateSparesCount = (equipmentId: string, count: number) => {
     setCalculations(prev => 
