@@ -135,7 +135,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
         <EquipmentImage 
           src={equipment.image} 
           alt={equipment.set || "Equipment"}
-          size="sm"
+          size="md"
           onImageStatusChange={setHasImage}
           showFallback={false}
         />
@@ -147,7 +147,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           <EquipmentImage 
             src={equipment.image} 
             alt={equipment.set || "Equipment"}
-            size="md"
+            size="lg"
             showFallback={false}
             className="shrink-0"
           />
