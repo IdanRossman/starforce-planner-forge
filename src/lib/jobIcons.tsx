@@ -109,7 +109,7 @@ export const ORGANIZED_CLASSES = {
 export const getJobCategory = (className: string): string => {
   const warriors = [
     'Hero', 'Paladin', 'Dark Knight', 'Dawn Warrior', 'Aran', 'Kaiser', 'Demon Slayer', 'Demon Avenger',
-    'Blaster', 'Hayato', 'Zero', 'Adele', 'Ark'
+    'Blaster', 'Hayato', 'Zero', 'Adele'
   ];
   
   const mages = [
@@ -126,7 +126,7 @@ export const getJobCategory = (className: string): string => {
   ];
   
   const pirates = [
-    'Buccaneer', 'Corsair', 'Cannon Master', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Mo Xuan'
+    'Buccaneer', 'Corsair', 'Cannon Master', 'Thunder Breaker', 'Shade', 'Mechanic', 'Angelic Buster', 'Mo Xuan','Ark'
   ];
   
   if (warriors.includes(className)) return JOB_CATEGORIES.WARRIOR;
