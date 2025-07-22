@@ -40,7 +40,7 @@ export const ORGANIZED_CLASSES = {
   [CLASS_SUBCATEGORIES.CYGNUS_KNIGHTS]: {
     name: 'Cygnus Knights',
     classes: [
-      'Dawn Warrior', 'Blaze Wizard', 'Wind Archer', 'Night Walker', 'Thunder Breaker'
+      'Dawn Warrior', 'Blaze Wizard', 'Wind Archer', 'Night Walker', 'Thunder Breaker', 'Mihile'
     ]
   },
   [CLASS_SUBCATEGORIES.HEROES]: {
@@ -145,7 +145,7 @@ export const getClassSubcategory = (className: string): string => {
       return category.name;
     }
   }
-  return CLASS_SUBCATEGORIES.OTHER;
+  return 'Other'; // fallback for unknown classes
 };
 
 // Get job icon component
@@ -236,4 +236,88 @@ export const getJobCategoryName = (className: string) => {
     default:
       return 'Warrior';
   }
+};
+
+// Map display names to database job strings
+export const getJobDatabaseString = (className: string): string => {
+  const jobMapping: Record<string, string> = {
+    // Explorers
+    'Hero': 'hero',
+    'Paladin': 'paladin',
+    'Dark Knight': 'dark-knight',
+    'Fire/Poison Mage': 'archmage-fire-poison',
+    'Ice/Lightning Mage': 'archmage-ice-lightning',
+    'Bishop': 'bishop',
+    'Bowmaster': 'bowmaster',
+    'Marksman': 'marksman',
+    'Pathfinder': 'pathfinder',
+    'Night Lord': 'night-lord',
+    'Shadower': 'shadower',
+    'Dual Blade': 'dual-blade',
+    'Buccaneer': 'buccaneer',
+    'Corsair': 'corsair',
+    'Cannoneer': 'cannoneer',
+    
+    // Cygnus Knights
+    'Dawn Warrior': 'dawn-warrior',
+    'Blaze Wizard': 'blaze-wizard',
+    'Wind Archer': 'wind-archer',
+    'Night Walker': 'night-walker',
+    'Thunder Breaker': 'thunder-breaker',
+    'Mihile': 'mihile',
+    
+    // Heroes
+    'Aran': 'aran',
+    'Evan': 'evan',
+    'Mercedes': 'mercedes',
+    'Phantom': 'phantom',
+    'Luminous': 'luminous',
+    'Shade': 'shade',
+    
+    // Resistance
+    'Blaster': 'blaster',
+    'Battle Mage': 'battle-mage',
+    'Wild Hunter': 'wild-hunter',
+    'Mechanic': 'mechanic',
+    'Xenon': 'xenon',
+    'Demon Slayer': 'demon-slayer',
+    'Demon Avenger': 'demon-avenger',
+    
+    // Nova
+    'Kaiser': 'kaiser',
+    'Angelic Buster': 'angelic-buster',
+    'Cadena': 'cadena',
+    'Kain': 'kain',
+    
+    // Flora
+    'Illium': 'illium',
+    'Ark': 'ark',
+    'Adele': 'adele',
+    'Khali': 'khali',
+    
+    // Sengoku
+    'Hayato': 'hayato',
+    'Kanna': 'kanna',
+    
+    // Jianghu
+    'Lynn': 'lynn',
+    // Note: 'Mo Xuan' not in DB list, mapping to generic
+    'Mo Xuan': 'mo-xuan',
+    
+    // Anima
+    'Hoyoung': 'hoyoung',
+    'Lara': 'lara',
+    
+    // Shine
+    // Note: 'Sia' not in DB list, mapping to generic
+    'Sia': 'sia',
+    
+    // Transcendent
+    'Zero': 'zero',
+    
+    // Friends World
+    'Kinesis': 'kinesis'
+  };
+  
+  return jobMapping[className] || className.toLowerCase().replace(/[\s/]/g, '-');
 };

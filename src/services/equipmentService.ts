@@ -1,5 +1,6 @@
 import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
 import { EQUIPMENT_DATABASE } from '@/data/equipmentDatabase';
+import { getJobDatabaseString } from '@/lib/jobIcons';
 import { apiService } from './api';
 
 // Map equipment slots to API equipment types
@@ -57,16 +58,6 @@ function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
     return 'armor';
   };
 
-  // Map API class to equipment tier
-  const getTier = (className?: string): EquipmentTier | null => {
-    if (!className) return null;
-    const lowerClass = className.toLowerCase();
-    if (['rare', 'epic', 'unique', 'legendary'].includes(lowerClass)) {
-      return lowerClass as EquipmentTier;
-    }
-    return null;
-  };
-
   return {
     id: apiEquipment.id.toString(),
     slot: apiEquipment.type as EquipmentSlot,
@@ -75,10 +66,42 @@ function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
     set: apiEquipment.set || apiEquipment.name,
     currentStarForce: 0,
     targetStarForce: 0,
-    tier: getTier(apiEquipment.class),
+    tier: null,
     starforceable: apiEquipment.starforceable,
     image: apiEquipment.storage_url
   };
+}
+
+export async function getEquipmentBySlotAndJob(slot: EquipmentSlot, job: string): Promise<{ equipment: Equipment[]; source: 'api' | 'local' }> {
+  const cacheKey = `slot-${slot}-job-${job}`;
+  const cached = equipmentCache.get(cacheKey);
+  
+  // Return cached data if still valid
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return { equipment: cached.data, source: 'api' };
+  }
+
+  try {
+    const equipmentType = SLOT_TO_TYPE_MAP[slot];
+    const dbJobString = getJobDatabaseString(job);
+    
+    const apiData = await apiService.get<ApiEquipment[]>(`/Equipment/type/${equipmentType}/job/${dbJobString}`);
+    
+    const equipment = apiData.map(transformApiEquipment);
+    
+    // Cache the result
+    equipmentCache.set(cacheKey, {
+      data: equipment,
+      timestamp: Date.now()
+    });
+    
+    return { equipment, source: 'api' };
+  } catch (error) {
+    console.warn(`Failed to fetch equipment from API for slot ${slot} and job ${job}, falling back to slot-only data:`, error);
+    
+    // Fallback to slot-only data if job-specific fails
+    return getEquipmentBySlot(slot);
+  }
 }
 
 export async function getEquipmentBySlot(slot: EquipmentSlot): Promise<{ equipment: Equipment[]; source: 'api' | 'local' }> {

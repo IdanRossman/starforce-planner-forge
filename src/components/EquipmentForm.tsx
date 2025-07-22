@@ -6,7 +6,7 @@ import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types'
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { EquipmentImage } from '@/components/EquipmentImage';
-import { getEquipmentBySlot } from '@/services/equipmentService';
+import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
 import { 
   Sword, 
   Shield, 
@@ -92,6 +92,7 @@ interface EquipmentFormProps {
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
   allowSlotEdit?: boolean;
+  selectedJob?: string;
 }
 
 const getSlotIcon = (slotValue: string) => {
@@ -172,7 +173,8 @@ export function EquipmentForm({
   equipment, 
   defaultSlot, 
   onSave,
-  allowSlotEdit = false
+  allowSlotEdit = false,
+  selectedJob
 }: EquipmentFormProps) {
   const isEditing = !!equipment;
 
@@ -298,7 +300,13 @@ export function EquipmentForm({
   useEffect(() => {
     if (selectedSlot) {
       setEquipmentLoading(true);
-      getEquipmentBySlot(selectedSlot as EquipmentSlot)
+      
+      // Use job-specific API if job is selected, otherwise use slot-only
+      const fetchEquipment = selectedJob 
+        ? getEquipmentBySlotAndJob(selectedSlot as EquipmentSlot, selectedJob)
+        : getEquipmentBySlot(selectedSlot as EquipmentSlot);
+      
+      fetchEquipment
         .then(({ equipment, source }) => {
           setAvailableEquipment(equipment);
           setEquipmentSource(source);
@@ -313,7 +321,7 @@ export function EquipmentForm({
     } else {
       setAvailableEquipment([]);
     }
-  }, [selectedSlot]);
+  }, [selectedSlot, selectedJob]);
   
   // Watch for overall/top/bottom conflicts
   const currentSlot = form.watch('slot');

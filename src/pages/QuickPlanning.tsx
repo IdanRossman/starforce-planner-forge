@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { QuickStarForceTable } from "@/components/QuickStarForceTable";
 import { EquipmentForm } from "@/components/EquipmentForm";
-import { EQUIPMENT_TEMPLATES, getTemplateById, getDefaultTemplate } from "@/data/equipmentTemplates";
+import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { 
   Calculator, 
   Sparkles, 
@@ -25,43 +25,29 @@ interface QuickPlanningProps {
 }
 
 export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPlanningProps) {
-  const [selectedTemplateId, setSelectedTemplateId] = useState(getDefaultTemplate().id);
+  const [selectedJob, setSelectedJob] = useState<string>("");
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [starForceItems, setStarForceItems] = useState<Equipment[]>([]);
   const [isEquipmentFormOpen, setIsEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
-  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
-  // Load template equipment when template changes
+  // Clear equipment on component mount (page navigation)
   useEffect(() => {
-    const template = getTemplateById(selectedTemplateId);
-    if (template) {
-      setIsLoadingTemplate(true);
-      setLoadedImages(new Set()); // Reset loaded images
-      
-      // Clear equipment immediately to prevent conflicts
+    setEquipment([]);
+    setStarForceItems([]);
+    setSelectedJob("");
+  }, []);
+
+  // Handle job selection changes
+  useEffect(() => {
+    if (selectedJob) {
+      // Clear equipment when job changes
       setEquipment([]);
       setStarForceItems([]);
-      
-      // Add a small delay to ensure smooth transition
-      setTimeout(() => {
-        // Create fresh equipment with new IDs to avoid conflicts between templates
-        const freshEquipment = template.equipment.map(eq => ({
-          ...eq,
-          id: `template-${eq.slot}-${Date.now()}-${Math.random()}`
-        }));
-        
-        setEquipment(freshEquipment);
-        
-        // Give a moment for the equipment to render, then remove loading
-        setTimeout(() => {
-          setIsLoadingTemplate(false);
-        }, 500);
-      }, 100);
     }
-  }, [selectedTemplateId]);
+  }, [selectedJob]);
 
   // Update starforce items when equipment changes (auto-calculation)
   useEffect(() => {
@@ -88,22 +74,15 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
   };
 
   const handleSaveEquipment = (equipmentData: Equipment) => {
-    console.log('Saving equipment:', equipmentData);
-    
     if (editingEquipment) {
-      console.log('Updating existing equipment:', editingEquipment.id);
       setEquipment(prev => {
         const updated = prev.map(eq => eq.id === editingEquipment.id ? equipmentData : eq);
-        const updatedEquipment = updated.find(eq => eq.id === editingEquipment.id);
-        console.log('Updated equipment:', updatedEquipment);
         return updated;
       });
     } else {
-      console.log('Adding new equipment to slot:', equipmentData.slot);
       setEquipment(prev => {
         const filtered = prev.filter(eq => eq.slot !== equipmentData.slot);
         const newEquipment = [...filtered, equipmentData];
-        console.log('New equipment array:', newEquipment);
         return newEquipment;
       });
     }
@@ -116,8 +95,6 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
   ).length;
   const completionRate = totalEquipment > 0 ? 
     ((totalEquipment - incompleteEquipment) / totalEquipment * 100) : 0;
-
-  const currentTemplate = getTemplateById(selectedTemplateId);
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
@@ -147,7 +124,7 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
                     <Badge variant="secondary" className="text-xs">No signup required</Badge>
                   </CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Choose a template and see instant cost calculations
+                    Choose a job class and customize your equipment setup
                   </p>
                 </div>
               </div>
@@ -165,7 +142,7 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
         </CardHeader>
       </Card>
 
-      {/* Equipment Template Selector - Primary Focus */}
+      {/* Job Selector - Primary Focus */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-purple-500/5">
         <CardHeader className="pb-6">
           <div className="text-center space-y-4">
@@ -175,45 +152,92 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
               </div>
               <div>
                 <CardTitle className="text-2xl flex items-center gap-3">
-                  Choose Your Equipment Template
+                  Choose Your Job Class
                   <Badge variant="outline" className="text-sm bg-primary/10 border-primary/30">
                     Step 1
                   </Badge>
                 </CardTitle>
                 <p className="text-muted-foreground text-lg mt-2">
-                  Start with a preset configuration tailored to your playstyle and goals
+                  Select your character's job to fetch appropriate equipment
                 </p>
               </div>
             </div>
             
-            {/* Template Selector */}
+            {/* Job Selector */}
             <div className="max-w-md mx-auto">
               <Select 
-                value={selectedTemplateId} 
+                value={selectedJob} 
                 onValueChange={(value) => {
-                  setSelectedTemplateId(value);
+                  setSelectedJob(value);
                 }}
-                disabled={isLoadingTemplate}
               >
                 <SelectTrigger className="w-full h-14 text-lg border-primary/30 bg-background/80 backdrop-blur-sm">
-                  <SelectValue />
+                  <SelectValue placeholder="Select a job class">
+                    {selectedJob && (
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const JobIcon = getJobIcon(selectedJob);
+                          const jobColors = getJobColors(selectedJob);
+                          const jobCategory = getJobCategoryName(selectedJob);
+                          const classSubcategory = getClassSubcategory(selectedJob);
+                          
+                          return (
+                            <>
+                              <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                <JobIcon className="w-3 h-3 text-white" />
+                              </div>
+                              <span>{selectedJob}</span>
+                              {jobCategory && classSubcategory && (
+                                <div className="flex gap-1">
+                                  <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                    {jobCategory}
+                                  </span>
+                                  <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                    {classSubcategory}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {EQUIPMENT_TEMPLATES.map((template) => (
-                    <SelectItem key={template.id} value={template.id} className="py-3">
-                      <div className="flex flex-col text-left">
-                        <span className="font-semibold text-base">{template.name}</span>
-                        <span className="text-sm text-muted-foreground">{template.description}</span>
+                  {Object.entries(ORGANIZED_CLASSES).map(([key, category]) => (
+                    <div key={key}>
+                      <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
+                        {category.name}
                       </div>
-                    </SelectItem>
+                      {category.classes.map((cls) => {
+                        const ClassIcon = getJobIcon(cls);
+                        const classColors = getJobColors(cls);
+                        const classCategory = getJobCategoryName(cls);
+                        
+                        return (
+                          <SelectItem key={cls} value={cls} className="pl-6">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
+                                <ClassIcon className="w-2.5 h-2.5 text-white" />
+                              </div>
+                              <span className="flex-1">{cls}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
+                                {classCategory}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                    </div>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           
-          {/* Template Info */}
-          {currentTemplate && (
+          {/* Equipment Stats */}
+          {selectedJob && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-4 max-w-lg mx-auto">
               <div className="bg-background/40 backdrop-blur-sm rounded-md p-2 border border-primary/15 text-center">
                 <div className="flex items-center justify-center gap-1.5 mb-0.5">
@@ -254,19 +278,14 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
               <Badge variant="outline" className="text-xs bg-secondary/50">Step 2: Customize</Badge>
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              Click any equipment slot to edit or add custom equipment
+              {selectedJob 
+                ? `Click any equipment slot to see ${selectedJob}-specific equipment options`
+                : "Select a job class above, then click any equipment slot to customize"
+              }
             </p>
           </CardHeader>
           <CardContent className="p-6 overflow-hidden">
             <div className="w-full flex justify-center relative">
-              {isLoadingTemplate && (
-                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-10">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                    <p className="text-sm text-muted-foreground">Loading equipment...</p>
-                  </div>
-                </div>
-              )}
               <EquipmentGrid
                 equipment={equipment}
                 onEditEquipment={handleEditEquipment}
@@ -341,6 +360,7 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
         defaultSlot={defaultSlot}
         onSave={handleSaveEquipment}
         allowSlotEdit={!editingEquipment}
+        selectedJob={selectedJob}
       />
     </div>
   );
