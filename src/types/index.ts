@@ -20,6 +20,7 @@ export interface Equipment {
   tier?: EquipmentTier | null;
   starforceable: boolean;
   image?: string; // Path to equipment image
+  actualCost?: number; // Actual cost paid by user for tracking luck
 }
 
 export interface EquipmentWithCharacter extends Equipment {

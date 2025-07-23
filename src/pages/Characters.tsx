@@ -4,6 +4,7 @@ import { mockCharacters } from "@/data/mockData";
 import { CharacterCard } from "@/components/CharacterCard";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { StarForceTable } from "@/components/StarForceTable";
+import { StarForceCalculator } from "@/components/StarForceCalculator";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { CharacterForm } from "@/components/CharacterForm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -637,15 +638,74 @@ export default function Characters() {
               </TabsContent>
 
               <TabsContent value="calculator" className="space-y-6">
-                <StarForceTable 
+                <StarForceCalculator 
+                  mode="equipment-table"
                   equipment={selectedCharacter.equipment.filter(eq => eq.starforceable)}
-                  starForceItems={selectedCharacter.starForceItems || []}
-                  onAddStarForceItem={handleAddStarForceItem}
-                  onRemoveStarForceItem={handleRemoveStarForceItem}
-                  onMarkAsDone={handleMarkAsDone}
-                  title={`${selectedCharacter.name}'s StarForce Calculator`}
-                  subtitle="Calculate upgrade costs and chances"
-                  characterId={selectedCharacter.id}
+                  additionalEquipment={selectedCharacter.starForceItems || []}
+                  onUpdateStarforce={(equipmentId, current, target) => {
+                    const updatedCharacters = characters.map(char => {
+                      if (char.id === selectedCharacter.id) {
+                        // Update in regular equipment
+                        const updatedEquipment = char.equipment.map(eq => 
+                          eq.id === equipmentId 
+                            ? { ...eq, currentStarForce: current, targetStarForce: target }
+                            : eq
+                        );
+                        
+                        // Update in starForceItems if present
+                        const updatedStarForceItems = (char.starForceItems || []).map(eq => 
+                          eq.id === equipmentId 
+                            ? { ...eq, currentStarForce: current, targetStarForce: target }
+                            : eq
+                        );
+                        
+                        return {
+                          ...char,
+                          equipment: updatedEquipment,
+                          starForceItems: updatedStarForceItems
+                        };
+                      }
+                      return char;
+                    });
+                    
+                    setCharacters(updatedCharacters);
+                    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+                    if (updatedCharacter) {
+                      setSelectedCharacter(updatedCharacter);
+                    }
+                  }}
+                  onUpdateActualCost={(equipmentId, actualCost) => {
+                    const updatedCharacters = characters.map(char => {
+                      if (char.id === selectedCharacter.id) {
+                        // Update in regular equipment
+                        const updatedEquipment = char.equipment.map(eq => 
+                          eq.id === equipmentId 
+                            ? { ...eq, actualCost }
+                            : eq
+                        );
+                        
+                        // Update in starForceItems if present
+                        const updatedStarForceItems = (char.starForceItems || []).map(eq => 
+                          eq.id === equipmentId 
+                            ? { ...eq, actualCost }
+                            : eq
+                        );
+                        
+                        return {
+                          ...char,
+                          equipment: updatedEquipment,
+                          starForceItems: updatedStarForceItems
+                        };
+                      }
+                      return char;
+                    });
+                    
+                    setCharacters(updatedCharacters);
+                    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+                    if (updatedCharacter) {
+                      setSelectedCharacter(updatedCharacter);
+                    }
+                  }}
                 />
               </TabsContent>
             </Tabs>

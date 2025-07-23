@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { useState, useEffect } from "react";
 import { 
@@ -122,47 +121,19 @@ const getSlotIcon = (slot: string) => {
 
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [isLoading, setIsLoading] = useState(!!equipment.image);
+  const [imageFailedToLoad, setImageFailedToLoad] = useState(false);
   
-  // Reset image state when equipment changes
+  // Reset state when equipment changes
   useEffect(() => {
-    setImageLoaded(false);
-    setImageError(false);
-    setIsLoading(!!equipment.image);
+    setImageFailedToLoad(false);
   }, [equipment.id, equipment.image]);
 
-  // Handle image loading
-  useEffect(() => {
-    if (equipment.image) {
-      const img = new Image();
-      img.onload = () => {
-        setImageLoaded(true);
-        setIsLoading(false);
-      };
-      img.onerror = () => {
-        setImageError(true);
-        setIsLoading(false);
-      };
-      img.src = equipment.image;
-    } else {
-      setIsLoading(false);
-    }
-  }, [equipment.image]);
+  // If no image or image failed, show text layout
+  const shouldShowTextLayout = !equipment.image || imageFailedToLoad;
   
   return (
     <div className="space-y-2">
-      {isLoading ? (
-        // Loading state - show skeleton while image loads
-        <div className="flex flex-col items-center justify-center space-y-2">
-          <Skeleton className="w-12 h-12 rounded" />
-          <Skeleton className="w-16 h-3" />
-          {equipment.starforceable && (
-            <Skeleton className="w-12 h-3" />
-          )}
-        </div>
-      ) : imageLoaded && !imageError ? (
+      {!shouldShowTextLayout ? (
         // Image-centered layout: image with centered StarForce below
         <div className="flex flex-col items-center justify-center space-y-1">
           <EquipmentImage 
@@ -170,7 +141,13 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
             alt={equipment.name || equipment.set || "Equipment"}
             size="lg"
             showFallback={false}
+            maxRetries={3}
             className="shrink-0"
+            onImageStatusChange={(hasImage) => {
+              if (!hasImage) {
+                setImageFailedToLoad(true);
+              }
+            }}
           />
           {/* StarForce display - centered below image */}
           {equipment.starforceable && (
