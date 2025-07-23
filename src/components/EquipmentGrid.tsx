@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { useState, useEffect } from "react";
 import { 
@@ -121,32 +122,52 @@ const getSlotIcon = (slot: string) => {
 
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
-  const [hasImage, setHasImage] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!equipment.image);
   
   // Reset image state when equipment changes
   useEffect(() => {
-    setHasImage(false);
-  }, [equipment.id, equipment.set, equipment.image]);
+    setImageLoaded(false);
+    setImageError(false);
+    setIsLoading(!!equipment.image);
+  }, [equipment.id, equipment.image]);
+
+  // Handle image loading
+  useEffect(() => {
+    if (equipment.image) {
+      const img = new Image();
+      img.onload = () => {
+        setImageLoaded(true);
+        setIsLoading(false);
+      };
+      img.onerror = () => {
+        setImageError(true);
+        setIsLoading(false);
+      };
+      img.src = equipment.image;
+    } else {
+      setIsLoading(false);
+    }
+  }, [equipment.image]);
   
   return (
     <div className="space-y-2">
-      {/* Hidden image detector */}
-      <div className="hidden">
-        <EquipmentImage 
-          src={equipment.image} 
-          alt={equipment.set || "Equipment"}
-          size="md"
-          onImageStatusChange={setHasImage}
-          showFallback={false}
-        />
-      </div>
-      
-      {hasImage ? (
+      {isLoading ? (
+        // Loading state - show skeleton while image loads
+        <div className="flex flex-col items-center justify-center space-y-2">
+          <Skeleton className="w-12 h-12 rounded" />
+          <Skeleton className="w-16 h-3" />
+          {equipment.starforceable && (
+            <Skeleton className="w-12 h-3" />
+          )}
+        </div>
+      ) : imageLoaded && !imageError ? (
         // Image-centered layout: image with centered StarForce below
         <div className="flex flex-col items-center justify-center space-y-1">
           <EquipmentImage 
             src={equipment.image} 
-            alt={equipment.set || "Equipment"}
+            alt={equipment.name || equipment.set || "Equipment"}
             size="lg"
             showFallback={false}
             className="shrink-0"
@@ -170,7 +191,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           )}
         </div>
       ) : (
-        // Text layout: no image, show equipment details with slot icon
+        // Text layout: no image or image failed to load, show equipment details with slot icon
         <div className="space-y-2">
           <div className="flex items-start gap-2">
             <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded shrink-0">
@@ -178,7 +199,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-medium text-foreground truncate">
-                {equipment.set || `Lv.${equipment.level} Equipment`}
+                {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {label}
@@ -360,7 +381,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                                 {getSlotIcon(slot)}
                                 <div className="min-w-0 flex-1">
                                   <p className="text-xs font-medium text-foreground truncate">
-                                    {equipment.set || `Lv.${equipment.level} Equipment`}
+                                    {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
                                   </p>
                                   <p className="text-xs text-muted-foreground truncate">
                                     {label}

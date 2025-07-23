@@ -10,10 +10,11 @@ export interface Character {
 
 export interface Equipment {
   id: string;
+  name?: string; // Equipment name (e.g., "Aquatic Letter Eye Accessory")
   slot: EquipmentSlot;
   type: EquipmentType;
   level: number;
-  set?: string;
+  set?: string; // Set name (e.g., "Boss Accessory")
   currentStarForce: number;
   targetStarForce: number;
   tier?: EquipmentTier | null;

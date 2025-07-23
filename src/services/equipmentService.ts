@@ -60,10 +60,11 @@ function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
 
   return {
     id: apiEquipment.id.toString(),
+    name: apiEquipment.name, // Store the actual equipment name
     slot: apiEquipment.type as EquipmentSlot,
     type: getEquipmentType(apiEquipment.type),
     level: apiEquipment.level,
-    set: apiEquipment.set || apiEquipment.name,
+    set: apiEquipment.set, // Store the set name separately
     currentStarForce: 0,
     targetStarForce: 0,
     tier: null,

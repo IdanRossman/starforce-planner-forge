@@ -257,7 +257,7 @@ export function EquipmentForm({
           slot: equipment.slot,
           type: equipment.type,
           level: equipment.level,
-          set: equipment.set || '',
+          set: equipment.name || equipment.set || '', // Use name if available, fallback to set
           tier: equipment.tier,
           currentStarForce: equipment.currentStarForce,
           targetStarForce: equipment.targetStarForce,
@@ -319,13 +319,14 @@ export function EquipmentForm({
 
   const onSubmit = (data: EquipmentFormData) => {
     // Find the selected equipment to get its image, prioritizing tracked state
-    const selectedEquipment = availableEquipment.find(eq => eq.set === data.set);
+    const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
     const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
 
     if (isEditing && equipment) {
       onSave({
         ...equipment,
         ...data,
+        name: data.set, // Store the selected name
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
         tier: data.tier as EquipmentTier | null | undefined,
@@ -333,10 +334,11 @@ export function EquipmentForm({
       });
     } else {
       onSave({
+        name: data.set, // Store the selected name
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
         level: data.level,
-        set: data.set,
+        set: selectedEquipment?.set, // Store the actual set name from API
         tier: data.tier as EquipmentTier | null | undefined,
         currentStarForce: data.starforceable ? data.currentStarForce : 0,
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
@@ -432,7 +434,7 @@ export function EquipmentForm({
                   <Select onValueChange={(value) => {
                     field.onChange(value);
                     // Auto-update tier and level based on equipment selection
-                    const equipData = availableEquipment.find(eq => eq.set === value);
+                    const equipData = availableEquipment.find(eq => eq.name === value);
                     if (equipData) {
                       form.setValue('tier', equipData.tier);
                       form.setValue('level', equipData.level);
@@ -471,7 +473,28 @@ export function EquipmentForm({
                   }} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"} />
+                        <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"}>
+                          {field.value && (
+                            <div className="flex items-center gap-2">
+                              {(() => {
+                                const selectedEquip = availableEquipment.find(eq => eq.name === field.value);
+                                return selectedEquip ? (
+                                  <>
+                                    <EquipmentImage 
+                                      src={selectedEquip.image} 
+                                      alt={selectedEquip.name || `Equipment ${selectedEquip.id}`}
+                                      size="sm"
+                                      fallbackIcon={getSlotIcon(selectedSlot)}
+                                    />
+                                    <span>{selectedEquip.name} (Lv.{selectedEquip.level})</span>
+                                  </>
+                                ) : (
+                                  <span>{field.value}</span>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -491,15 +514,20 @@ export function EquipmentForm({
                             </div>
                           )}
                           {availableEquipment.map((equipment) => (
-                        <SelectItem key={equipment.id} value={equipment.set || equipment.id}>
+                        <SelectItem key={equipment.id} value={equipment.name || equipment.id}>
                           <div className="flex items-center gap-2">
                             <EquipmentImage 
                               src={equipment.image} 
-                              alt={equipment.set || `Equipment ${equipment.id}`}
+                              alt={equipment.name || `Equipment ${equipment.id}`}
                               size="md"
                               fallbackIcon={getSlotIcon(selectedSlot)}
                             />
-                            <span>{equipment.set || `Equipment ${equipment.id}`} (Lv.{equipment.level})</span>
+                            <span>
+                              {equipment.name && equipment.name.trim() 
+                                ? `${equipment.name} (Lv.${equipment.level})`
+                                : `Level ${equipment.level} Equipment`
+                              }
+                            </span>
                           </div>
                         </SelectItem>
                       ))}
