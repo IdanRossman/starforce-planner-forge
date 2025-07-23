@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
 import {
   Card,
@@ -232,7 +232,11 @@ export function calculateStarForce(
       currentLevel,
       targetLevel,
       averageCost: 0,
+      medianCost: 0,
+      p75Cost: 0,
       averageBooms: 0,
+      medianBooms: 0,
+      p75Booms: 0,
       successRate: 100,
       boomRate: 0,
       costPerAttempt: 0,
@@ -242,8 +246,8 @@ export function calculateStarForce(
   }
 
   const trials = 1000; // Increased for more consistent results
-  let totalCost = 0;
-  let totalBooms = 0;
+  const costResults: number[] = []; // Store all cost results for median calculation
+  const boomResults: number[] = []; // Store all boom results for median calculation
   
   // Convert events to working calculator format
   const thirtyOff = costMultiplier < 1;
@@ -265,9 +269,30 @@ export function calculateStarForce(
       mvpDiscount, 
       server
     );
-    totalCost += mesoResult;
-    totalBooms += boomResult;
+    costResults.push(mesoResult);
+    boomResults.push(boomResult);
   }
+
+  // Calculate average values
+  const avgCost = costResults.reduce((sum, cost) => sum + cost, 0) / trials;
+  const avgBooms = boomResults.reduce((sum, booms) => sum + booms, 0) / trials;
+
+  // Calculate median values
+  const sortedCosts = [...costResults].sort((a, b) => a - b);
+  const sortedBooms = [...boomResults].sort((a, b) => a - b);
+  
+  const medianCost = trials % 2 === 0
+    ? (sortedCosts[trials / 2 - 1] + sortedCosts[trials / 2]) / 2
+    : sortedCosts[Math.floor(trials / 2)];
+    
+  const medianBooms = trials % 2 === 0
+    ? (sortedBooms[trials / 2 - 1] + sortedBooms[trials / 2]) / 2
+    : sortedBooms[Math.floor(trials / 2)];
+
+  // Calculate 75th percentile values
+  const p75Index = Math.floor(trials * 0.75);
+  const p75Cost = sortedCosts[p75Index];
+  const p75Booms = sortedBooms[p75Index];
 
   // Calculate per-star stats
   const perStarStats: { star: number; successRate: number; boomRate: number; cost: number }[] = [];
@@ -290,8 +315,6 @@ export function calculateStarForce(
   }
 
   // Calculate spares needed based on average booms
-  const avgCost = totalCost / trials;
-  const avgBooms = totalBooms / trials;
   const sparesNeeded = Math.ceil(avgBooms); // Round up - if 0.7 booms, need 1 spare
 
   // Generate recommendations
@@ -318,10 +341,14 @@ export function calculateStarForce(
     currentLevel,
     targetLevel,
     averageCost: Math.round(avgCost), // Just enhancement costs
-    averageBooms: Math.round((totalBooms / trials) * 100) / 100,
+    averageBooms: Math.round(avgBooms * 100) / 100,
+    medianCost: Math.round(medianCost),
+    medianBooms: Math.round(medianBooms * 100) / 100,
+    p75Cost: Math.round(p75Cost),
+    p75Booms: Math.round(p75Booms * 100) / 100,
     successRate: Math.round((trials / trials) * 10000) / 100, // Simplified
-    boomRate: Math.round((totalBooms / (trials * 5)) * 10000) / 100, // Estimated
-    costPerAttempt: Math.round(totalCost / (trials * 10)), // Estimated
+    boomRate: Math.round((avgBooms / 5) * 10000) / 100, // Estimated
+    costPerAttempt: Math.round(avgCost / 10), // Estimated
     perStarStats,
     recommendations,
   };
@@ -349,11 +376,9 @@ export function StarForceCalculator({
   
   // Enhanced settings for equipment mode
   const [enhancedSettings, setEnhancedSettings] = useState({
-    discountEvent: true, // 30% off event
-    starcatchEvent: true, // 5/10/15 event
-    shiningStarForce: true, // Shining StarForce
-    serverType: 'interactive' as 'interactive' | 'heroic',
-    hasSpares: true
+    discountEvent: false, // 30% off event
+    starcatchEvent: false, // 5/10/15 event
+    isInteractive: false, // Interactive server toggle (default to Heroic)
   });
 
   // Equipment table editing states
@@ -363,15 +388,32 @@ export function StarForceCalculator({
   const [tempActualCost, setTempActualCost] = useState<number>(0);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
+  // Per-item safeguard settings
+  const [itemSafeguard, setItemSafeguard] = useState<{ [equipmentId: string]: boolean }>({});
+  
+  // Per-item star catching settings (default to true)
+  const [itemStarCatching, setItemStarCatching] = useState<{ [equipmentId: string]: boolean }>({});
+  
+  // Per-item spare count
+  const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>({});
+  
+  // Per-item spare prices (for Interactive server)
+  const [itemSparePrices, setItemSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+  
+  // Per-item actual costs with units
+  const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+  
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null
   );
 
-  // Combine all equipment for table mode
-  const allEquipment = [...equipment, ...additionalEquipment];
-  const pendingEquipment = allEquipment.filter(eq => 
-    eq.starforceable && (eq.currentStarForce || 0) < (eq.targetStarForce || 0)
-  );
+  // Combine all equipment for table mode - memoized to prevent recalculation on hover
+  const pendingEquipment = useMemo(() => {
+    const allEquipment = [...equipment, ...additionalEquipment];
+    return allEquipment.filter(eq => 
+      eq.starforceable && (eq.currentStarForce || 0) < (eq.targetStarForce || 0)
+    );
+  }, [equipment, additionalEquipment]);
 
   // Calculate costs and statistics for equipment mode
   const equipmentCalculations = useMemo(() => {
@@ -381,8 +423,8 @@ export function StarForceCalculator({
       const events = {
         costMultiplier: enhancedSettings.discountEvent ? 0.7 : 1,
         successRateBonus: enhancedSettings.starcatchEvent ? 1 : 0,
-        starCatching,
-        safeguard,
+        starCatching: itemStarCatching[eq.id] !== undefined ? itemStarCatching[eq.id] : true, // Default to true
+        safeguard: itemSafeguard[eq.id] || false, // Use per-item safeguard
         eventType: enhancedSettings.starcatchEvent ? "5/10/15" as const : undefined
       };
 
@@ -395,26 +437,99 @@ export function StarForceCalculator({
         events
       );
 
+      // Calculate spare costs for Interactive server
+      let spareCostMultiplier = 0;
+      if (enhancedSettings.isInteractive && itemSparePrices[eq.id]) {
+        const sparePrice = itemSparePrices[eq.id];
+        const sparePriceInMesos = sparePrice.unit === 'B' 
+          ? sparePrice.value * 1000000000 
+          : sparePrice.value * 1000000;
+        spareCostMultiplier = sparePriceInMesos;
+      }
+
+      // Calculate total costs including spare items
+      const enhancementCost = calculation.averageCost;
+      const totalAverageCost = enhancementCost + (calculation.averageBooms * spareCostMultiplier);
+      const totalMedianCost = calculation.medianCost + (calculation.medianBooms * spareCostMultiplier);
+      const totalP75Cost = calculation.p75Cost + (calculation.p75Booms * spareCostMultiplier);
+
       return {
         equipment: eq,
-        calculation,
-        expectedCost: calculation.averageCost,
+        calculation: {
+          ...calculation,
+          averageCost: Math.round(totalAverageCost),
+          medianCost: Math.round(totalMedianCost),
+          p75Cost: Math.round(totalP75Cost),
+        },
+        expectedCost: Math.round(totalAverageCost),
         actualCost: eq.actualCost || 0,
-        luckPercentage: eq.actualCost && calculation.averageCost > 0 
-          ? ((eq.actualCost - calculation.averageCost) / calculation.averageCost) * 100 
-          : 0
+        luckPercentage: eq.actualCost && totalAverageCost > 0 
+          ? ((eq.actualCost - totalAverageCost) / totalAverageCost) * 100 
+          : 0,
+        spareCostBreakdown: {
+          enhancementCost,
+          averageSpareCost: calculation.averageBooms * spareCostMultiplier,
+          medianSpareCost: calculation.medianBooms * spareCostMultiplier,
+          p75SpareCost: calculation.p75Booms * spareCostMultiplier
+        },
+        // Pre-calculate spare status and related UI data
+        spareStatus: (() => {
+          const spares = itemSpares[eq.id] || 0;
+          const boomChance = calculation.averageBooms;
+          
+          if (boomChance === 0) return "none-needed";
+          if (spares === 0) return "none-available";
+          if (spares < Math.ceil(boomChance)) return "insufficient";
+          if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
+          return "adequate";
+        })(),
+        spareClassName: (() => {
+          const spares = itemSpares[eq.id] || 0;
+          const boomChance = calculation.averageBooms;
+          
+          if (boomChance === 0) return "";
+          if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
+          if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
+          if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
+          return "border-green-500 bg-green-950/30 text-green-200";
+        })(),
+        spareTitle: (() => {
+          const spares = itemSpares[eq.id] || 0;
+          const expectedBooms = calculation.averageBooms;
+          
+          if (expectedBooms === 0) return "No booms expected";
+          if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
+          if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
+          if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
+          return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
+        })()
       };
     });
-  }, [pendingEquipment, enhancedSettings, starCatching, safeguard, mode]);
+  }, [pendingEquipment, enhancedSettings, itemStarCatching, itemSafeguard, itemSparePrices, itemSpares, mode]);
 
-  // Aggregate statistics for equipment mode
-  const totalExpectedCost = equipmentCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
-  const totalActualCost = equipmentCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
-  const totalExpectedBooms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
-  
-  const overallLuckPercentage = totalExpectedCost > 0 
-    ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
-    : 0;
+  // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
+  const aggregateStats = useMemo(() => {
+    const totalExpectedCost = equipmentCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
+    const totalActualCost = equipmentCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
+    const totalExpectedBooms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
+    const totalMedianBooms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.medianBooms, 0);
+    const totalP75Cost = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
+    const totalP75Booms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
+    
+    const overallLuckPercentage = totalExpectedCost > 0 
+      ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
+      : 0;
+
+    return {
+      totalExpectedCost,
+      totalActualCost,
+      totalExpectedBooms,
+      totalMedianBooms,
+      totalP75Cost,
+      totalP75Booms,
+      overallLuckPercentage
+    };
+  }, [equipmentCalculations]);
 
   // Format Mesos for display
   const formatMesos = (amount: number) => {
@@ -438,6 +553,25 @@ export function StarForceCalculator({
     if (percentage > 0) return "text-orange-400"; // Unlucky
     return "text-gray-400"; // No data
   };
+
+  const getLuckText = (percentage: number) => {
+    if (percentage === 0) return "";
+    if (percentage < -25) return "Far below avg";
+    if (percentage < -10) return "Below avg";
+    if (percentage < 0) return "Below avg";
+    if (percentage <= 10) return "Above avg";
+    if (percentage <= 25) return "Above avg";
+    return "Far above avg";
+  };
+
+  // Helper function to check if safeguard is applicable for an item
+  const isSafeguardEligible = useCallback((equipment: Equipment) => {
+    if (!equipment.starforceable) return false;
+    const current = equipment.currentStarForce || 0;
+    const target = equipment.targetStarForce || 0;
+    // Safeguard is useful for attempting 15★ and 16★
+    return target > 15;
+  }, []);
 
   // Equipment table handlers
   const handleQuickAdjust = (equipment: Equipment, type: 'current' | 'target', delta: number) => {
@@ -477,13 +611,35 @@ export function StarForceCalculator({
 
   const handleStartActualCostEdit = (equipment: Equipment) => {
     setEditingActualCost(equipment.id);
-    setTempActualCost(equipment.actualCost || 0);
+    // Initialize with current value or convert from legacy actualCost
+    const currentCost = itemActualCosts[equipment.id];
+    if (currentCost) {
+      setTempActualCost(currentCost.value);
+    } else if (equipment.actualCost && equipment.actualCost > 0) {
+      // Convert legacy actualCost to M/B format
+      const value = equipment.actualCost >= 1000000000 ? equipment.actualCost / 1000000000 : equipment.actualCost / 1000000;
+      const unit = equipment.actualCost >= 1000000000 ? 'B' : 'M';
+      setTempActualCost(Math.round(value * 10) / 10); // Round to 1 decimal
+      setItemActualCosts(prev => ({ ...prev, [equipment.id]: { value: Math.round(value * 10) / 10, unit } }));
+    } else {
+      setTempActualCost(0);
+    }
   };
 
   const handleSaveActualCost = (equipment: Equipment) => {
+    const unit = itemActualCosts[equipment.id]?.unit || 'M';
+    const rawValue = unit === 'B' ? tempActualCost * 1000000000 : tempActualCost * 1000000;
+    
     if (onUpdateActualCost) {
-      onUpdateActualCost(equipment.id, tempActualCost);
+      onUpdateActualCost(equipment.id, rawValue);
     }
+    
+    // Update our local state
+    setItemActualCosts(prev => ({ 
+      ...prev, 
+      [equipment.id]: { value: tempActualCost, unit } 
+    }));
+    
     setEditingActualCost(null);
   };
 
@@ -493,53 +649,106 @@ export function StarForceCalculator({
   };
 
   const exportData = () => {
-    if (mode === 'standalone' && calculation) {
-      // Standalone export
-      const exportText = [
-        `StarForce Calculator Export`,
-        ``,
-        `Item Level: ${itemLevel}`,
-        `Current Star: ★${calculation.currentLevel}`,
-        `Target Star: ★${calculation.targetLevel}`,
-        ``,
-        `Expected Cost: ${formatMesos(calculation.averageCost)} mesos`,
-        `Expected Booms: ${calculation.averageBooms.toFixed(1)}`,
-        `Success Rate: ${calculation.successRate}%`,
-        ``,
-        `Per-Star Details:`,
-        ...calculation.perStarStats.map(stat => 
-          `★${stat.star}: ${stat.successRate.toFixed(1)}% success, ${stat.boomRate.toFixed(1)}% boom, ${formatMesos(stat.cost)} cost`
-        )
-      ].join('\n');
+    // Helper function to convert raw mesos to unitized format
+    const formatMesosForExport = (amount: number): string => {
+      if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
+      if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
+      if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
+      return amount.toString();
+    };
 
-      const blob = new Blob([exportText], { type: 'text/plain' });
+    if (mode === 'standalone' && calculation) {
+      // Standalone export - CSV format with unitized values
+      const csvRows = [
+        ['StarForce Calculator Export'],
+        [''],
+        ['Setting', 'Value'],
+        ['Item Level', itemLevel.toString()],
+        ['Current Star', `★${calculation.currentLevel}`],
+        ['Target Star', `★${calculation.targetLevel}`],
+        [''],
+        ['Cost Statistics', 'Amount (Unitized)'],
+        ['Average Cost', formatMesosForExport(calculation.averageCost)],
+        ['Median Cost', formatMesosForExport(calculation.medianCost)],
+        ['75th Percentile Cost', formatMesosForExport(calculation.p75Cost)],
+        [''],
+        ['Boom Statistics', 'Count'],
+        ['Average Booms', calculation.averageBooms.toFixed(1)],
+        ['Median Booms', calculation.medianBooms.toFixed(1)],
+        ['75th Percentile Booms', calculation.p75Booms.toFixed(1)],
+        [''],
+        ['Per-Star Details', 'Success Rate (%)', 'Boom Rate (%)', 'Cost (Unitized)'],
+        ...calculation.perStarStats.map(stat => 
+          [`★${stat.star}`, stat.successRate.toFixed(1), stat.boomRate.toFixed(1), formatMesosForExport(stat.cost)]
+        )
+      ];
+
+      const csvContent = csvRows.map(row => 
+        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'starforce-calculation.txt';
+      a.download = 'starforce-calculation.csv';
       a.click();
       URL.revokeObjectURL(url);
     } else if (mode === 'equipment-table') {
-      // Equipment table export
-      const exportText = equipmentCalculations.map(calc => {
-        const eq = calc.equipment;
-        return `${eq.name || 'Unknown'} (${eq.slot}): ★${eq.currentStarForce}→★${eq.targetStarForce} | Expected: ${formatMesos(calc.expectedCost)} | Actual: ${formatMesos(calc.actualCost)} | Luck: ${calc.luckPercentage.toFixed(1)}%`;
-      }).join('\n');
+      // Equipment table export - CSV format with unitized values
+      const summaryRows = [
+        ['StarForce Planning Summary'],
+        [''],
+        ['Statistic', 'Value (Unitized)', 'Status'],
+        ['Total Expected Cost', formatMesosForExport(aggregateStats.totalExpectedCost), ''],
+        ['Total Actual Cost', formatMesosForExport(aggregateStats.totalActualCost), ''],
+        ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
+        ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
+        ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
+        ['Total 75th Percentile Cost', formatMesosForExport(aggregateStats.totalP75Cost), ''],
+        ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
+        [''],
+        ['Equipment Details'],
+        ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Star Catching', 'Spares', 
+         ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
+         'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
+         'Actual Cost', 'Luck %', 'Luck Status'],
+        ...equipmentCalculations.map(calc => {
+          const eq = calc.equipment;
+          const sparePriceInfo = itemSparePrices[eq.id];
+          const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
 
-      const blob = new Blob([
-        `StarForce Planning Export\n\n`,
-        `Total Expected Cost: ${formatMesos(totalExpectedCost)}\n`,
-        `Total Actual Cost: ${formatMesos(totalActualCost)}\n`,
-        `Overall Luck: ${overallLuckPercentage.toFixed(1)}%\n`,
-        `Expected Booms: ${totalExpectedBooms.toFixed(1)}\n\n`,
-        `Equipment Details:\n`,
-        exportText
-      ], { type: 'text/plain' });
-      
+          return [
+            eq.name || 'Unknown',
+            eq.slot || '',
+            `★${eq.currentStarForce || 0}`,
+            `★${eq.targetStarForce || 0}`,
+            itemSafeguard[eq.id] ? 'Yes' : 'No',
+            (itemStarCatching[eq.id] !== undefined ? itemStarCatching[eq.id] : true) ? 'Yes' : 'No',
+            (itemSpares[eq.id] || 0).toString(),
+            ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
+            formatMesosForExport(calc.expectedCost),
+            formatMesosForExport(calc.calculation.medianCost),
+            formatMesosForExport(calc.calculation.p75Cost),
+            calc.calculation.averageBooms.toFixed(1),
+            calc.calculation.medianBooms.toFixed(1),
+            calc.calculation.p75Booms.toFixed(1),
+            calc.actualCost > 0 ? formatMesosForExport(calc.actualCost) : '0',
+            calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
+            calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
+          ];
+        })
+      ];
+
+      const csvContent = summaryRows.map(row => 
+        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'starforce-plan.txt';
+      a.download = 'starforce-plan.csv';
       a.click();
       URL.revokeObjectURL(url);
     }
@@ -595,79 +804,41 @@ export function StarForceCalculator({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="discount-event" className="text-sm">30% Off Event</Label>
-                <Switch
-                  id="discount-event"
-                  checked={enhancedSettings.discountEvent}
-                  onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="starcatch-event" className="text-sm">5/10/15 Event</Label>
-                <Switch
-                  id="starcatch-event"
-                  checked={enhancedSettings.starcatchEvent}
-                  onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="shining-sf" className="text-sm">Shining StarForce</Label>
-                <Switch
-                  id="shining-sf"
-                  checked={enhancedSettings.shiningStarForce}
-                  onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, shiningStarForce: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="star-catching" className="text-sm">Star Catching</Label>
-                <Switch
-                  id="star-catching"
-                  checked={starCatching}
-                  onCheckedChange={(checked) => setStarCatching(checked)}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label className="text-sm text-muted-foreground">Server Type</Label>
-                <Select 
-                  value={enhancedSettings.serverType} 
-                  onValueChange={(value) => setEnhancedSettings(prev => ({ ...prev, serverType: value as 'interactive' | 'heroic' }))}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="interactive">Interactive</SelectItem>
-                    <SelectItem value="heroic">Heroic</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has-spares" className="text-sm">Has Spares</Label>
-                <Switch
-                  id="has-spares"
-                  checked={enhancedSettings.hasSpares}
-                  onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, hasSpares: checked }))}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="safeguard" className="text-sm">Use Safeguard</Label>
-                <Switch
-                  id="safeguard"
-                  checked={safeguard}
-                  onCheckedChange={(checked) => setSafeguard(checked)}
-                />
+            {/* Event Settings */}
+            <div>
+              <h4 className="font-medium text-sm mb-3 text-muted-foreground">Enhancement Settings</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="discount-event"
+                    checked={enhancedSettings.discountEvent}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
+                  />
+                  <Label htmlFor="discount-event" className="text-sm cursor-pointer">30% Off Event</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="starcatch-event"
+                    checked={enhancedSettings.starcatchEvent}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
+                  />
+                  <Label htmlFor="starcatch-event" className="text-sm cursor-pointer">5/10/15 Event</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="interactive-server"
+                    checked={enhancedSettings.isInteractive}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
+                  />
+                  <Label htmlFor="interactive-server" className="text-sm cursor-pointer">Interactive Server</Label>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Statistics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -675,7 +846,7 @@ export function StarForceCalculator({
                   <DollarSign className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-yellow-400">{formatMesos(totalExpectedCost)}</div>
+                  <div className="text-2xl font-bold text-yellow-400">{formatMesos(aggregateStats.totalExpectedCost)}</div>
                   <div className="text-sm text-muted-foreground">Expected Cost</div>
                 </div>
               </div>
@@ -689,7 +860,7 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-blue-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-400">{formatMesos(totalActualCost)}</div>
+                  <div className="text-2xl font-bold text-blue-400">{formatMesos(aggregateStats.totalActualCost)}</div>
                   <div className="text-sm text-muted-foreground">Actual Cost</div>
                 </div>
               </div>
@@ -703,8 +874,36 @@ export function StarForceCalculator({
                   <AlertTriangle className="w-5 h-5 text-orange-500" />
                 </div>
                 <div>
-                  <div className="text-2xl font-bold">{totalExpectedBooms.toFixed(1)}</div>
-                  <div className="text-sm text-muted-foreground">Expected Booms</div>
+                  <div className="text-2xl font-bold">{aggregateStats.totalExpectedBooms.toFixed(1)}</div>
+                  <div className="text-sm text-muted-foreground">Average Booms</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-full flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold">{aggregateStats.totalMedianBooms.toFixed(1)}</div>
+                  <div className="text-sm text-muted-foreground">Median Booms</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-red-500" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-red-400">{formatMesos(aggregateStats.totalP75Cost)}</div>
+                  <div className="text-sm text-muted-foreground">75th % Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -717,8 +916,11 @@ export function StarForceCalculator({
                   <Heart className="w-5 h-5 text-green-500" />
                 </div>
                 <div>
-                  <div className={`text-2xl font-bold ${getLuckColor(overallLuckPercentage)}`}>
-                    {overallLuckPercentage.toFixed(1)}%
+                  <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
+                    <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
+                    {getLuckText(aggregateStats.overallLuckPercentage) && (
+                      <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
+                    )}
                   </div>
                   <div className="text-sm text-muted-foreground">Luck Factor</div>
                 </div>
@@ -757,10 +959,27 @@ export function StarForceCalculator({
                       <TableHead>Item</TableHead>
                       <TableHead className="text-center">Current SF</TableHead>
                       <TableHead className="text-center">Target SF</TableHead>
-                      <TableHead className="text-center">Expected Cost</TableHead>
+                      <TableHead className="text-center">Safeguard</TableHead>
+                      <TableHead className="text-center">Star Catching</TableHead>
+                      <TableHead className="text-center">Spares</TableHead>
+                      {enhancedSettings.isInteractive && (
+                        <TableHead className="text-center">Spare Price</TableHead>
+                      )}
+                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + expected spare costs" : "Expected enhancement cost only"}>
+                        Average Cost
+                      </TableHead>
+                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + median spare costs" : "Median enhancement cost only"}>
+                        Median Cost
+                      </TableHead>
+                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + 75th percentile spare costs" : "75th percentile enhancement cost only"}>
+                        75th % Cost
+                      </TableHead>
+                      <TableHead className="text-center">Avg Booms</TableHead>
+                      <TableHead className="text-center">Med Booms</TableHead>
+                      <TableHead className="text-center">75th % Booms</TableHead>
                       <TableHead className="text-center">Actual Cost</TableHead>
                       <TableHead className="text-center">Luck</TableHead>
-                      <TableHead className="text-center">Booms</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -890,9 +1109,185 @@ export function StarForceCalculator({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          <span className="font-medium text-yellow-400">
-                            {formatMesos(calc.expectedCost)}
-                          </span>
+                          {/* Safeguard Toggle */}
+                          <div className="flex items-center justify-center">
+                            {isSafeguardEligible(calc.equipment) ? (
+                              <Switch
+                                checked={itemSafeguard[calc.equipment.id] || false}
+                                onCheckedChange={(checked) => {
+                                  console.log(`Setting safeguard for ${calc.equipment.id}: ${checked}`);
+                                  setItemSafeguard(prev => ({ ...prev, [calc.equipment.id]: checked }));
+                                }}
+                              />
+                            ) : (
+                              <span className="text-xs text-muted-foreground" title="Safeguard only applies when targeting 15-16★">
+                                N/A
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {/* Star Catching Toggle */}
+                          <div className="flex items-center justify-center">
+                            <Switch
+                              checked={itemStarCatching[calc.equipment.id] !== undefined ? itemStarCatching[calc.equipment.id] : true}
+                              onCheckedChange={(checked) => {
+                                setItemStarCatching(prev => ({ ...prev, [calc.equipment.id]: checked }));
+                              }}
+                              title="Star Catching (+5% success rate)"
+                            />
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {/* Spares Input */}
+                          <div className="flex items-center justify-center gap-1">
+                            <div className="relative">
+                              <Input
+                                type="number"
+                                min="0"
+                                max="99"
+                                value={itemSpares[calc.equipment.id] || 0}
+                                onChange={(e) => {
+                                  const spares = parseInt(e.target.value) || 0;
+                                  setItemSpares(prev => ({ ...prev, [calc.equipment.id]: spares }));
+                                }}
+                                className={`w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${calc.spareClassName}`}
+                                placeholder="0"
+                                title={calc.spareTitle}
+                              />
+                            </div>
+                            {/* Quick Adjust Buttons - Spares */}
+                            {hoveredRow === calc.equipment.id && (
+                              <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const current = itemSpares[calc.equipment.id] || 0;
+                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.min(99, current + 1) }));
+                                  }}
+                                  className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
+                                >
+                                  <ChevronUp className="w-2 h-2 text-green-600" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => {
+                                    const current = itemSpares[calc.equipment.id] || 0;
+                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.max(0, current - 1) }));
+                                  }}
+                                  className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
+                                >
+                                  <ChevronDown className="w-2 h-2 text-red-600" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        {enhancedSettings.isInteractive && (
+                          <TableCell className="text-center">
+                            {/* Spare Price Input */}
+                            <div className="flex items-center justify-center gap-1">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={itemSparePrices[calc.equipment.id]?.value || 0}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value) || 0;
+                                  setItemSparePrices(prev => ({ 
+                                    ...prev, 
+                                    [calc.equipment.id]: { 
+                                      value, 
+                                      unit: prev[calc.equipment.id]?.unit || 'M' 
+                                    } 
+                                  }));
+                                }}
+                                className="w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                placeholder="0"
+                              />
+                              <Select
+                                value={itemSparePrices[calc.equipment.id]?.unit || 'M'}
+                                onValueChange={(unit: 'M' | 'B') => {
+                                  setItemSparePrices(prev => ({ 
+                                    ...prev, 
+                                    [calc.equipment.id]: { 
+                                      value: prev[calc.equipment.id]?.value || 0, 
+                                      unit 
+                                    } 
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="w-16 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="M">M</SelectItem>
+                                  <SelectItem value="B">B</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </TableCell>
+                        )}
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="font-medium text-yellow-400">
+                              {formatMesos(calc.expectedCost)}
+                            </span>
+                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.averageSpareCost > 0 && (
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.averageSpareCost)}`}>
+                                (+{formatMesos(calc.spareCostBreakdown.averageSpareCost)} spares)
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="font-medium text-orange-400">
+                              {formatMesos(calc.calculation.medianCost)}
+                            </span>
+                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.medianSpareCost > 0 && (
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.medianSpareCost)}`}>
+                                (+{formatMesos(calc.spareCostBreakdown.medianSpareCost)} spares)
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="font-medium text-red-400">
+                              {formatMesos(calc.calculation.p75Cost)}
+                            </span>
+                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.p75SpareCost > 0 && (
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.p75SpareCost)}`}>
+                                (+{formatMesos(calc.spareCostBreakdown.p75SpareCost)} spares)
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-500" />
+                            <span className="font-medium text-red-400">
+                              {calc.calculation.averageBooms.toFixed(1)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-orange-500" />
+                            <span className="font-medium text-orange-400">
+                              {calc.calculation.medianBooms.toFixed(1)}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-red-600" />
+                            <span className="font-medium text-red-600">
+                              {calc.calculation.p75Booms.toFixed(1)}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           {editingActualCost === calc.equipment.id ? (
@@ -901,10 +1296,31 @@ export function StarForceCalculator({
                                 type="number"
                                 min="0"
                                 value={tempActualCost}
-                                onChange={(e) => setTempActualCost(parseInt(e.target.value) || 0)}
-                                className="w-20 h-8 text-center"
-                                placeholder="Mesos"
+                                onChange={(e) => setTempActualCost(parseFloat(e.target.value) || 0)}
+                                className="w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                                placeholder="0"
+                                step="0.1"
                               />
+                              <Select
+                                value={itemActualCosts[calc.equipment.id]?.unit || 'M'}
+                                onValueChange={(unit: 'M' | 'B') => {
+                                  setItemActualCosts(prev => ({ 
+                                    ...prev, 
+                                    [calc.equipment.id]: { 
+                                      value: prev[calc.equipment.id]?.value || 0, 
+                                      unit 
+                                    } 
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="w-16 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="M">M</SelectItem>
+                                  <SelectItem value="B">B</SelectItem>
+                                </SelectContent>
+                              </Select>
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -940,15 +1356,45 @@ export function StarForceCalculator({
                         </TableCell>
                         <TableCell className="text-center">
                           <div className={`font-medium ${getLuckColor(calc.luckPercentage)}`}>
-                            {calc.actualCost > 0 ? `${calc.luckPercentage.toFixed(1)}%` : '-'}
+                            {calc.actualCost > 0 ? (
+                              <div className="flex flex-col">
+                                <span>{calc.luckPercentage.toFixed(1)}%</span>
+                                {getLuckText(calc.luckPercentage) && (
+                                  <span className="text-xs opacity-75">{getLuckText(calc.luckPercentage)}</span>
+                                )}
+                              </div>
+                            ) : '-'}
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
+                          {/* Actions */}
                           <div className="flex items-center justify-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-red-500" />
-                            <span className="font-medium text-red-400">
-                              {calc.calculation.averageBooms.toFixed(1)}
-                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (onUpdateStarforce) {
+                                  onUpdateStarforce(calc.equipment.id, calc.equipment.targetStarForce || 0, calc.equipment.targetStarForce || 0);
+                                }
+                              }}
+                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
+                              title="Mark as completed (set current = target)"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                if (onUpdateStarforce) {
+                                  onUpdateStarforce(calc.equipment.id, 0, 0);
+                                }
+                              }}
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              title="Remove from planning (set target = current)"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1172,15 +1618,47 @@ export function StarForceCalculator({
                       {formatMesos(calculation.averageCost)} mesos
                     </p>
                   </div>
+                  <div>
+                    <span className="text-muted-foreground">Median Total</span>
+                    <p className="font-semibold text-orange-400">
+                      {formatMesos(calculation.medianCost)} mesos
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">75th % Total</span>
+                    <p className="font-semibold text-red-400">
+                      {formatMesos(calculation.p75Cost)} mesos
+                    </p>
+                  </div>
                 </div>
                 {calculation.boomRate > 0 && (
-                  <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
-                    <AlertTriangle className="w-4 h-4 text-red-400" />
-                    <div className="text-sm">
-                      <span className="text-muted-foreground">Expected Booms: </span>
-                      <span className="font-semibold text-red-400">
-                        {calculation.averageBooms.toFixed(1)}
-                      </span>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Average Booms: </span>
+                        <span className="font-semibold text-red-400">
+                          {calculation.averageBooms.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded">
+                      <AlertTriangle className="w-4 h-4 text-orange-400" />
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">Median Booms: </span>
+                        <span className="font-semibold text-orange-400">
+                          {calculation.medianBooms.toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-2 bg-red-600/10 border border-red-600/20 rounded">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <div className="text-sm">
+                        <span className="text-muted-foreground">75th % Booms: </span>
+                        <span className="font-semibold text-red-600">
+                          {calculation.p75Booms.toFixed(1)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}

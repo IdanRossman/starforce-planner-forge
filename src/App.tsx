@@ -6,7 +6,6 @@ import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-route
 import { AppNavbar } from "@/components/AppNavbar";
 import Homepage from "./pages/Homepage";
 import Overview from "./pages/Overview";
-import Characters from "./pages/Characters";
 import CharacterDashboard from "./pages/CharacterDashboard";
 import Planning from "./pages/Planning";
 import { QuickPlanning } from "./pages/QuickPlanning";
@@ -38,8 +37,7 @@ function AppContent() {
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/overview" element={<Overview />} />
-          <Route path="/characters" element={<Characters />} />
-          <Route path="/characters-new" element={<CharacterDashboard />} />
+          <Route path="/characters" element={<CharacterDashboard />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/quick-planning" element={<QuickPlanningWrapper />} />
           <Route path="/settings" element={<Settings />} />

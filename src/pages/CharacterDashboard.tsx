@@ -174,6 +174,33 @@ export default function CharacterDashboard() {
     }
   };
 
+  const handleUpdateActualCost = (equipmentId: string, actualCost: number) => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        const updatedEquipment = char.equipment.map(eq => 
+          eq.id === equipmentId 
+            ? { ...eq, actualCost }
+            : eq
+        );
+        const updatedStarForceItems = (char.starForceItems || []).map(eq => 
+          eq.id === equipmentId 
+            ? { ...eq, actualCost }
+            : eq
+        );
+        return { ...char, equipment: updatedEquipment, starForceItems: updatedStarForceItems };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
+  };
+
   // Calculate character stats
   const getCharacterStats = (character: Character) => {
     const totalEquipment = character.equipment.length;
@@ -422,6 +449,7 @@ export default function CharacterDashboard() {
                     onAddEquipment={handleAddEquipment}
                     onClearEquipment={handleClearEquipment}
                     onUpdateStarforce={handleUpdateStarforce}
+                    onUpdateActualCost={handleUpdateActualCost}
                     onSaveEquipment={handleSaveEquipment}
                     selectedJob={selectedCharacter.class}
                   />

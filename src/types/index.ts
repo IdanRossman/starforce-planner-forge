@@ -77,7 +77,11 @@ export interface StarForceCalculation {
   currentLevel: number;
   targetLevel: number;
   averageCost: number;
+  medianCost: number;
+  p75Cost: number;
   averageBooms: number;
+  medianBooms: number;
+  p75Booms: number;
   successRate: number;
   boomRate: number;
   costPerAttempt: number;
