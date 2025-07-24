@@ -10,7 +10,6 @@ import {
   Target, 
   Coins, 
   Calculator,
-  Settings,
   BarChart3,
   Zap,
   TrendingUp,
@@ -45,24 +44,7 @@ export default function Homepage() {
   const completionRate = totalEquipment > 0 ? ((totalEquipment - incompleteEquipment) / totalEquipment * 100) : 0;
 
   const quickActions = [
-    {
-      title: "Progress Overview",
-      description: "View detailed statistics and progress across your entire account with comprehensive data insights and character analytics.",
-      icon: BarChart3,
-      color: "bg-green-500/20 text-green-400 border-green-500/30",
-      route: "/overview",
-      stats: totalCharacters > 0 ? `${Math.round(completionRate)}% complete` : "Get started with characters",
-      featured: true
-    },
-    {
-      title: "Settings & Preferences",
-      description: "Customize your experience with personalized settings, themes, and calculation preferences for optimal planning.",
-      icon: Settings,
-      color: "bg-slate-500/20 text-slate-400 border-slate-500/30",
-      route: "/settings",
-      stats: "Customize experience",
-      featured: false
-    }
+    // Removed unused overview and settings routes
   ];
 
   return (
@@ -167,7 +149,7 @@ export default function Homepage() {
                     Instant calculations with preset templates
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <Settings className="w-4 h-4 text-orange-400" />
+                    <Calculator className="w-4 h-4 text-orange-400" />
                     StarForce event support (5/10/15, 30% off)
                   </div>
                   <div className="flex items-center gap-2 text-sm">

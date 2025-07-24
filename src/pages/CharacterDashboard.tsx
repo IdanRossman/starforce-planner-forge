@@ -872,22 +872,6 @@ export default function CharacterDashboard() {
                   />
                 </CardContent>
               </Card>
-
-              {/* Enhanced Calculator Placeholder */}
-              <Card className="bg-gradient-to-r from-primary/5 via-purple-500/5 to-secondary/5 border-primary/20">
-                <CardContent className="p-6">
-                  <div className="text-center space-y-4">
-                    <h3 className="text-lg font-semibold">Enhanced StarForce Calculator</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Interactive calculator with inline editing, real-time statistics, and advanced planning features coming soon.
-                    </p>
-                    <Button size="lg" className="flex items-center gap-2">
-                      <Calculator className="w-5 h-5" />
-                      Open Enhanced Calculator
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           ) : (
             <Card>

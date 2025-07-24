@@ -402,7 +402,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
         
         {/* Calculator Button */}
         {hasIncompleteStarForce && onOpenCalculator && (
-          <div className="text-center">
+          <div className="flex flex-col items-center text-center">
             <Button 
               onClick={onOpenCalculator}
               className="flex items-center gap-2"

@@ -8,7 +8,7 @@ const mainItems = [
 ];
 
 const toolItems = [
-  // { title: "Settings", url: "/settings", icon: Settings },
+  // Future tool items can be added here
 ];
 
 export function AppNavbar() {

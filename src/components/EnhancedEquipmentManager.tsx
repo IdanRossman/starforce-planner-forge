@@ -229,6 +229,7 @@ export function EnhancedEquipmentManager({
                       onEditEquipment={(equipment) => handleOpenEquipmentForm(equipment)}
                       onAddEquipment={(slot) => handleOpenEquipmentForm(undefined, slot)}
                       onClearEquipment={onClearEquipment}
+                      onOpenCalculator={() => setActiveTab("calculator")}
                     />
                   </CardContent>
                 </Card>
