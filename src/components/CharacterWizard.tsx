@@ -366,140 +366,326 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="character-name">Character Name</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="character-name"
-                      placeholder="Enter your character name"
-                      value={wizardData.name}
-                      onChange={(e) => {
-                        setWizardData(prev => ({ ...prev, name: e.target.value }));
-                        // Reset MapleRanks status when name changes
-                        setMapleRanksStatus('idle');
-                        setMapleRanksMessage('');
-                      }}
-                      className="h-12"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          searchMapleRanks();
-                        }
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      onClick={searchMapleRanks}
-                      disabled={!wizardData.name.trim() || isSearchingMapleRanks}
-                      className="h-12 px-4"
-                    >
-                      {isSearchingMapleRanks ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Search className="w-4 h-4" />
+              {/* Character Image Display (when found on MapleRanks) */}
+              {mapleRanksStatus === 'found' && wizardData.image ? (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                  {/* Character Portrait Section */}
+                  <div className="lg:col-span-1 flex flex-col items-center space-y-4">
+                    <div className="relative">
+                      <img 
+                        src={wizardData.image} 
+                        alt={`${wizardData.name} character portrait`}
+                        className="w-40 h-40 rounded-xl border-4 border-green-300 dark:border-green-700 object-cover shadow-xl"
+                        onError={(e) => {
+                          // Hide the entire container if image fails to load
+                          const container = e.currentTarget.parentElement?.parentElement?.parentElement?.parentElement;
+                          if (container) container.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute -bottom-3 -right-3 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-3 border-white dark:border-gray-800 shadow-lg">
+                        <CheckCircle2 className="w-5 h-5 text-white" />
+                      </div>
+                    </div>
+                    
+                    {/* Character Info Display */}
+                    <div className="text-center space-y-2">
+                      <h4 className="text-lg font-bold text-foreground">{wizardData.name}</h4>
+                      {wizardData.class && (
+                        <div className="flex items-center justify-center gap-2">
+                          {(() => {
+                            const JobIcon = getJobIcon(wizardData.class);
+                            const jobColors = getJobColors(wizardData.class);
+                            return (
+                              <>
+                                <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                  <JobIcon className="w-4 h-4 text-white" />
+                                </div>
+                                <span className="font-medium">{wizardData.class}</span>
+                              </>
+                            );
+                          })()}
+                        </div>
                       )}
-                    </Button>
+                      <p className="text-sm text-muted-foreground">Level {wizardData.level}</p>
+                      <div className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400">
+                        ✓ Found on MapleRanks
+                      </div>
+                    </div>
                   </div>
-                  
-                  {/* MapleRanks Status Messages */}
-                  {mapleRanksStatus !== 'idle' && (
-                    <div className={`flex items-center gap-2 text-sm p-3 rounded-md ${
-                      mapleRanksStatus === 'found' 
-                        ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
-                        : mapleRanksStatus === 'not-found'
+
+                  {/* Form Fields Section */}
+                  <div className="lg:col-span-2 space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="character-name">Character Name</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="character-name"
+                            placeholder="Enter your character name"
+                            value={wizardData.name}
+                            onChange={(e) => {
+                              setWizardData(prev => ({ ...prev, name: e.target.value }));
+                              // Reset MapleRanks status when name changes
+                              setMapleRanksStatus('idle');
+                              setMapleRanksMessage('');
+                            }}
+                            className="h-12"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                searchMapleRanks();
+                              }
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            onClick={searchMapleRanks}
+                            disabled={!wizardData.name.trim() || isSearchingMapleRanks}
+                            className="h-12 px-4"
+                          >
+                            {isSearchingMapleRanks ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Search className="w-4 h-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="character-level">Level</Label>
+                          <Input
+                            id="character-level"
+                            type="number"
+                            min="1"
+                            max="300"
+                            value={wizardData.level}
+                            onChange={(e) => setWizardData(prev => ({ ...prev, level: parseInt(e.target.value) || 200 }))}
+                            className="h-12"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="character-class">Job Class</Label>
+                          <Select 
+                            value={wizardData.class} 
+                            onValueChange={(value) => setWizardData(prev => ({ ...prev, class: value }))}
+                          >
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select your job class">
+                                {wizardData.class && (
+                                  <div className="flex items-center gap-2">
+                                    {(() => {
+                                      const JobIcon = getJobIcon(wizardData.class);
+                                      const jobColors = getJobColors(wizardData.class);
+                                      const jobCategory = getJobCategoryName(wizardData.class);
+                                      const classSubcategory = getClassSubcategory(wizardData.class);
+                                      
+                                      return (
+                                        <>
+                                          <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                            <JobIcon className="w-3 h-3 text-white" />
+                                          </div>
+                                          <span>{wizardData.class}</span>
+                                          {jobCategory && classSubcategory && (
+                                            <div className="flex gap-1">
+                                              <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                                {jobCategory}
+                                              </span>
+                                              <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                                {classSubcategory}
+                                              </span>
+                                            </div>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                )}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[300px]">
+                              {Object.entries(ORGANIZED_CLASSES).map(([category, categoryData]) => (
+                                <div key={category}>
+                                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b">
+                                    {categoryData.name}
+                                  </div>
+                                  {categoryData.classes.map((jobClass) => {
+                                    const JobIcon = getJobIcon(jobClass);
+                                    const jobColors = getJobColors(jobClass);
+                                    return (
+                                      <SelectItem key={jobClass} value={jobClass}>
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                            <JobIcon className="w-2.5 h-2.5 text-white" />
+                                          </div>
+                                          <span>{jobClass}</span>
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* MapleRanks Status Messages */}
+                    {(mapleRanksStatus === 'not-found' || mapleRanksStatus === 'error') && (
+                      <div className={`flex items-center gap-2 text-sm p-3 rounded-md ${
+                        mapleRanksStatus === 'not-found'
                         ? 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800'
                         : 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
-                    }`}>
-                      {mapleRanksStatus === 'found' && <CheckCircle2 className="w-4 h-4" />}
-                      {mapleRanksStatus === 'not-found' && <XCircle className="w-4 h-4" />}
-                      {mapleRanksStatus === 'error' && <AlertCircle className="w-4 h-4" />}
-                      <span>{mapleRanksMessage}</span>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-muted-foreground">
-                    💡 Click search to auto-fill character data from MapleRanks (beta feature)
-                  </p>
+                      }`}>
+                        {mapleRanksStatus === 'not-found' && <XCircle className="w-4 h-4" />}
+                        {mapleRanksStatus === 'error' && <AlertCircle className="w-4 h-4" />}
+                        <span>{mapleRanksMessage}</span>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
+                      💡 You can update the character details or search for a different character
+                    </p>
+                  </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="character-level">Level</Label>
-                  <Input
-                    id="character-level"
-                    type="number"
-                    min="1"
-                    max="300"
-                    value={wizardData.level}
-                    onChange={(e) => setWizardData(prev => ({ ...prev, level: parseInt(e.target.value) || 200 }))}
-                    className="h-12"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="character-class">Job Class</Label>
-                  <Select 
-                    value={wizardData.class} 
-                    onValueChange={(value) => setWizardData(prev => ({ ...prev, class: value }))}
-                  >
-                    <SelectTrigger className="h-12">
-                      <SelectValue placeholder="Select your job class">
-                        {wizardData.class && (
-                          <div className="flex items-center gap-2">
-                            {(() => {
-                              const JobIcon = getJobIcon(wizardData.class);
-                              const jobColors = getJobColors(wizardData.class);
-                              const jobCategory = getJobCategoryName(wizardData.class);
-                              const classSubcategory = getClassSubcategory(wizardData.class);
-                              
-                              return (
-                                <>
-                                  <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
-                                    <JobIcon className="w-3 h-3 text-white" />
-                                  </div>
-                                  <span>{wizardData.class}</span>
-                                  {jobCategory && classSubcategory && (
-                                    <div className="flex gap-1">
-                                      <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
-                                        {jobCategory}
-                                      </span>
-                                      <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
-                                        {classSubcategory}
-                                      </span>
-                                    </div>
-                                  )}
-                                </>
-                              );
-                            })()}
-                          </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="character-name">Character Name</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="character-name"
+                        placeholder="Enter your character name"
+                        value={wizardData.name}
+                        onChange={(e) => {
+                          setWizardData(prev => ({ ...prev, name: e.target.value }));
+                          // Reset MapleRanks status when name changes
+                          setMapleRanksStatus('idle');
+                          setMapleRanksMessage('');
+                        }}
+                        className="h-12"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            searchMapleRanks();
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={searchMapleRanks}
+                        disabled={!wizardData.name.trim() || isSearchingMapleRanks}
+                        className="h-12 px-4"
+                      >
+                        {isSearchingMapleRanks ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Search className="w-4 h-4" />
                         )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="max-h-[300px]">
-                      {Object.entries(ORGANIZED_CLASSES).map(([category, categoryData]) => (
-                        <div key={category}>
-                          <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b">
-                            {categoryData.name}
-                          </div>
-                          {categoryData.classes.map((jobClass) => {
-                            const JobIcon = getJobIcon(jobClass);
-                            const jobColors = getJobColors(jobClass);
-                            return (
-                              <SelectItem key={jobClass} value={jobClass}>
-                                <div className="flex items-center gap-2">
-                                  <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
-                                    <JobIcon className="w-2.5 h-2.5 text-white" />
+                      </Button>
+                    </div>
+                    
+                    {/* MapleRanks Status Messages */}
+                    {mapleRanksStatus !== 'idle' && (
+                      <div className={`flex items-center gap-2 text-sm p-3 rounded-md ${
+                        mapleRanksStatus === 'found' 
+                          ? 'bg-green-100 text-green-800 border border-green-300 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
+                          : mapleRanksStatus === 'not-found'
+                          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800'
+                          : 'bg-red-100 text-red-800 border border-red-300 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                      }`}>
+                        {mapleRanksStatus === 'found' && <CheckCircle2 className="w-4 h-4" />}
+                        {mapleRanksStatus === 'not-found' && <XCircle className="w-4 h-4" />}
+                        {mapleRanksStatus === 'error' && <AlertCircle className="w-4 h-4" />}
+                        <span>{mapleRanksMessage}</span>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
+                      💡 Click search to auto-fill character data from MapleRanks (beta feature)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="character-level">Level</Label>
+                    <Input
+                      id="character-level"
+                      type="number"
+                      min="1"
+                      max="300"
+                      value={wizardData.level}
+                      onChange={(e) => setWizardData(prev => ({ ...prev, level: parseInt(e.target.value) || 200 }))}
+                      className="h-12"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="character-class">Job Class</Label>
+                    <Select 
+                      value={wizardData.class} 
+                      onValueChange={(value) => setWizardData(prev => ({ ...prev, class: value }))}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select your job class">
+                          {wizardData.class && (
+                            <div className="flex items-center gap-2">
+                              {(() => {
+                                const JobIcon = getJobIcon(wizardData.class);
+                                const jobColors = getJobColors(wizardData.class);
+                                const jobCategory = getJobCategoryName(wizardData.class);
+                                const classSubcategory = getClassSubcategory(wizardData.class);
+                                
+                                return (
+                                  <>
+                                    <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                      <JobIcon className="w-3 h-3 text-white" />
+                                    </div>
+                                    <span>{wizardData.class}</span>
+                                    {jobCategory && classSubcategory && (
+                                      <div className="flex gap-1">
+                                        <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                          {jobCategory}
+                                        </span>
+                                        <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                          {classSubcategory}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {Object.entries(ORGANIZED_CLASSES).map(([category, categoryData]) => (
+                          <div key={category}>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b">
+                              {categoryData.name}
+                            </div>
+                            {categoryData.classes.map((jobClass) => {
+                              const JobIcon = getJobIcon(jobClass);
+                              const jobColors = getJobColors(jobClass);
+                              return (
+                                <SelectItem key={jobClass} value={jobClass}>
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
+                                      <JobIcon className="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                    <span>{jobClass}</span>
                                   </div>
-                                  <span>{jobClass}</span>
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </div>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                                </SelectItem>
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
