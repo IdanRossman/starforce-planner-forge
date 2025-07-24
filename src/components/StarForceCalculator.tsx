@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
+import { calculateBulkStarforce, convertToMesos, BulkEnhancedStarforceRequestDto, LuckAnalysisDto } from "@/services/starforceService";
 import {
   Card,
   CardContent,
@@ -453,6 +454,9 @@ export function StarForceCalculator({
     return loadCharacterSettings('item-spare-prices', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
   });
   
+  // Temporary spare price editing state (doesn't trigger recalculation until blur)
+  const [tempSparePrices, setTempSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+  
   // Per-item actual costs with units
   const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
     return loadCharacterSettings('item-actual-costs', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
@@ -507,6 +511,32 @@ export function StarForceCalculator({
     initialCalculation || null
   );
 
+  // State for handling async calculations
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
+  const [recalculationTrigger, setRecalculationTrigger] = useState(0); // Trigger for manual recalculation
+  
+  // State for equipment calculations
+  interface EquipmentCalculation {
+    equipment: Equipment;
+    calculation: StarForceCalculation;
+    expectedCost: number;
+    actualCost: number;
+    luckPercentage: number;
+    luckAnalysis?: LuckAnalysisDto;
+    spareCostBreakdown: {
+      enhancementCost: number;
+      averageSpareCost: number;
+      medianSpareCost: number;
+      p75SpareCost: number;
+    };
+    spareStatus: string;
+    spareClassName: string;
+    spareTitle: string;
+  }
+  
+  const [equipmentCalculations, setEquipmentCalculations] = useState<EquipmentCalculation[]>([]);
+
   // Combine all equipment for table mode - memoized to prevent recalculation on hover
   const pendingEquipment = useMemo(() => {
     const allEquipment = [...equipment, ...additionalEquipment];
@@ -515,166 +545,251 @@ export function StarForceCalculator({
     );
   }, [equipment, additionalEquipment]);
 
-  // Calculate costs and statistics for equipment mode
-  const equipmentCalculations = useMemo(() => {
-    if (mode === 'standalone' || !pendingEquipment.length) return [];
-
-    const calculations = pendingEquipment.map(eq => {
-      const events = {
-        costMultiplier: enhancedSettings.discountEvent ? 0.7 : 1,
-        successRateBonus: enhancedSettings.starcatchEvent ? 1 : 0,
-        starCatching: enhancedSettings.starCatching !== false, // Use global star catching setting
-        safeguard: itemSafeguard[eq.id] || false, // Use per-item safeguard
-        eventType: enhancedSettings.starcatchEvent ? "5/10/15" as const : undefined
-      };
-
-      const calculation = calculateStarForce(
-        eq.level,
-        eq.currentStarForce || 0,
-        eq.targetStarForce || 0,
-        "epic",
-        "Regular",
-        events
-      );
-
-      // Calculate spare costs for Interactive server
-      let spareCostMultiplier = 0;
-      if (enhancedSettings.isInteractive && itemSparePrices[eq.id]) {
-        const sparePrice = itemSparePrices[eq.id];
-        const sparePriceInMesos = sparePrice.unit === 'B' 
-          ? sparePrice.value * 1000000000 
-          : sparePrice.value * 1000000;
-        spareCostMultiplier = sparePriceInMesos;
+  // Calculate costs and statistics for equipment mode using backend API
+  useEffect(() => {
+    async function calculateEquipmentCosts() {
+      if (mode === 'standalone' || !pendingEquipment.length) {
+        setEquipmentCalculations([]);
+        setIsCalculating(false);
+        setCalculationError(null);
+        return;
       }
 
-      // Calculate total costs including spare items
-      const enhancementCost = calculation.averageCost;
-      const totalAverageCost = enhancementCost + (calculation.averageBooms * spareCostMultiplier);
-      const totalMedianCost = calculation.medianCost + (calculation.medianBooms * spareCostMultiplier);
-      const totalP75Cost = calculation.p75Cost + (calculation.p75Booms * spareCostMultiplier);
+      setIsCalculating(true);
+      setCalculationError(null);
 
-      return {
-        equipment: eq,
-        calculation: {
-          ...calculation,
-          averageCost: Math.round(totalAverageCost),
-          medianCost: Math.round(totalMedianCost),
-          p75Cost: Math.round(totalP75Cost),
-        },
-        expectedCost: Math.round(totalAverageCost),
-        actualCost: eq.actualCost || 0,
-        luckPercentage: eq.actualCost && totalAverageCost > 0 
-          ? ((eq.actualCost - totalAverageCost) / totalAverageCost) * 100 
-          : 0,
-        spareCostBreakdown: {
-          enhancementCost,
-          averageSpareCost: calculation.averageBooms * spareCostMultiplier,
-          medianSpareCost: calculation.medianBooms * spareCostMultiplier,
-          p75SpareCost: calculation.p75Booms * spareCostMultiplier
-        },
-        // Pre-calculate spare status and related UI data
-        spareStatus: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const boomChance = calculation.averageBooms;
-          
-          if (boomChance === 0) return "none-needed";
-          if (spares === 0) return "none-available";
-          if (spares < Math.ceil(boomChance)) return "insufficient";
-          if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
-          return "adequate";
-        })(),
-        spareClassName: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const boomChance = calculation.averageBooms;
-          
-          if (boomChance === 0) return "";
-          if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
-          if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
-          if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
-          return "border-green-500 bg-green-950/30 text-green-200";
-        })(),
-        spareTitle: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const expectedBooms = calculation.averageBooms;
-          
-          if (expectedBooms === 0) return "No booms expected";
-          if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
-          if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
-          if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
-          return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
-        })()
-      };
-    });
+      try {
+        // Build API request
+        const request: BulkEnhancedStarforceRequestDto = {
+          isInteractive: enhancedSettings.isInteractive,
+          events: {
+            thirtyOff: enhancedSettings.discountEvent,
+            fiveTenFifteen: enhancedSettings.starcatchEvent,
+            starCatching: enhancedSettings.starCatching !== false,
+            mvpDiscount: 0 // Add to settings if needed
+          },
+          items: pendingEquipment.map(eq => {
+            const actualCostData = itemActualCosts[eq.id];
+            const actualCostInMesos = actualCostData ? convertToMesos(actualCostData) : 0;
 
-    // Apply sorting if specified
-    if (sortField && sortDirection) {
-      calculations.sort((a, b) => {
-        let aValue: string | number;
-        let bValue: string | number;
+            const spareCostData = itemSparePrices[eq.id];
+            const spareCostInMesos = spareCostData ? convertToMesos(spareCostData) : 0;
 
-        switch (sortField) {
-          case 'name':
-            aValue = (a.equipment.name || '').toLowerCase();
-            bValue = (b.equipment.name || '').toLowerCase();
-            break;
-          case 'currentStarForce':
-            aValue = a.equipment.currentStarForce || 0;
-            bValue = b.equipment.currentStarForce || 0;
-            break;
-          case 'targetStarForce':
-            aValue = a.equipment.targetStarForce || 0;
-            bValue = b.equipment.targetStarForce || 0;
-            break;
-          case 'averageCost':
-            aValue = a.expectedCost;
-            bValue = b.expectedCost;
-            break;
-          case 'medianCost':
-            aValue = a.calculation.medianCost;
-            bValue = b.calculation.medianCost;
-            break;
-          case 'p75Cost':
-            aValue = a.calculation.p75Cost;
-            bValue = b.calculation.p75Cost;
-            break;
-          case 'averageBooms':
-            aValue = a.calculation.averageBooms;
-            bValue = b.calculation.averageBooms;
-            break;
-          case 'medianBooms':
-            aValue = a.calculation.medianBooms;
-            bValue = b.calculation.medianBooms;
-            break;
-          case 'p75Booms':
-            aValue = a.calculation.p75Booms;
-            bValue = b.calculation.p75Booms;
-            break;
-          case 'actualCost':
-            aValue = a.actualCost;
-            bValue = b.actualCost;
-            break;
-          case 'luckPercentage':
-            aValue = a.luckPercentage;
-            bValue = b.luckPercentage;
-            break;
-          default:
-            return 0;
+            return {
+              itemLevel: eq.level,
+              fromStar: eq.currentStarForce || 0,
+              toStar: eq.targetStarForce || 0,
+              safeguardEnabled: itemSafeguard[eq.id] || false,
+              spareCount: itemSpares[eq.id] || 0,
+              spareCost: spareCostInMesos,
+              actualCost: actualCostInMesos,
+              itemName: eq.name
+            };
+          })
+        };
+
+        // Call backend API
+        const { response } = await calculateBulkStarforce(request);
+        
+        // Transform response to match current format
+        const calculations: EquipmentCalculation[] = response.results.map((result, index) => {
+          const equipment = pendingEquipment[index];
+          
+          // Calculate luck percentage from API response
+          const luckPercentage = result.luckAnalysis 
+            ? result.luckAnalysis.percentile <= 50 
+              ? -(50 - result.luckAnalysis.percentile) * 2  // Lucky: negative percentage
+              : (result.luckAnalysis.percentile - 50) * 2   // Unlucky: positive percentage
+            : 0;
+
+          // Get actual cost from our local state
+          const actualCostData = itemActualCosts[equipment.id];
+          const actualCost = actualCostData ? convertToMesos(actualCostData) : (equipment.actualCost || 0);
+
+          // Calculate spare cost breakdown
+          const enhancementCost = result.averageCost;
+          const averageSpareCost = (result.averageSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+          const medianSpareCost = (result.medianSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+          const p75SpareCost = (result.percentile75SpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+
+          const calculation: StarForceCalculation = {
+            currentLevel: result.fromStar,
+            targetLevel: result.toStar,
+            averageCost: result.averageCost,
+            medianCost: result.medianCost,
+            p75Cost: result.percentile75Cost,
+            averageBooms: result.averageSpareCount || 0,
+            medianBooms: result.medianSpareCount || 0,
+            p75Booms: result.percentile75SpareCount || 0,
+            successRate: 0, // Not provided by API
+            boomRate: 0, // Not provided by API
+            costPerAttempt: 0, // Not provided by API
+            perStarStats: [], // Not provided by API
+            recommendations: [] // Not provided by API
+          };
+
+          return {
+            equipment,
+            calculation,
+            expectedCost: result.averageCost, // Use pure average cost, not totalInvestment
+            actualCost,
+            luckPercentage,
+            luckAnalysis: result.luckAnalysis, // Store the full luck analysis
+            spareCostBreakdown: {
+              enhancementCost,
+              averageSpareCost,
+              medianSpareCost,
+              p75SpareCost
+            },
+            // Pre-calculate spare status and related UI data
+            spareStatus: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const boomChance = result.averageSpareCount || 0;
+              
+              if (boomChance === 0) return "none-needed";
+              if (spares === 0) return "none-available";
+              if (spares < Math.ceil(boomChance)) return "insufficient";
+              if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
+              return "adequate";
+            })(),
+            spareClassName: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const boomChance = result.averageSpareCount || 0;
+              
+              if (boomChance === 0) return "";
+              if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
+              if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
+              if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
+              return "border-green-500 bg-green-950/30 text-green-200";
+            })(),
+            spareTitle: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const expectedBooms = result.averageSpareCount || 0;
+              
+              if (expectedBooms === 0) return "No booms expected";
+              if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
+              if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
+              if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
+              return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
+            })()
+          };
+        });
+
+        // Apply sorting if specified
+        if (sortField && sortDirection) {
+          calculations.sort((a, b) => {
+            let aValue: string | number;
+            let bValue: string | number;
+
+            switch (sortField) {
+              case 'name':
+                aValue = (a.equipment.name || '').toLowerCase();
+                bValue = (b.equipment.name || '').toLowerCase();
+                break;
+              case 'currentStarForce':
+                aValue = a.equipment.currentStarForce || 0;
+                bValue = b.equipment.currentStarForce || 0;
+                break;
+              case 'targetStarForce':
+                aValue = a.equipment.targetStarForce || 0;
+                bValue = b.equipment.targetStarForce || 0;
+                break;
+              case 'averageCost':
+                aValue = a.expectedCost;
+                bValue = b.expectedCost;
+                break;
+              case 'medianCost':
+                aValue = a.calculation.medianCost;
+                bValue = b.calculation.medianCost;
+                break;
+              case 'p75Cost':
+                aValue = a.calculation.p75Cost;
+                bValue = b.calculation.p75Cost;
+                break;
+              case 'averageBooms':
+                aValue = a.calculation.averageBooms;
+                bValue = b.calculation.averageBooms;
+                break;
+              case 'medianBooms':
+                aValue = a.calculation.medianBooms;
+                bValue = b.calculation.medianBooms;
+                break;
+              case 'p75Booms':
+                aValue = a.calculation.p75Booms;
+                bValue = b.calculation.p75Booms;
+                break;
+              case 'actualCost':
+                aValue = a.actualCost;
+                bValue = b.actualCost;
+                break;
+              case 'luckPercentage':
+                aValue = a.luckPercentage;
+                bValue = b.luckPercentage;
+                break;
+              default:
+                return 0;
+            }
+
+            if (typeof aValue === 'string') {
+              return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue as string)
+                : (bValue as string).localeCompare(aValue);
+            } else {
+              return sortDirection === 'asc' 
+                ? (aValue as number) - (bValue as number)
+                : (bValue as number) - (aValue as number);
+            }
+          });
         }
 
-        if (typeof aValue === 'string') {
-          return sortDirection === 'asc' 
-            ? aValue.localeCompare(bValue as string)
-            : (bValue as string).localeCompare(aValue);
-        } else {
-          return sortDirection === 'asc' 
-            ? (aValue as number) - (bValue as number)
-            : (bValue as number) - (aValue as number);
-        }
-      });
+        setEquipmentCalculations(calculations);
+      } catch (error) {
+        console.error('Failed to calculate equipment costs:', error);
+        setCalculationError(error instanceof Error ? error.message : 'Failed to calculate costs');
+        
+        // Fallback to local calculation - for now we'll just set empty array
+        setEquipmentCalculations([]);
+      } finally {
+        setIsCalculating(false);
+      }
     }
 
-    return calculations;
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, mode, sortField, sortDirection]);
+    calculateEquipmentCosts();
+  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
+
+  // Enhanced luck rating based on percentile tiers
+  const getEnhancedLuckRating = (percentile: number) => {
+    if (percentile <= 10) return { 
+      rating: "Godlike luck 🍀", 
+      color: "text-emerald-400",
+      shareMessage: `🍀 Godlike luck! Spent less than ${percentile.toFixed(1)}% of players - absolutely legendary RNG!`
+    };
+    if (percentile <= 30) return { 
+      rating: "Very lucky ✨", 
+      color: "text-green-400",
+      shareMessage: `✨ Very lucky! Spent less than ${percentile.toFixed(1)}% of players - exceptional RNG!`
+    };
+    if (percentile <= 50) return { 
+      rating: "Above average 🍂", 
+      color: "text-green-300",
+      shareMessage: `🍂 Above average luck! Spent less than ${percentile.toFixed(1)}% of players - better than most!`
+    };
+    if (percentile <= 70) return { 
+      rating: "Unlucky 😕", 
+      color: "text-orange-400",
+      shareMessage: `😕 Unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - below average RNG.`
+    };
+    if (percentile <= 90) return { 
+      rating: "Very unlucky 😩", 
+      color: "text-red-400",
+      shareMessage: `😩 Very unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - rough RNG.`
+    };
+    return { 
+      rating: "Nightmare RNG 💀", 
+      color: "text-red-600",
+      shareMessage: `💀 Nightmare RNG! Spent more than ${(100-percentile).toFixed(1)}% of players - absolutely brutal luck!`
+    };
+  };
 
   // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
   const aggregateStats = useMemo(() => {
@@ -694,6 +809,32 @@ export function StarForceCalculator({
       ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
       : 0;
 
+    // Calculate enhanced overall luck using weighted average
+    const itemsWithLuck = includedCalculations.filter(calc => 
+      calc.actualCost > 0 && calc.luckAnalysis
+    );
+    
+    let overallLuck = null;
+    if (itemsWithLuck.length > 0) {
+      // Weight by actual cost spent (bigger investments matter more)
+      const totalActualCostWithLuck = itemsWithLuck.reduce((sum, calc) => sum + calc.actualCost, 0);
+      
+      const weightedPercentile = itemsWithLuck.reduce((sum, calc) => {
+        const weight = calc.actualCost / totalActualCostWithLuck;
+        return sum + (calc.luckAnalysis!.percentile * weight);
+      }, 0);
+      
+      const enhancedRating = getEnhancedLuckRating(weightedPercentile);
+      
+      overallLuck = {
+        percentile: weightedPercentile,
+        rating: enhancedRating.rating,
+        color: enhancedRating.color,
+        shareMessage: enhancedRating.shareMessage,
+        description: `Overall spending luck across ${itemsWithLuck.length} items (cost-weighted average)`
+      };
+    }
+
     // Check if any actual costs have been entered
     const hasActualCosts = totalActualCost > 0;
 
@@ -705,6 +846,7 @@ export function StarForceCalculator({
       totalP75Cost,
       totalP75Booms,
       overallLuckPercentage,
+      overallLuck, // Add enhanced luck analysis
       hasActualCosts,
       includedCount: includedCalculations.length,
       totalCount: equipmentCalculations.length
@@ -776,6 +918,27 @@ export function StarForceCalculator({
     return "text-gray-400"; // No data
   };
 
+  // New function for percentile-based coloring
+  const getLuckColorFromPercentile = (percentile: number) => {
+    if (percentile <= 10) return "text-green-400"; // Very lucky (bottom 10%)
+    if (percentile <= 25) return "text-green-300"; // Lucky (bottom 25%)
+    if (percentile >= 90) return "text-red-400"; // Very unlucky (top 10%)
+    if (percentile >= 75) return "text-orange-400"; // Unlucky (top 25%)
+    return "text-blue-300"; // Average (25-75%)
+  };
+
+  // Function to get color based on luck rating from API
+  const getLuckColorFromRating = (luckRating: string) => {
+    switch (luckRating) {
+      case 'Very Lucky': return "text-green-400";
+      case 'Lucky': return "text-green-300";
+      case 'Average': return "text-blue-300";
+      case 'Unlucky': return "text-orange-400";
+      case 'Very Unlucky': return "text-red-400";
+      default: return "text-gray-400";
+    }
+  };
+
   const getLuckText = (percentage: number) => {
     if (percentage === 0) return "";
     if (percentage < -25) return "Far below avg";
@@ -784,6 +947,24 @@ export function StarForceCalculator({
     if (percentage <= 10) return "Above avg";
     if (percentage <= 25) return "Above avg";
     return "Far above avg";
+  };
+
+  // Helper function to get current spare price (temp or committed)
+  const getCurrentSparePrice = (equipmentId: string) => {
+    return tempSparePrices[equipmentId] || itemSparePrices[equipmentId] || { value: 0, unit: 'M' as const };
+  };
+
+  // Helper function to commit spare price changes (triggers recalculation)
+  const commitSparePriceChange = (equipmentId: string) => {
+    const tempValue = tempSparePrices[equipmentId];
+    if (tempValue) {
+      setItemSparePrices(prev => ({ ...prev, [equipmentId]: tempValue }));
+      setTempSparePrices(prev => {
+        const newState = { ...prev };
+        delete newState[equipmentId];
+        return newState;
+      });
+    }
   };
 
   // Helper function to check if safeguard is applicable for an item
@@ -831,6 +1012,31 @@ export function StarForceCalculator({
     setTempValues({ current: 0, target: 0 });
   };
 
+  // Auto-determine unit based on table data
+  const getAutoUnit = (equipment: Equipment): 'M' | 'B' => {
+    // Check current calculation values for this equipment
+    const calc = equipmentCalculations.find(c => c.equipment.id === equipment.id);
+    if (calc) {
+      // If most values are >= 1B, suggest B, otherwise M
+      const values = [
+        calc.expectedCost,
+        calc.calculation.medianCost,
+        calc.calculation.p75Cost
+      ];
+      const billionValues = values.filter(v => v >= 1000000000).length;
+      return billionValues >= 2 ? 'B' : 'M'; // If 2+ values are in billions, use B
+    }
+
+    // Fallback: check other items' spare prices for context
+    const sparePrices = Object.values(itemSparePrices);
+    if (sparePrices.length > 0) {
+      const billionSpares = sparePrices.filter(p => p.unit === 'B').length;
+      return billionSpares > sparePrices.length / 2 ? 'B' : 'M';
+    }
+
+    return 'M'; // Default to millions
+  };
+
   const handleStartActualCostEdit = (equipment: Equipment) => {
     setEditingActualCost(equipment.id);
     // Initialize with current value or convert from legacy actualCost
@@ -844,7 +1050,13 @@ export function StarForceCalculator({
       setTempActualCost(Math.round(value * 10) / 10); // Round to 1 decimal
       setItemActualCosts(prev => ({ ...prev, [equipment.id]: { value: Math.round(value * 10) / 10, unit } }));
     } else {
+      // Auto-determine unit and set to 0
+      const autoUnit = getAutoUnit(equipment);
       setTempActualCost(0);
+      setItemActualCosts(prev => ({ 
+        ...prev, 
+        [equipment.id]: { value: 0, unit: autoUnit } 
+      }));
     }
   };
 
@@ -861,6 +1073,9 @@ export function StarForceCalculator({
       ...prev, 
       [equipment.id]: { value: tempActualCost, unit } 
     }));
+    
+    // Trigger recalculation manually
+    setRecalculationTrigger(prev => prev + 1);
     
     setEditingActualCost(null);
   };
@@ -1098,6 +1313,7 @@ export function StarForceCalculator({
         )}
 
         {/* Statistics Overview */}
+        {!isCalculating && !calculationError && aggregateStats.totalCount > 0 && (
         <div className={`grid grid-cols-${aggregateStats.hasActualCosts ? '5' : '4'} gap-4`}>
           <Card>
             <CardContent className="p-4">
@@ -1160,27 +1376,43 @@ export function StarForceCalculator({
               <CardContent className="p-4">
                 <div className="flex flex-col items-center justify-center gap-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    aggregateStats.overallLuck ? 'bg-purple-500/10' : 
                     aggregateStats.overallLuckPercentage > 0 ? 'bg-red-500/10' : 'bg-green-500/10'
                   }`}>
-                    {aggregateStats.overallLuckPercentage > 0 ? 
-                      <TrendingDown className="w-5 h-5 text-red-500" /> :
-                      <TrendingUp className="w-5 h-5 text-green-500" />
+                    {aggregateStats.overallLuck ? 
+                      <Star className="w-5 h-5 text-purple-500" /> :
+                      aggregateStats.overallLuckPercentage > 0 ? 
+                        <TrendingDown className="w-5 h-5 text-red-500" /> :
+                        <TrendingUp className="w-5 h-5 text-green-500" />
                     }
                   </div>
                   <div className="text-center">
-                    <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
-                      <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
-                      {getLuckText(aggregateStats.overallLuckPercentage) && (
-                        <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
-                      )}
+                    {aggregateStats.overallLuck ? (
+                      <div 
+                        className={`text-2xl font-bold ${aggregateStats.overallLuck.color} flex flex-col cursor-help`}
+                        title={aggregateStats.overallLuck.shareMessage}
+                      >
+                        <span>{aggregateStats.overallLuck.percentile.toFixed(1)}%</span>
+                        <span className="text-sm opacity-75">{aggregateStats.overallLuck.rating}</span>
+                      </div>
+                    ) : (
+                      <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
+                        <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
+                        {getLuckText(aggregateStats.overallLuckPercentage) && (
+                          <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
+                        )}
+                      </div>
+                    )}
+                    <div className="text-sm text-muted-foreground">
+                      {aggregateStats.overallLuck ? 'Spending Percentile' : 'vs Average Cost'}
                     </div>
-                    <div className="text-sm text-muted-foreground">vs Average Cost</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
+        )}
 
         {/* Equipment Table */}
         <Card>
@@ -1197,7 +1429,29 @@ export function StarForceCalculator({
             </div>
           </CardHeader>
           <CardContent>
-            {equipmentCalculations.length === 0 ? (
+            {isCalculating ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 className="font-semibold text-lg mb-2">Calculating StarForce Costs</h3>
+                <p className="text-muted-foreground">Using enhanced simulation algorithms...</p>
+              </div>
+            ) : calculationError ? (
+              <div className="text-center py-8">
+                <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2 text-red-600">Calculation Error</h3>
+                <p className="text-muted-foreground mb-4">{calculationError}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setCalculationError(null);
+                    // Trigger recalculation by updating a dependency
+                    setIsCalculating(true);
+                  }}
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : equipmentCalculations.length === 0 ? (
               <div className="text-center py-8">
                 <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">No Pending Equipment</h3>
@@ -1359,7 +1613,7 @@ export function StarForceCalculator({
                           className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
                         >
                           <TableCell>
-                            <div className="flex items-center justify-center">
+                            <div className="flex items-center gap-2">
                               <div className="relative flex-shrink-0">
                                 <EquipmentImage
                                   src={calc.equipment.image}
@@ -1374,6 +1628,14 @@ export function StarForceCalculator({
                                     <EyeOff className="w-3 h-3 text-white" />
                                   </div>
                                 )}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-medium text-sm truncate" title={calc.equipment.name}>
+                                  {calc.equipment.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {calc.equipment.slot}
+                                </span>
                               </div>
                             </div>
                           </TableCell>
@@ -1551,30 +1813,43 @@ export function StarForceCalculator({
                               <Input
                                 type="number"
                                 min="0"
-                                value={itemSparePrices[calc.equipment.id]?.value || 0}
+                                value={getCurrentSparePrice(calc.equipment.id).value}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0;
-                                  setItemSparePrices(prev => ({ 
+                                  setTempSparePrices(prev => ({ 
                                     ...prev, 
                                     [calc.equipment.id]: { 
                                       value, 
-                                      unit: prev[calc.equipment.id]?.unit || 'M' 
+                                      unit: getCurrentSparePrice(calc.equipment.id).unit
                                     } 
                                   }));
+                                }}
+                                onBlur={() => commitSparePriceChange(calc.equipment.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    commitSparePriceChange(calc.equipment.id);
+                                    e.currentTarget.blur();
+                                  }
                                 }}
                                 className="w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                                 placeholder="0"
                               />
                               <Select
-                                value={itemSparePrices[calc.equipment.id]?.unit || 'M'}
+                                value={getCurrentSparePrice(calc.equipment.id).unit}
                                 onValueChange={(unit: 'M' | 'B') => {
-                                  setItemSparePrices(prev => ({ 
+                                  const currentPrice = getCurrentSparePrice(calc.equipment.id);
+                                  const newPrice = { ...currentPrice, unit };
+                                  setTempSparePrices(prev => ({ 
                                     ...prev, 
-                                    [calc.equipment.id]: { 
-                                      value: prev[calc.equipment.id]?.value || 0, 
-                                      unit 
-                                    } 
+                                    [calc.equipment.id]: newPrice
                                   }));
+                                  // For unit changes, commit immediately since it's a deliberate choice
+                                  setItemSparePrices(prev => ({ ...prev, [calc.equipment.id]: newPrice }));
+                                  setTempSparePrices(prev => {
+                                    const newState = { ...prev };
+                                    delete newState[calc.equipment.id];
+                                    return newState;
+                                  });
                                 }}
                               >
                                 <SelectTrigger className="w-16 h-8">
@@ -1714,8 +1989,16 @@ export function StarForceCalculator({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className={`font-medium ${getLuckColor(calc.luckPercentage)}`}>
-                            {calc.actualCost > 0 ? (
+                          <div className={`font-medium ${calc.luckAnalysis ? getEnhancedLuckRating(calc.luckAnalysis.percentile).color : getLuckColor(calc.luckPercentage)}`}>
+                            {calc.actualCost > 0 && calc.luckAnalysis ? (
+                              <div 
+                                className="flex flex-col cursor-help" 
+                                title={getEnhancedLuckRating(calc.luckAnalysis.percentile).shareMessage}
+                              >
+                                <span>{calc.luckAnalysis.percentile.toFixed(1)}th percentile</span>
+                                <span className="text-xs opacity-75">{getEnhancedLuckRating(calc.luckAnalysis.percentile).rating}</span>
+                              </div>
+                            ) : calc.actualCost > 0 ? (
                               <div className="flex flex-col">
                                 <span>{calc.luckPercentage.toFixed(1)}%</span>
                                 {getLuckText(calc.luckPercentage) && (
