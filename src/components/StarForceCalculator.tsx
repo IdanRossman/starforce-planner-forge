@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
+import { calculateBulkStarforce, convertToMesos, BulkEnhancedStarforceRequestDto } from "@/services/starforceService";
 import {
   Card,
   CardContent,
@@ -507,6 +508,30 @@ export function StarForceCalculator({
     initialCalculation || null
   );
 
+  // State for handling async calculations
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState<string | null>(null);
+  
+  // State for equipment calculations
+  interface EquipmentCalculation {
+    equipment: Equipment;
+    calculation: StarForceCalculation;
+    expectedCost: number;
+    actualCost: number;
+    luckPercentage: number;
+    spareCostBreakdown: {
+      enhancementCost: number;
+      averageSpareCost: number;
+      medianSpareCost: number;
+      p75SpareCost: number;
+    };
+    spareStatus: string;
+    spareClassName: string;
+    spareTitle: string;
+  }
+  
+  const [equipmentCalculations, setEquipmentCalculations] = useState<EquipmentCalculation[]>([]);
+
   // Combine all equipment for table mode - memoized to prevent recalculation on hover
   const pendingEquipment = useMemo(() => {
     const allEquipment = [...equipment, ...additionalEquipment];
@@ -515,166 +540,216 @@ export function StarForceCalculator({
     );
   }, [equipment, additionalEquipment]);
 
-  // Calculate costs and statistics for equipment mode
-  const equipmentCalculations = useMemo(() => {
-    if (mode === 'standalone' || !pendingEquipment.length) return [];
-
-    const calculations = pendingEquipment.map(eq => {
-      const events = {
-        costMultiplier: enhancedSettings.discountEvent ? 0.7 : 1,
-        successRateBonus: enhancedSettings.starcatchEvent ? 1 : 0,
-        starCatching: enhancedSettings.starCatching !== false, // Use global star catching setting
-        safeguard: itemSafeguard[eq.id] || false, // Use per-item safeguard
-        eventType: enhancedSettings.starcatchEvent ? "5/10/15" as const : undefined
-      };
-
-      const calculation = calculateStarForce(
-        eq.level,
-        eq.currentStarForce || 0,
-        eq.targetStarForce || 0,
-        "epic",
-        "Regular",
-        events
-      );
-
-      // Calculate spare costs for Interactive server
-      let spareCostMultiplier = 0;
-      if (enhancedSettings.isInteractive && itemSparePrices[eq.id]) {
-        const sparePrice = itemSparePrices[eq.id];
-        const sparePriceInMesos = sparePrice.unit === 'B' 
-          ? sparePrice.value * 1000000000 
-          : sparePrice.value * 1000000;
-        spareCostMultiplier = sparePriceInMesos;
+  // Calculate costs and statistics for equipment mode using backend API
+  useEffect(() => {
+    async function calculateEquipmentCosts() {
+      if (mode === 'standalone' || !pendingEquipment.length) {
+        setEquipmentCalculations([]);
+        setIsCalculating(false);
+        setCalculationError(null);
+        return;
       }
 
-      // Calculate total costs including spare items
-      const enhancementCost = calculation.averageCost;
-      const totalAverageCost = enhancementCost + (calculation.averageBooms * spareCostMultiplier);
-      const totalMedianCost = calculation.medianCost + (calculation.medianBooms * spareCostMultiplier);
-      const totalP75Cost = calculation.p75Cost + (calculation.p75Booms * spareCostMultiplier);
+      setIsCalculating(true);
+      setCalculationError(null);
 
-      return {
-        equipment: eq,
-        calculation: {
-          ...calculation,
-          averageCost: Math.round(totalAverageCost),
-          medianCost: Math.round(totalMedianCost),
-          p75Cost: Math.round(totalP75Cost),
-        },
-        expectedCost: Math.round(totalAverageCost),
-        actualCost: eq.actualCost || 0,
-        luckPercentage: eq.actualCost && totalAverageCost > 0 
-          ? ((eq.actualCost - totalAverageCost) / totalAverageCost) * 100 
-          : 0,
-        spareCostBreakdown: {
-          enhancementCost,
-          averageSpareCost: calculation.averageBooms * spareCostMultiplier,
-          medianSpareCost: calculation.medianBooms * spareCostMultiplier,
-          p75SpareCost: calculation.p75Booms * spareCostMultiplier
-        },
-        // Pre-calculate spare status and related UI data
-        spareStatus: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const boomChance = calculation.averageBooms;
-          
-          if (boomChance === 0) return "none-needed";
-          if (spares === 0) return "none-available";
-          if (spares < Math.ceil(boomChance)) return "insufficient";
-          if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
-          return "adequate";
-        })(),
-        spareClassName: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const boomChance = calculation.averageBooms;
-          
-          if (boomChance === 0) return "";
-          if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
-          if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
-          if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
-          return "border-green-500 bg-green-950/30 text-green-200";
-        })(),
-        spareTitle: (() => {
-          const spares = itemSpares[eq.id] || 0;
-          const expectedBooms = calculation.averageBooms;
-          
-          if (expectedBooms === 0) return "No booms expected";
-          if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
-          if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
-          if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
-          return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
-        })()
-      };
-    });
+      try {
+        // Build API request
+        const request: BulkEnhancedStarforceRequestDto = {
+          isInteractive: enhancedSettings.isInteractive,
+          events: {
+            thirtyOff: enhancedSettings.discountEvent,
+            fiveTenFifteen: enhancedSettings.starcatchEvent,
+            starCatching: enhancedSettings.starCatching !== false,
+            mvpDiscount: 0 // Add to settings if needed
+          },
+          items: pendingEquipment.map(eq => {
+            const actualCostData = itemActualCosts[eq.id];
+            const actualCostInMesos = actualCostData ? convertToMesos(actualCostData) : 0;
 
-    // Apply sorting if specified
-    if (sortField && sortDirection) {
-      calculations.sort((a, b) => {
-        let aValue: string | number;
-        let bValue: string | number;
+            const spareCostData = itemSparePrices[eq.id];
+            const spareCostInMesos = spareCostData ? convertToMesos(spareCostData) : 0;
 
-        switch (sortField) {
-          case 'name':
-            aValue = (a.equipment.name || '').toLowerCase();
-            bValue = (b.equipment.name || '').toLowerCase();
-            break;
-          case 'currentStarForce':
-            aValue = a.equipment.currentStarForce || 0;
-            bValue = b.equipment.currentStarForce || 0;
-            break;
-          case 'targetStarForce':
-            aValue = a.equipment.targetStarForce || 0;
-            bValue = b.equipment.targetStarForce || 0;
-            break;
-          case 'averageCost':
-            aValue = a.expectedCost;
-            bValue = b.expectedCost;
-            break;
-          case 'medianCost':
-            aValue = a.calculation.medianCost;
-            bValue = b.calculation.medianCost;
-            break;
-          case 'p75Cost':
-            aValue = a.calculation.p75Cost;
-            bValue = b.calculation.p75Cost;
-            break;
-          case 'averageBooms':
-            aValue = a.calculation.averageBooms;
-            bValue = b.calculation.averageBooms;
-            break;
-          case 'medianBooms':
-            aValue = a.calculation.medianBooms;
-            bValue = b.calculation.medianBooms;
-            break;
-          case 'p75Booms':
-            aValue = a.calculation.p75Booms;
-            bValue = b.calculation.p75Booms;
-            break;
-          case 'actualCost':
-            aValue = a.actualCost;
-            bValue = b.actualCost;
-            break;
-          case 'luckPercentage':
-            aValue = a.luckPercentage;
-            bValue = b.luckPercentage;
-            break;
-          default:
-            return 0;
+            return {
+              itemLevel: eq.level,
+              fromStar: eq.currentStarForce || 0,
+              toStar: eq.targetStarForce || 0,
+              safeguardEnabled: itemSafeguard[eq.id] || false,
+              spareCount: itemSpares[eq.id] || 0,
+              spareCost: spareCostInMesos,
+              actualCost: actualCostInMesos,
+              itemName: eq.name
+            };
+          })
+        };
+
+        // Call backend API
+        const { response } = await calculateBulkStarforce(request);
+        
+        // Transform response to match current format
+        const calculations: EquipmentCalculation[] = response.results.map((result, index) => {
+          const equipment = pendingEquipment[index];
+          
+          // Calculate luck percentage from API response
+          const luckPercentage = result.luckAnalysis 
+            ? result.luckAnalysis.percentile <= 50 
+              ? -(50 - result.luckAnalysis.percentile) * 2  // Lucky: negative percentage
+              : (result.luckAnalysis.percentile - 50) * 2   // Unlucky: positive percentage
+            : 0;
+
+          // Get actual cost from our local state
+          const actualCostData = itemActualCosts[equipment.id];
+          const actualCost = actualCostData ? convertToMesos(actualCostData) : (equipment.actualCost || 0);
+
+          // Calculate spare cost breakdown
+          const enhancementCost = result.averageCost;
+          const averageSpareCost = (result.averageSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+          const medianSpareCost = (result.medianSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+          const p75SpareCost = (result.percentile75SpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
+
+          const calculation: StarForceCalculation = {
+            currentLevel: result.fromStar,
+            targetLevel: result.toStar,
+            averageCost: result.averageCost,
+            medianCost: result.medianCost,
+            p75Cost: result.percentile75Cost,
+            averageBooms: result.averageSpareCount || 0,
+            medianBooms: result.medianSpareCount || 0,
+            p75Booms: result.percentile75SpareCount || 0,
+            successRate: 0, // Not provided by API
+            boomRate: 0, // Not provided by API
+            costPerAttempt: 0, // Not provided by API
+            perStarStats: [], // Not provided by API
+            recommendations: [] // Not provided by API
+          };
+
+          return {
+            equipment,
+            calculation,
+            expectedCost: result.averageCost, // Use pure average cost, not totalInvestment
+            actualCost,
+            luckPercentage,
+            spareCostBreakdown: {
+              enhancementCost,
+              averageSpareCost,
+              medianSpareCost,
+              p75SpareCost
+            },
+            // Pre-calculate spare status and related UI data
+            spareStatus: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const boomChance = result.averageSpareCount || 0;
+              
+              if (boomChance === 0) return "none-needed";
+              if (spares === 0) return "none-available";
+              if (spares < Math.ceil(boomChance)) return "insufficient";
+              if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
+              return "adequate";
+            })(),
+            spareClassName: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const boomChance = result.averageSpareCount || 0;
+              
+              if (boomChance === 0) return "";
+              if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
+              if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
+              if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
+              return "border-green-500 bg-green-950/30 text-green-200";
+            })(),
+            spareTitle: (() => {
+              const spares = itemSpares[equipment.id] || 0;
+              const expectedBooms = result.averageSpareCount || 0;
+              
+              if (expectedBooms === 0) return "No booms expected";
+              if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
+              if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
+              if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
+              return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
+            })()
+          };
+        });
+
+        // Apply sorting if specified
+        if (sortField && sortDirection) {
+          calculations.sort((a, b) => {
+            let aValue: string | number;
+            let bValue: string | number;
+
+            switch (sortField) {
+              case 'name':
+                aValue = (a.equipment.name || '').toLowerCase();
+                bValue = (b.equipment.name || '').toLowerCase();
+                break;
+              case 'currentStarForce':
+                aValue = a.equipment.currentStarForce || 0;
+                bValue = b.equipment.currentStarForce || 0;
+                break;
+              case 'targetStarForce':
+                aValue = a.equipment.targetStarForce || 0;
+                bValue = b.equipment.targetStarForce || 0;
+                break;
+              case 'averageCost':
+                aValue = a.expectedCost;
+                bValue = b.expectedCost;
+                break;
+              case 'medianCost':
+                aValue = a.calculation.medianCost;
+                bValue = b.calculation.medianCost;
+                break;
+              case 'p75Cost':
+                aValue = a.calculation.p75Cost;
+                bValue = b.calculation.p75Cost;
+                break;
+              case 'averageBooms':
+                aValue = a.calculation.averageBooms;
+                bValue = b.calculation.averageBooms;
+                break;
+              case 'medianBooms':
+                aValue = a.calculation.medianBooms;
+                bValue = b.calculation.medianBooms;
+                break;
+              case 'p75Booms':
+                aValue = a.calculation.p75Booms;
+                bValue = b.calculation.p75Booms;
+                break;
+              case 'actualCost':
+                aValue = a.actualCost;
+                bValue = b.actualCost;
+                break;
+              case 'luckPercentage':
+                aValue = a.luckPercentage;
+                bValue = b.luckPercentage;
+                break;
+              default:
+                return 0;
+            }
+
+            if (typeof aValue === 'string') {
+              return sortDirection === 'asc' 
+                ? aValue.localeCompare(bValue as string)
+                : (bValue as string).localeCompare(aValue);
+            } else {
+              return sortDirection === 'asc' 
+                ? (aValue as number) - (bValue as number)
+                : (bValue as number) - (aValue as number);
+            }
+          });
         }
 
-        if (typeof aValue === 'string') {
-          return sortDirection === 'asc' 
-            ? aValue.localeCompare(bValue as string)
-            : (bValue as string).localeCompare(aValue);
-        } else {
-          return sortDirection === 'asc' 
-            ? (aValue as number) - (bValue as number)
-            : (bValue as number) - (aValue as number);
-        }
-      });
+        setEquipmentCalculations(calculations);
+      } catch (error) {
+        console.error('Failed to calculate equipment costs:', error);
+        setCalculationError(error instanceof Error ? error.message : 'Failed to calculate costs');
+        
+        // Fallback to local calculation - for now we'll just set empty array
+        setEquipmentCalculations([]);
+      } finally {
+        setIsCalculating(false);
+      }
     }
 
-    return calculations;
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, mode, sortField, sortDirection]);
+    calculateEquipmentCosts();
+  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, itemActualCosts, mode, sortField, sortDirection]);
 
   // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
   const aggregateStats = useMemo(() => {
@@ -1098,6 +1173,7 @@ export function StarForceCalculator({
         )}
 
         {/* Statistics Overview */}
+        {!isCalculating && !calculationError && aggregateStats.totalCount > 0 && (
         <div className={`grid grid-cols-${aggregateStats.hasActualCosts ? '5' : '4'} gap-4`}>
           <Card>
             <CardContent className="p-4">
@@ -1181,6 +1257,7 @@ export function StarForceCalculator({
             </Card>
           )}
         </div>
+        )}
 
         {/* Equipment Table */}
         <Card>
@@ -1197,7 +1274,29 @@ export function StarForceCalculator({
             </div>
           </CardHeader>
           <CardContent>
-            {equipmentCalculations.length === 0 ? (
+            {isCalculating ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <h3 className="font-semibold text-lg mb-2">Calculating StarForce Costs</h3>
+                <p className="text-muted-foreground">Using enhanced simulation algorithms...</p>
+              </div>
+            ) : calculationError ? (
+              <div className="text-center py-8">
+                <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <h3 className="font-semibold text-lg mb-2 text-red-600">Calculation Error</h3>
+                <p className="text-muted-foreground mb-4">{calculationError}</p>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setCalculationError(null);
+                    // Trigger recalculation by updating a dependency
+                    setIsCalculating(true);
+                  }}
+                >
+                  Try Again
+                </Button>
+              </div>
+            ) : equipmentCalculations.length === 0 ? (
               <div className="text-center py-8">
                 <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="font-semibold text-lg mb-2">No Pending Equipment</h3>
