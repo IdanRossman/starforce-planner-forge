@@ -121,55 +121,34 @@ const getSlotIcon = (slot: string) => {
 
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
-  const [hasImage, setHasImage] = useState<boolean | null>(null); // null = loading, true = has image, false = no image
-  const [lastImageUrl, setLastImageUrl] = useState<string | undefined>(equipment.image);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
-  // Only reset state when the actual image URL changes, not on every re-render
+  // Reset state when equipment changes
   useEffect(() => {
-    if (lastImageUrl !== equipment.image) {
-      setHasImage(null); // Reset to loading state only when image URL actually changes
-      setLastImageUrl(equipment.image);
-    }
-  }, [equipment.image, lastImageUrl]);
+    setImageLoaded(false);
+    setImageError(false);
+  }, [equipment.id]);
 
-  // Determine layout: if we have an image URL, wait for image status; if no URL, show text immediately
-  const shouldShowTextLayout = equipment.image ? hasImage === false : true;
-  const isLoadingImage = equipment.image && hasImage === null;
+  const hasValidImage = equipment.image && !imageError;
   
   return (
     <div className="space-y-2">
-      {/* Always render EquipmentImage (hidden) to test image availability */}
-      {equipment.image && (
-        <div className="hidden">
-          <EquipmentImage 
-            src={equipment.image}
-            alt={equipment.name || equipment.set || "Equipment"}
-            size="md"
-            showFallback={false}
-            onImageStatusChange={(imageAvailable) => {
-              setHasImage(imageAvailable);
-            }}
-          />
-        </div>
-      )}
-
-      {isLoadingImage ? (
-        // Loading state while checking image
-        <div className="flex flex-col items-center justify-center space-y-1">
-          <div className="w-12 h-12 bg-gray-100 rounded animate-pulse" />
-          <div className="text-xs text-muted-foreground">Loading...</div>
-        </div>
-      ) : !shouldShowTextLayout ? (
+      {hasValidImage ? (
         // Image-centered layout: image with centered StarForce below
         <div className="flex flex-col items-center justify-center space-y-1">
-          <EquipmentImage 
-            src={equipment.image} 
-            alt={equipment.name || equipment.set || "Equipment"}
-            size="lg"
-            showFallback={false}
-            maxRetries={3}
-            className="shrink-0"
-          />
+          <div className="relative">
+            {!imageLoaded && (
+              <div className="w-12 h-12 bg-gray-100 rounded animate-pulse" />
+            )}
+            <img
+              src={equipment.image}
+              alt={equipment.name || equipment.set || "Equipment"}
+              className={`w-12 h-12 object-contain rounded shrink-0 ${imageLoaded ? 'block' : 'hidden'}`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+          </div>
           {/* StarForce display - centered below image */}
           {equipment.starforceable && (
             <div className="flex items-center justify-center gap-0.5 text-xs">
