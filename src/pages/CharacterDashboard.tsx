@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Character, Equipment, EquipmentSlot } from "@/types";
+import { Character, Equipment, EquipmentSlot, EquipmentType } from "@/types";
 import { mockCharacters } from "@/data/mockData";
 import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterCard } from "@/components/CharacterCard";
@@ -10,8 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
+import { findEquipmentByName } from "@/data/equipmentDatabase";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -24,7 +27,11 @@ import {
   Crown,
   Edit,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Upload,
+  Copy,
+  Share
 } from "lucide-react";
 
 export default function CharacterDashboard() {
@@ -35,7 +42,235 @@ export default function CharacterDashboard() {
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
+  
+  // Import/Export state
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [exportText, setExportText] = useState("");
+  const [copied, setCopied] = useState(false);
+  
   const { toast } = useToast();
+
+  // Import/Export utility functions
+  const exportCharacters = (charactersToExport: Character[]) => {
+    try {
+      // Create a compressed version of the character data
+      const exportData = charactersToExport.map(char => ({
+        n: char.name, // name
+        c: char.class, // class
+        l: char.level, // level
+        i: char.image, // image (already base64 or URL)
+        e: char.equipment.map(eq => ({
+          n: eq.name, // name
+          s: eq.slot, // slot
+          t: eq.type, // type
+          lv: eq.level, // level
+          st: eq.set, // set
+          sf: eq.starforceable, // starforceable
+          c: eq.currentStarForce, // currentStarForce
+          tg: eq.targetStarForce, // targetStarForce
+          tr: eq.tier, // tier
+          ac: eq.actualCost, // actualCost
+          img: eq.image // image
+        })),
+        sf: (char.starForceItems || []).map(eq => ({
+          n: eq.name,
+          s: eq.slot,
+          t: eq.type,
+          lv: eq.level,
+          st: eq.set,
+          sf: eq.starforceable,
+          c: eq.currentStarForce,
+          tg: eq.targetStarForce,
+          tr: eq.tier,
+          ac: eq.actualCost,
+          img: eq.image
+        }))
+      }));
+
+      const jsonString = JSON.stringify(exportData);
+      const base64String = btoa(jsonString);
+      return base64String;
+    } catch (error) {
+      console.error("Export error:", error);
+      throw new Error("Failed to export character data");
+    }
+  };
+
+  const importCharacters = (base64Data: string): Character[] => {
+    try {
+      const jsonString = atob(base64Data);
+      const importData = JSON.parse(jsonString);
+
+      const characters: Character[] = importData.map((char: {
+        n: string;
+        c: string;
+        l: number;
+        i?: string;
+        e?: Array<{
+          n?: string;
+          s: string;
+          t?: string;
+          lv?: number;
+          st?: string;
+          sf?: boolean;
+          c?: number;
+          tg?: number;
+          tr?: string;
+          ac?: number;
+          img?: string;
+        }>;
+        sf?: Array<{
+          n?: string;
+          s: string;
+          t?: string;
+          lv?: number;
+          st?: string;
+          sf?: boolean;
+          c?: number;
+          tg?: number;
+          tr?: string;
+          ac?: number;
+          img?: string;
+        }>;
+      }) => {
+        const reconstructEquipment = (eq: {
+          n?: string;
+          s: string;
+          t?: string;
+          lv?: number;
+          st?: string;
+          sf?: boolean;
+          c?: number;
+          tg?: number;
+          tr?: string;
+          ac?: number;
+          img?: string;
+        }) => {
+          // Try to find equipment data from database if name is available
+          let equipmentData = null;
+          if (eq.n) {
+            equipmentData = findEquipmentByName(eq.s as EquipmentSlot, eq.n);
+          }
+
+          // Determine equipment type based on slot if not provided
+          const getEquipmentTypeFromSlot = (slot: EquipmentSlot): EquipmentType => {
+            const weaponSlots = ['weapon', 'secondary', 'emblem'];
+            const accessorySlots = ['face', 'eye', 'earring', 'ring1', 'ring2', 'ring3', 'ring4', 'pendant1', 'pendant2', 'badge', 'medal', 'heart', 'pocket'];
+            
+            if (weaponSlots.includes(slot)) return 'weapon';
+            if (accessorySlots.includes(slot)) return 'accessory';
+            return 'armor';
+          };
+
+          const equipmentType = eq.t as EquipmentType || getEquipmentTypeFromSlot(eq.s as EquipmentSlot);
+
+          const finalEquipment = {
+            id: crypto.randomUUID(),
+            name: eq.n || 'Custom Equipment',
+            slot: eq.s as EquipmentSlot,
+            type: equipmentType,
+            level: eq.lv || equipmentData?.level || 150,
+            set: eq.st || equipmentData?.set,
+            starforceable: eq.sf !== undefined ? eq.sf : true,
+            currentStarForce: eq.c || 0,
+            targetStarForce: eq.tg || 0,
+            tier: eq.tr || equipmentData?.tier || null,
+            actualCost: eq.ac,
+            // Use provided image, or fall back to database image, or undefined
+            image: eq.img || equipmentData?.image
+          };
+
+          // Debug logging for image issues
+          if (eq.n && !finalEquipment.image) {
+            console.log(`No image found for ${eq.n} in slot ${eq.s}:`, {
+              providedImage: eq.img,
+              databaseImage: equipmentData?.image,
+              equipmentData
+            });
+          }
+
+          return finalEquipment;
+        };
+
+        return {
+          id: crypto.randomUUID(),
+          name: char.n,
+          class: char.c,
+          level: char.l,
+          image: char.i,
+          equipment: (char.e || []).map(reconstructEquipment),
+          starForceItems: (char.sf || []).map(reconstructEquipment)
+        };
+      });
+
+      return characters;
+    } catch (error) {
+      console.error("Import error:", error);
+      throw new Error("Invalid character data format");
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      const exportData = exportCharacters(characters);
+      setExportText(exportData);
+      setExportDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Export Failed",
+        description: "Failed to export character data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImport = () => {
+    if (!importText.trim()) {
+      toast({
+        title: "No Data",
+        description: "Please paste your character data to import.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const importedCharacters = importCharacters(importText.trim());
+      setCharacters(prev => [...prev, ...importedCharacters]);
+      setImportDialogOpen(false);
+      setImportText("");
+      toast({
+        title: "Import Successful",
+        description: `Imported ${importedCharacters.length} character(s) successfully!`,
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: error instanceof Error ? error.message : "Invalid import data.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast({
+        title: "Copied!",
+        description: "Character data copied to clipboard.",
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Helper function to check if characters should be updated (once per day)
   const shouldUpdateCharacters = (): boolean => {
@@ -358,6 +593,27 @@ export default function CharacterDashboard() {
         
         <div className="flex items-center gap-2">
           <Button 
+            onClick={handleExport}
+            disabled={characters.length === 0}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Export
+          </Button>
+          
+          <Button 
+            onClick={() => setImportDialogOpen(true)}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Upload className="w-4 h-4" />
+            Import
+          </Button>
+          
+          <Button 
             onClick={updateCharactersFromMapleRanks}
             disabled={isUpdating || characters.length === 0}
             variant="outline"
@@ -389,14 +645,26 @@ export default function CharacterDashboard() {
             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
               Create your first character to start planning equipment upgrades and calculating StarForce costs.
             </p>
-            <Button 
-              onClick={() => setWizardOpen(true)}
-              size="lg"
-              className="flex items-center gap-2"
-            >
-              <Sparkles className="w-5 h-5" />
-              Create Your First Character
-            </Button>
+            <div className="flex items-center gap-4 justify-center">
+              <Button 
+                onClick={() => setWizardOpen(true)}
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Sparkles className="w-5 h-5" />
+                Create Your First Character
+              </Button>
+              <div className="text-muted-foreground">or</div>
+              <Button 
+                onClick={() => setImportDialogOpen(true)}
+                variant="outline"
+                size="lg"
+                className="flex items-center gap-2"
+              >
+                <Upload className="w-5 h-5" />
+                Import Characters
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -650,6 +918,101 @@ export default function CharacterDashboard() {
         editingCharacter={editingCharacter}
         onEditingChange={setEditingCharacter}
       />
+
+      {/* Import Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Upload className="w-5 h-5" />
+              Import Characters
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Character Data
+              </label>
+              <Textarea
+                placeholder="Paste your exported character data here..."
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                className="min-h-[120px] font-mono text-xs"
+              />
+            </div>
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setImportDialogOpen(false);
+                  setImportText("");
+                }}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleImport}>
+                <Upload className="w-4 h-4 mr-2" />
+                Import Characters
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Export Characters
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium text-foreground mb-2 block">
+                Character Data ({characters.length} character{characters.length !== 1 ? 's' : ''})
+              </label>
+              <Textarea
+                value={exportText}
+                readOnly
+                className="min-h-[120px] font-mono text-xs bg-muted"
+                placeholder="Character data will appear here..."
+              />
+            </div>
+            
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+                <Share className="w-4 h-4" />
+                How to Share
+              </h4>
+              <p className="text-sm text-muted-foreground mb-3">
+                Copy the data above and share it with others. They can import it using the Import Characters feature.
+              </p>
+              <div className="text-xs text-muted-foreground">
+                Data size: ~{Math.ceil(exportText.length / 1024)}KB • 
+                Includes: character info, equipment, and StarForce data
+              </div>
+            </div>
+            
+            <div className="flex justify-between">
+              <Button
+                variant="outline"
+                onClick={() => setExportDialogOpen(false)}
+              >
+                Close
+              </Button>
+              <Button 
+                onClick={() => copyToClipboard(exportText)}
+                className="flex items-center gap-2"
+              >
+                <Copy className="w-4 h-4" />
+                {copied ? 'Copied!' : 'Copy to Clipboard'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

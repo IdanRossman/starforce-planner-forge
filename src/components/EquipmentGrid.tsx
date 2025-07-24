@@ -122,11 +122,15 @@ const getSlotIcon = (slot: string) => {
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
   const [hasImage, setHasImage] = useState<boolean | null>(null); // null = loading, true = has image, false = no image
+  const [lastImageUrl, setLastImageUrl] = useState<string | undefined>(equipment.image);
   
-  // Reset state when equipment changes
+  // Only reset state when the actual image URL changes, not on every re-render
   useEffect(() => {
-    setHasImage(null); // Reset to loading state
-  }, [equipment.id, equipment.image]);
+    if (lastImageUrl !== equipment.image) {
+      setHasImage(null); // Reset to loading state only when image URL actually changes
+      setLastImageUrl(equipment.image);
+    }
+  }, [equipment.image, lastImageUrl]);
 
   // Determine layout: if we have an image URL, wait for image status; if no URL, show text immediately
   const shouldShowTextLayout = equipment.image ? hasImage === false : true;

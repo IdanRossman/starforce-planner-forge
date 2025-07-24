@@ -26,10 +26,9 @@ import {
 
 interface QuickPlanningProps {
   onNavigateHome?: () => void;
-  onNavigateToOverview?: () => void;
 }
 
-export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPlanningProps) {
+export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
   const [selectedJob, setSelectedJob] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<string>("empty");
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -234,15 +233,6 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
                 </div>
               </div>
             </div>
-            {onNavigateToOverview && (
-              <Button 
-                onClick={onNavigateToOverview}
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Characters
-              </Button>
-            )}
           </div>
         </CardHeader>
       </Card>
@@ -522,16 +512,6 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
               track progress across multiple builds, and access advanced planning features.
             </p>
             <div className="flex gap-4 justify-center items-center">
-              {onNavigateToOverview && (
-                <Button 
-                  onClick={onNavigateToOverview}
-                  size="lg"
-                  className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-                >
-                  <Users className="w-5 h-5 mr-2" />
-                  Characters
-                </Button>
-              )}
               {onNavigateHome && (
                 <Button 
                   onClick={onNavigateHome}
