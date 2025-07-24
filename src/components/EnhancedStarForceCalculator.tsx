@@ -162,9 +162,12 @@ export function EnhancedStarForceCalculator({
   const totalActualCost = pendingEquipment.reduce((sum, eq) => sum + (eq.actualCost || 0), 0);
   
   // Calculate luck percentage
-  const luckPercentage = totalExpectedCost > 0 
+  const luckPercentage = totalExpectedCost > 0 && totalActualCost > 0
     ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
     : 0;
+  
+  // Check if any actual costs have been entered (must be greater than 0)
+  const hasActualCosts = totalActualCost > 0;
 
   const handleQuickAdjust = (equipment: Equipment, type: 'current' | 'target', delta: number) => {
     const current = equipment.currentStarForce || 0;
@@ -371,7 +374,7 @@ export function EnhancedStarForceCalculator({
       </Card>
 
       {/* Statistics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className={`grid grid-cols-1 md:grid-cols-${hasActualCosts ? '4' : '3'} gap-4`}>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -408,36 +411,38 @@ export function EnhancedStarForceCalculator({
               </div>
               <div>
                 <div className="text-lg font-bold">{formatMesos(totalWorstCase)}</div>
-                <div className="text-sm text-muted-foreground">Worst Case</div>
+                <div className="text-sm text-muted-foreground">Worst Case (95th %)</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                luckPercentage > 0 ? 'bg-red-500/10' : 'bg-green-500/10'
-              }`}>
-                {luckPercentage > 0 ? 
-                  <TrendingDown className="w-5 h-5 text-red-500" /> :
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                }
-              </div>
-              <div>
-                <div className={`text-lg font-bold ${
-                  luckPercentage > 0 ? 'text-red-500' : 'text-green-500'
+        {hasActualCosts && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  luckPercentage > 0 ? 'bg-red-500/10' : 'bg-green-500/10'
                 }`}>
-                  {luckPercentage > 0 ? '+' : ''}{luckPercentage.toFixed(1)}%
+                  {luckPercentage > 0 ? 
+                    <TrendingDown className="w-5 h-5 text-red-500" /> :
+                    <TrendingUp className="w-5 h-5 text-green-500" />
+                  }
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {luckPercentage > 0 ? 'Unlucky' : 'Lucky'}
+                <div>
+                  <div className={`text-lg font-bold ${
+                    luckPercentage > 0 ? 'text-red-500' : 'text-green-500'
+                  }`}>
+                    {luckPercentage > 0 ? '+' : ''}{luckPercentage.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    vs Expected Cost
+                  </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* StarForce Table */}

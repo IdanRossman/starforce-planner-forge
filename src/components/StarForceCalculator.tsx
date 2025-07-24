@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentImage } from "@/components/EquipmentImage";
@@ -516,9 +516,12 @@ export function StarForceCalculator({
     const totalP75Cost = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
     const totalP75Booms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
     
-    const overallLuckPercentage = totalExpectedCost > 0 
+    const overallLuckPercentage = totalExpectedCost > 0 && totalActualCost > 0
       ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
       : 0;
+
+    // Check if any actual costs have been entered
+    const hasActualCosts = totalActualCost > 0;
 
     return {
       totalExpectedCost,
@@ -527,7 +530,8 @@ export function StarForceCalculator({
       totalMedianBooms,
       totalP75Cost,
       totalP75Booms,
-      overallLuckPercentage
+      overallLuckPercentage,
+      hasActualCosts
     };
   }, [equipmentCalculations]);
 
@@ -838,16 +842,16 @@ export function StarForceCalculator({
         </Card>
 
         {/* Statistics Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+        <div className={`grid grid-cols-${aggregateStats.hasActualCosts ? '5' : '4'} gap-4`}>
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center justify-center gap-3">
                 <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-5 h-5 text-primary" />
+                  <Calculator className="w-5 h-5 text-primary" />
                 </div>
-                <div>
+                <div className="text-center">
                   <div className="text-2xl font-bold text-yellow-400">{formatMesos(aggregateStats.totalExpectedCost)}</div>
-                  <div className="text-sm text-muted-foreground">Expected Cost</div>
+                  <div className="text-sm text-muted-foreground">Average Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -855,27 +859,13 @@ export function StarForceCalculator({
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-blue-500" />
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-400">{formatMesos(aggregateStats.totalActualCost)}</div>
-                  <div className="text-sm text-muted-foreground">Actual Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-orange-500/10 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-orange-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{aggregateStats.totalExpectedBooms.toFixed(1)}</div>
-                  <div className="text-sm text-muted-foreground">Average Booms</div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400">{formatMesos(aggregateStats.totalExpectedCost * 0.85)}</div>
+                  <div className="text-sm text-muted-foreground">Median Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -883,25 +873,11 @@ export function StarForceCalculator({
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-amber-500/10 rounded-full flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold">{aggregateStats.totalMedianBooms.toFixed(1)}</div>
-                  <div className="text-sm text-muted-foreground">Median Booms</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center justify-center gap-3">
                 <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
                   <TrendingUp className="w-5 h-5 text-red-500" />
                 </div>
-                <div>
+                <div className="text-center">
                   <div className="text-2xl font-bold text-red-400">{formatMesos(aggregateStats.totalP75Cost)}</div>
                   <div className="text-sm text-muted-foreground">75th % Cost</div>
                 </div>
@@ -911,22 +887,43 @@ export function StarForceCalculator({
 
           <Card>
             <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <Heart className="w-5 h-5 text-green-500" />
+              <div className="flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
-                <div>
-                  <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
-                    <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
-                    {getLuckText(aggregateStats.overallLuckPercentage) && (
-                      <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
-                    )}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Luck Factor</div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-400">{formatMesos(aggregateStats.totalActualCost)}</div>
+                  <div className="text-sm text-muted-foreground">Actual Cost</div>
                 </div>
               </div>
             </CardContent>
           </Card>
+
+          {aggregateStats.hasActualCosts && (
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                    aggregateStats.overallLuckPercentage > 0 ? 'bg-red-500/10' : 'bg-green-500/10'
+                  }`}>
+                    {aggregateStats.overallLuckPercentage > 0 ? 
+                      <TrendingDown className="w-5 h-5 text-red-500" /> :
+                      <TrendingUp className="w-5 h-5 text-green-500" />
+                    }
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
+                      <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
+                      {getLuckText(aggregateStats.overallLuckPercentage) && (
+                        <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">vs Average Cost</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Equipment Table */}
