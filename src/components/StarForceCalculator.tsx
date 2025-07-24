@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentImage } from "@/components/EquipmentImage";
@@ -417,6 +417,7 @@ export function StarForceCalculator({
     const defaultSettings = {
       discountEvent: false, // 30% off event
       starcatchEvent: false, // 5/10/15 event
+      starCatching: true, // Star catching enabled globally
       isInteractive: false, // Interactive server toggle
       spareCount: 0, // Number of spares
       sparePrice: 0, // Price per spare in mesos
@@ -442,11 +443,6 @@ export function StarForceCalculator({
     return loadCharacterSettings('item-safeguard', {}) as { [equipmentId: string]: boolean };
   });
   
-  // Per-item star catching settings (default to true)
-  const [itemStarCatching, setItemStarCatching] = useState<{ [equipmentId: string]: boolean }>(() => {
-    return loadCharacterSettings('item-starcatching', {}) as { [equipmentId: string]: boolean };
-  });
-  
   // Per-item spare count
   const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>(() => {
     return loadCharacterSettings('item-spares', {}) as { [equipmentId: string]: number };
@@ -462,14 +458,26 @@ export function StarForceCalculator({
     return loadCharacterSettings('item-actual-costs', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
   });
   
+  // Column sorting state
+  type SortField = 'name' | 'currentStarForce' | 'targetStarForce' | 'averageCost' | 'medianCost' | 'p75Cost' | 'averageBooms' | 'medianBooms' | 'p75Booms' | 'actualCost' | 'luckPercentage';
+  type SortDirection = 'asc' | 'desc' | null;
+  
+  const [sortField, setSortField] = useState<SortField | null>(() => {
+    return loadCharacterSettings('sort-field', null) as SortField | null;
+  });
+  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
+    return loadCharacterSettings('sort-direction', null) as SortDirection;
+  });
+  
+  // Per-item include/exclude state (default to included)
+  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>(() => {
+    return loadCharacterSettings('item-included', {}) as { [equipmentId: string]: boolean };
+  });
+  
   // Save per-item settings to localStorage
   useEffect(() => {
     saveCharacterSettings('item-safeguard', itemSafeguard);
   }, [itemSafeguard, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-starcatching', itemStarCatching);
-  }, [itemStarCatching, saveCharacterSettings]);
 
   useEffect(() => {
     saveCharacterSettings('item-spares', itemSpares);
@@ -482,6 +490,18 @@ export function StarForceCalculator({
   useEffect(() => {
     saveCharacterSettings('item-actual-costs', itemActualCosts);
   }, [itemActualCosts, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('sort-field', sortField);
+  }, [sortField, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('sort-direction', sortDirection);
+  }, [sortDirection, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('item-included', itemIncluded);
+  }, [itemIncluded, saveCharacterSettings]);
   
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null
@@ -499,11 +519,11 @@ export function StarForceCalculator({
   const equipmentCalculations = useMemo(() => {
     if (mode === 'standalone' || !pendingEquipment.length) return [];
 
-    return pendingEquipment.map(eq => {
+    const calculations = pendingEquipment.map(eq => {
       const events = {
         costMultiplier: enhancedSettings.discountEvent ? 0.7 : 1,
         successRateBonus: enhancedSettings.starcatchEvent ? 1 : 0,
-        starCatching: itemStarCatching[eq.id] !== undefined ? itemStarCatching[eq.id] : true, // Default to true
+        starCatching: enhancedSettings.starCatching !== false, // Use global star catching setting
         safeguard: itemSafeguard[eq.id] || false, // Use per-item safeguard
         eventType: enhancedSettings.starcatchEvent ? "5/10/15" as const : undefined
       };
@@ -585,16 +605,90 @@ export function StarForceCalculator({
         })()
       };
     });
-  }, [pendingEquipment, enhancedSettings, itemStarCatching, itemSafeguard, itemSparePrices, itemSpares, mode]);
+
+    // Apply sorting if specified
+    if (sortField && sortDirection) {
+      calculations.sort((a, b) => {
+        let aValue: string | number;
+        let bValue: string | number;
+
+        switch (sortField) {
+          case 'name':
+            aValue = (a.equipment.name || '').toLowerCase();
+            bValue = (b.equipment.name || '').toLowerCase();
+            break;
+          case 'currentStarForce':
+            aValue = a.equipment.currentStarForce || 0;
+            bValue = b.equipment.currentStarForce || 0;
+            break;
+          case 'targetStarForce':
+            aValue = a.equipment.targetStarForce || 0;
+            bValue = b.equipment.targetStarForce || 0;
+            break;
+          case 'averageCost':
+            aValue = a.expectedCost;
+            bValue = b.expectedCost;
+            break;
+          case 'medianCost':
+            aValue = a.calculation.medianCost;
+            bValue = b.calculation.medianCost;
+            break;
+          case 'p75Cost':
+            aValue = a.calculation.p75Cost;
+            bValue = b.calculation.p75Cost;
+            break;
+          case 'averageBooms':
+            aValue = a.calculation.averageBooms;
+            bValue = b.calculation.averageBooms;
+            break;
+          case 'medianBooms':
+            aValue = a.calculation.medianBooms;
+            bValue = b.calculation.medianBooms;
+            break;
+          case 'p75Booms':
+            aValue = a.calculation.p75Booms;
+            bValue = b.calculation.p75Booms;
+            break;
+          case 'actualCost':
+            aValue = a.actualCost;
+            bValue = b.actualCost;
+            break;
+          case 'luckPercentage':
+            aValue = a.luckPercentage;
+            bValue = b.luckPercentage;
+            break;
+          default:
+            return 0;
+        }
+
+        if (typeof aValue === 'string') {
+          return sortDirection === 'asc' 
+            ? aValue.localeCompare(bValue as string)
+            : (bValue as string).localeCompare(aValue);
+        } else {
+          return sortDirection === 'asc' 
+            ? (aValue as number) - (bValue as number)
+            : (bValue as number) - (aValue as number);
+        }
+      });
+    }
+
+    return calculations;
+  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, mode, sortField, sortDirection]);
 
   // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
   const aggregateStats = useMemo(() => {
-    const totalExpectedCost = equipmentCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
-    const totalActualCost = equipmentCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
-    const totalExpectedBooms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
-    const totalMedianBooms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.medianBooms, 0);
-    const totalP75Cost = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
-    const totalP75Booms = equipmentCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
+    // Only include equipment that is marked as included (default to included if not set)
+    const includedCalculations = equipmentCalculations.filter(calc => 
+      itemIncluded[calc.equipment.id] !== false // Include by default
+    );
+
+    const totalExpectedCost = includedCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
+    const totalActualCost = includedCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
+    const totalExpectedBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
+    const totalMedianBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.medianBooms, 0);
+    const totalP75Cost = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
+    const totalP75Booms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
     
     const overallLuckPercentage = totalExpectedCost > 0 && totalActualCost > 0
       ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
@@ -611,9 +705,53 @@ export function StarForceCalculator({
       totalP75Cost,
       totalP75Booms,
       overallLuckPercentage,
-      hasActualCosts
+      hasActualCosts,
+      includedCount: includedCalculations.length,
+      totalCount: equipmentCalculations.length
     };
-  }, [equipmentCalculations]);
+  }, [equipmentCalculations, itemIncluded]);
+
+  // Sorting helper functions
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Cycling through: null -> asc -> desc -> null
+      if (sortDirection === null) {
+        setSortDirection('asc');
+      } else if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortField(null);
+        setSortDirection(null);
+      }
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    if (sortDirection === 'asc') {
+      return <ArrowUp className="w-4 h-4 text-primary" />;
+    } else if (sortDirection === 'desc') {
+      return <ArrowDown className="w-4 h-4 text-primary" />;
+    }
+    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  // Include/exclude helper functions
+  const toggleItemIncluded = (equipmentId: string) => {
+    setItemIncluded(prev => ({ 
+      ...prev, 
+      [equipmentId]: prev[equipmentId] === false ? true : false 
+    }));
+  };
+
+  const isItemIncluded = (equipmentId: string) => {
+    return itemIncluded[equipmentId] !== false; // Default to included
+  };
 
   // Format Mesos for display
   const formatMesos = (amount: number) => {
@@ -793,7 +931,7 @@ export function StarForceCalculator({
         ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
         [''],
         ['Equipment Details'],
-        ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Star Catching', 'Spares', 
+        ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Spares', 
          ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
          'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
          'Actual Cost', 'Luck %', 'Luck Status'],
@@ -808,7 +946,6 @@ export function StarForceCalculator({
             `★${eq.currentStarForce || 0}`,
             `★${eq.targetStarForce || 0}`,
             itemSafeguard[eq.id] ? 'Yes' : 'No',
-            (itemStarCatching[eq.id] !== undefined ? itemStarCatching[eq.id] : true) ? 'Yes' : 'No',
             (itemSpares[eq.id] || 0).toString(),
             ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
             formatMesosForExport(calc.expectedCost),
@@ -891,7 +1028,7 @@ export function StarForceCalculator({
             {/* Event Settings */}
             <div>
               <h4 className="font-medium text-sm mb-3 text-muted-foreground">Enhancement Settings</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-3">
                   <Switch
                     id="discount-event"
@@ -910,6 +1047,14 @@ export function StarForceCalculator({
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
+                    id="star-catching"
+                    checked={enhancedSettings.starCatching !== false}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starCatching: checked }))}
+                  />
+                  <Label htmlFor="star-catching" className="text-sm cursor-pointer">Star Catching</Label>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
                     id="interactive-server"
                     checked={enhancedSettings.isInteractive}
                     onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
@@ -920,6 +1065,37 @@ export function StarForceCalculator({
             </div>
           </CardContent>
         </Card>
+
+        {/* Equipment Status Summary */}
+        {aggregateStats.totalCount > 0 && (
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-blue-500/10 rounded-full flex items-center justify-center">
+                    <Eye className="w-4 h-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">
+                      {aggregateStats.includedCount} of {aggregateStats.totalCount} items included
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {aggregateStats.totalCount - aggregateStats.includedCount > 0 
+                        ? `${aggregateStats.totalCount - aggregateStats.includedCount} items excluded from calculations`
+                        : 'All items included in calculations'
+                      }
+                    </div>
+                  </div>
+                </div>
+                {aggregateStats.totalCount - aggregateStats.includedCount > 0 && (
+                  <div className="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/20 px-2 py-1 rounded">
+                    Some items excluded
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Statistics Overview */}
         <div className={`grid grid-cols-${aggregateStats.hasActualCosts ? '5' : '4'} gap-4`}>
@@ -1032,57 +1208,175 @@ export function StarForceCalculator({
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10 border-b">
                     <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>Item</TableHead>
-                      <TableHead className="text-center">Current SF</TableHead>
-                      <TableHead className="text-center">Target SF</TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('name')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Item
+                            {getSortIcon('name')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('currentStarForce')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Current SF
+                            {getSortIcon('currentStarForce')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('targetStarForce')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Target SF
+                            {getSortIcon('targetStarForce')}
+                          </span>
+                        </Button>
+                      </TableHead>
                       <TableHead className="text-center">Safeguard</TableHead>
-                      <TableHead className="text-center">Star Catching</TableHead>
                       <TableHead className="text-center">Spares</TableHead>
                       {enhancedSettings.isInteractive && (
                         <TableHead className="text-center">Spare Price</TableHead>
                       )}
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + expected spare costs" : "Expected enhancement cost only"}>
-                        Average Cost
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('averageCost')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Average Cost
+                            {getSortIcon('averageCost')}
+                          </span>
+                        </Button>
                       </TableHead>
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + median spare costs" : "Median enhancement cost only"}>
-                        Median Cost
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('medianCost')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Median Cost
+                            {getSortIcon('medianCost')}
+                          </span>
+                        </Button>
                       </TableHead>
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + 75th percentile spare costs" : "75th percentile enhancement cost only"}>
-                        75th % Cost
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('p75Cost')}
+                        >
+                          <span className="flex items-center gap-1">
+                            75th % Cost
+                            {getSortIcon('p75Cost')}
+                          </span>
+                        </Button>
                       </TableHead>
-                      <TableHead className="text-center">Avg Booms</TableHead>
-                      <TableHead className="text-center">Med Booms</TableHead>
-                      <TableHead className="text-center">75th % Booms</TableHead>
-                      <TableHead className="text-center">Actual Cost</TableHead>
-                      <TableHead className="text-center">Luck</TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('averageBooms')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Avg Booms
+                            {getSortIcon('averageBooms')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('medianBooms')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Med Booms
+                            {getSortIcon('medianBooms')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('p75Booms')}
+                        >
+                          <span className="flex items-center gap-1">
+                            75th % Booms
+                            {getSortIcon('p75Booms')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('actualCost')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Actual Cost
+                            {getSortIcon('actualCost')}
+                          </span>
+                        </Button>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <Button
+                          variant="ghost"
+                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          onClick={() => handleSort('luckPercentage')}
+                        >
+                          <span className="flex items-center gap-1">
+                            Luck
+                            {getSortIcon('luckPercentage')}
+                          </span>
+                        </Button>
+                      </TableHead>
                       <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {equipmentCalculations.map((calc) => (
-                      <TableRow 
-                        key={calc.equipment.id}
-                        onMouseEnter={() => setHoveredRow(calc.equipment.id)}
-                        onMouseLeave={() => setHoveredRow(null)}
-                        className="group"
-                      >
-                        <TableCell>
-                          <EquipmentImage
-                            src={calc.equipment.image}
-                            alt={calc.equipment.name}
-                            size="sm"
-                            className="w-8 h-8"
-                            maxRetries={2}
-                            showFallback={true}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{calc.equipment.name || 'Unknown Item'}</div>
-                            <div className="text-sm text-muted-foreground">{calc.equipment.slot}</div>
-                          </div>
-                        </TableCell>
+                    {equipmentCalculations.map((calc) => {
+                      const included = isItemIncluded(calc.equipment.id);
+                      return (
+                        <TableRow 
+                          key={calc.equipment.id}
+                          onMouseEnter={() => setHoveredRow(calc.equipment.id)}
+                          onMouseLeave={() => setHoveredRow(null)}
+                          className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
+                        >
+                          <TableCell>
+                            <div className="flex items-center justify-center">
+                              <div className="relative flex-shrink-0">
+                                <EquipmentImage
+                                  src={calc.equipment.image}
+                                  alt={calc.equipment.name}
+                                  size="sm"
+                                  className="w-8 h-8"
+                                  maxRetries={2}
+                                  showFallback={true}
+                                />
+                                {!included && (
+                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
+                                    <EyeOff className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
                         <TableCell className="text-center">
                           {editingStarforce === calc.equipment.id ? (
                             <Input
@@ -1201,18 +1495,6 @@ export function StarForceCalculator({
                                 N/A
                               </span>
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {/* Star Catching Toggle */}
-                          <div className="flex items-center justify-center">
-                            <Switch
-                              checked={itemStarCatching[calc.equipment.id] !== undefined ? itemStarCatching[calc.equipment.id] : true}
-                              onCheckedChange={(checked) => {
-                                setItemStarCatching(prev => ({ ...prev, [calc.equipment.id]: checked }));
-                              }}
-                              title="Star Catching (+5% success rate)"
-                            />
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
@@ -1449,6 +1731,19 @@ export function StarForceCalculator({
                             <Button
                               size="sm"
                               variant="outline"
+                              onClick={() => toggleItemIncluded(calc.equipment.id)}
+                              className={`h-7 w-7 p-0 ${
+                                included 
+                                  ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' 
+                                  : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20'
+                              }`}
+                              title={included ? "Exclude from calculations" : "Include in calculations"}
+                            >
+                              {included ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
                               onClick={() => {
                                 if (onUpdateStarforce) {
                                   onUpdateStarforce(calc.equipment.id, calc.equipment.targetStarForce || 0, calc.equipment.targetStarForce || 0);
@@ -1475,7 +1770,8 @@ export function StarForceCalculator({
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
