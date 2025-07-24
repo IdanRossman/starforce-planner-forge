@@ -334,6 +334,7 @@ export function EquipmentForm({
       });
     } else {
       onSave({
+        id: `eq-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate unique ID for new equipment
         name: data.set, // Store the selected name
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,

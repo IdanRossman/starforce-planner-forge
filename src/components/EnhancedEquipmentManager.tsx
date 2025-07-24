@@ -161,7 +161,11 @@ export function EnhancedEquipmentManager({
   };
 
   const handleSaveEquipmentForm = (equipment: Equipment) => {
-    const isAdditional = !equipment.slot || isAdditionalEquipment(equipment);
+    // If we're editing an existing piece of equipment, check if it was originally additional
+    const isEditingAdditional = editingEquipment && isAdditionalEquipment(editingEquipment);
+    
+    // If we're adding new equipment without a slot, or editing existing additional equipment
+    const isAdditional = !equipment.slot || isEditingAdditional;
     
     if (isAdditional && onSaveAdditionalEquipment) {
       onSaveAdditionalEquipment(equipment);
