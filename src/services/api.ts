@@ -6,6 +6,29 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface Template {
+  id: number;
+  name: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface TemplateEquipmentResponse {
+  slot_name: string;
+  id: number;
+  name: string;
+  type: string;
+  set: string;
+  level: number;
+  starforceable: boolean;
+  storage_url?: string;
+  class: string;
+  job: string[];
+  current_starforce: number;
+  target_starforce: number;
+}
+
 class ApiService {
   private baseUrl: string;
 
@@ -71,6 +94,15 @@ class ApiService {
     } catch {
       return false;
     }
+  }
+
+  // Template-specific methods
+  async getTemplates(): Promise<Template[]> {
+    return this.get<Template[]>('/Templates');
+  }
+
+  async getTemplateEquipment(templateId: number, job: string): Promise<TemplateEquipmentResponse[]> {
+    return this.get<TemplateEquipmentResponse[]>(`/Templates/${templateId}/equipment?job=${encodeURIComponent(job)}`);
   }
 }
 

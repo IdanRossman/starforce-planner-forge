@@ -10,15 +10,17 @@ export interface Character {
 
 export interface Equipment {
   id: string;
+  name?: string; // Equipment name (e.g., "Aquatic Letter Eye Accessory")
   slot: EquipmentSlot;
   type: EquipmentType;
   level: number;
-  set?: string;
+  set?: string; // Set name (e.g., "Boss Accessory")
   currentStarForce: number;
   targetStarForce: number;
   tier?: EquipmentTier | null;
   starforceable: boolean;
   image?: string; // Path to equipment image
+  actualCost?: number; // Actual cost paid by user for tracking luck
 }
 
 export interface EquipmentWithCharacter extends Equipment {
@@ -75,7 +77,11 @@ export interface StarForceCalculation {
   currentLevel: number;
   targetLevel: number;
   averageCost: number;
+  medianCost: number;
+  p75Cost: number;
   averageBooms: number;
+  medianBooms: number;
+  p75Booms: number;
   successRate: number;
   boomRate: number;
   costPerAttempt: number;

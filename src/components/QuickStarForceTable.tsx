@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { EquipmentImage } from "@/components/EquipmentImage";
 import {
   Table,
   TableBody,
@@ -248,13 +249,25 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
               <TableRow key={calc.equipment.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="text-muted-foreground">
-                      {getSlotIcon(calc.equipment.slot)}
-                    </div>
+                    {/* Equipment Image or Icon */}
+                    {calc.equipment.image ? (
+                      <EquipmentImage 
+                        src={calc.equipment.image} 
+                        alt={calc.equipment.name || calc.equipment.set || "Equipment"}
+                        size="sm"
+                        className="shrink-0"
+                      />
+                    ) : (
+                      <div className="text-muted-foreground">
+                        {getSlotIcon(calc.equipment.slot)}
+                      </div>
+                    )}
+                    
+                    {/* Equipment Details */}
                     <div>
                       <div className="font-medium">
-                        {calc.equipment.set 
-                          ? `${calc.equipment.set}` 
+                        {calc.equipment.name || calc.equipment.set 
+                          ? `${calc.equipment.name || calc.equipment.set}` 
                           : `Lv.${calc.equipment.level} Equipment`
                         }
                       </div>

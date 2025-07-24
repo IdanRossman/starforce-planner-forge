@@ -1,16 +1,14 @@
-import { Users, Target, Settings, BarChart3, Leaf, Home, Calculator } from "lucide-react";
+import { Users, Leaf, Home, Calculator } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
 const mainItems = [
   { title: "Home", url: "/", icon: Home },
   { title: "Quick Planning", url: "/quick-planning", icon: Calculator },
-  { title: "Overview", url: "/overview", icon: BarChart3 },
   { title: "Characters", url: "/characters", icon: Users },
-  { title: "Planning", url: "/planning", icon: Target },
 ];
 
 const toolItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
+  // Future tool items can be added here
 ];
 
 export function AppNavbar() {
@@ -63,20 +61,24 @@ export function AppNavbar() {
               </NavLink>
             ))}
             
-            <div className="w-px h-4 bg-border mx-1" />
-            
-            {toolItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                className={getNavCls(item.url)}
-              >
-                <div className="flex items-center gap-1">
-                  <item.icon className="w-3 h-3" />
-                  <span className="text-xs">{item.title}</span>
-                </div>
-              </NavLink>
-            ))}
+            {toolItems.length > 0 && (
+              <>
+                <div className="w-px h-4 bg-border mx-1" />
+                
+                {toolItems.map((item) => (
+                  <NavLink
+                    key={item.title}
+                    to={item.url}
+                    className={getNavCls(item.url)}
+                  >
+                    <div className="flex items-center gap-1">
+                      <item.icon className="w-3 h-3" />
+                      <span className="text-xs">{item.title}</span>
+                    </div>
+                  </NavLink>
+                ))}
+              </>
+            )}
           </nav>
         </div>
 
@@ -111,20 +113,24 @@ export function AppNavbar() {
               </NavLink>
             ))}
             
-            <div className="w-px h-6 bg-border mx-2" />
-            
-            {toolItems.map((item) => (
-              <NavLink
-                key={item.title}
-                to={item.url}
-                className={getNavCls(item.url)}
-              >
-                <div className="flex items-center gap-2">
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.title}</span>
-                </div>
-              </NavLink>
-            ))}
+            {toolItems.length > 0 && (
+              <>
+                <div className="w-px h-6 bg-border mx-2" />
+                
+                {toolItems.map((item) => (
+                  <NavLink
+                    key={item.title}
+                    to={item.url}
+                    className={getNavCls(item.url)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-4 h-4" />
+                      <span>{item.title}</span>
+                    </div>
+                  </NavLink>
+                ))}
+              </>
+            )}
           </nav>
           
           {/* Hashtags - Far Right */}

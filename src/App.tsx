@@ -5,11 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AppNavbar } from "@/components/AppNavbar";
 import Homepage from "./pages/Homepage";
-import Overview from "./pages/Overview";
-import Characters from "./pages/Characters";
-import Planning from "./pages/Planning";
+import CharacterDashboard from "./pages/CharacterDashboard";
 import { QuickPlanning } from "./pages/QuickPlanning";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -19,7 +16,6 @@ function QuickPlanningWrapper() {
   return (
     <QuickPlanning 
       onNavigateHome={() => navigate('/')}
-      onNavigateToOverview={() => navigate('/overview')}
     />
   );
 }
@@ -36,11 +32,8 @@ function AppContent() {
       <main className={isHomepage ? "" : "p-4 sm:p-6 pb-16 min-h-screen"}>
         <Routes>
           <Route path="/" element={<Homepage />} />
-          <Route path="/overview" element={<Overview />} />
-          <Route path="/characters" element={<Characters />} />
-          <Route path="/planning" element={<Planning />} />
+          <Route path="/characters" element={<CharacterDashboard />} />
           <Route path="/quick-planning" element={<QuickPlanningWrapper />} />
-          <Route path="/settings" element={<Settings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
