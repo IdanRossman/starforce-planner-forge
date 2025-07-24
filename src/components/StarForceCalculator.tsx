@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
 import {
   Card,
@@ -374,12 +374,35 @@ export function StarForceCalculator({
   const [costDiscount, setCostDiscount] = useState(0);
   const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
   
-  // Enhanced settings for equipment mode
-  const [enhancedSettings, setEnhancedSettings] = useState({
-    discountEvent: false, // 30% off event
-    starcatchEvent: false, // 5/10/15 event
-    isInteractive: false, // Interactive server toggle (default to Heroic)
+  // Enhanced settings for equipment mode with localStorage persistence
+  const [enhancedSettings, setEnhancedSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('starforce-settings');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error('Failed to load StarForce settings from localStorage:', error);
+    }
+    
+    // Default settings
+    return {
+      discountEvent: false, // 30% off event
+      starcatchEvent: false, // 5/10/15 event
+      isInteractive: false, // Interactive server toggle
+      spareCount: 0, // Number of spares
+      sparePrice: 0, // Price per spare in mesos
+    };
   });
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem('starforce-settings', JSON.stringify(enhancedSettings));
+    } catch (error) {
+      console.error('Failed to save StarForce settings to localStorage:', error);
+    }
+  }, [enhancedSettings]);
 
   // Equipment table editing states
   const [editingStarforce, setEditingStarforce] = useState<string | null>(null);

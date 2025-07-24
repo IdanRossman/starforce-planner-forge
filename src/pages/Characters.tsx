@@ -545,7 +545,13 @@ export default function Characters() {
           </Dialog>
 
           <CharacterForm 
-            onAddCharacter={addCharacter}
+            open={characterFormOpen}
+            onOpenChange={setCharacterFormOpen}
+            onAddCharacter={(character) => {
+              addCharacter(character);
+              setCharacterFormOpen(false);
+              setEditingCharacter(null);
+            }}
             editingCharacter={editingCharacter}
             onEditingChange={setEditingCharacter}
           />
@@ -720,7 +726,13 @@ export default function Characters() {
                   Select a character from the list to view their equipment and calculator
                 </p>
                 <CharacterForm 
-                  onAddCharacter={addCharacter}
+                  open={characterFormOpen}
+                  onOpenChange={setCharacterFormOpen}
+                  onAddCharacter={(character) => {
+                    addCharacter(character);
+                    setCharacterFormOpen(false);
+                    setEditingCharacter(null);
+                  }}
                   editingCharacter={editingCharacter}
                   onEditingChange={setEditingCharacter}
                 />

@@ -121,19 +121,41 @@ const getSlotIcon = (slot: string) => {
 
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
-  const [imageFailedToLoad, setImageFailedToLoad] = useState(false);
+  const [hasImage, setHasImage] = useState<boolean | null>(null); // null = loading, true = has image, false = no image
   
   // Reset state when equipment changes
   useEffect(() => {
-    setImageFailedToLoad(false);
+    setHasImage(null); // Reset to loading state
   }, [equipment.id, equipment.image]);
 
-  // If no image or image failed, show text layout
-  const shouldShowTextLayout = !equipment.image || imageFailedToLoad;
+  // Determine layout: if we have an image URL, wait for image status; if no URL, show text immediately
+  const shouldShowTextLayout = equipment.image ? hasImage === false : true;
+  const isLoadingImage = equipment.image && hasImage === null;
   
   return (
     <div className="space-y-2">
-      {!shouldShowTextLayout ? (
+      {/* Always render EquipmentImage (hidden) to test image availability */}
+      {equipment.image && (
+        <div className="hidden">
+          <EquipmentImage 
+            src={equipment.image}
+            alt={equipment.name || equipment.set || "Equipment"}
+            size="md"
+            showFallback={false}
+            onImageStatusChange={(imageAvailable) => {
+              setHasImage(imageAvailable);
+            }}
+          />
+        </div>
+      )}
+
+      {isLoadingImage ? (
+        // Loading state while checking image
+        <div className="flex flex-col items-center justify-center space-y-1">
+          <div className="w-12 h-12 bg-gray-100 rounded animate-pulse" />
+          <div className="text-xs text-muted-foreground">Loading...</div>
+        </div>
+      ) : !shouldShowTextLayout ? (
         // Image-centered layout: image with centered StarForce below
         <div className="flex flex-col items-center justify-center space-y-1">
           <EquipmentImage 
@@ -143,11 +165,6 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
             showFallback={false}
             maxRetries={3}
             className="shrink-0"
-            onImageStatusChange={(hasImage) => {
-              if (!hasImage) {
-                setImageFailedToLoad(true);
-              }
-            }}
           />
           {/* StarForce display - centered below image */}
           {equipment.starforceable && (

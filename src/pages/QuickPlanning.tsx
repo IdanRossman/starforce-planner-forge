@@ -75,6 +75,30 @@ export function QuickPlanning({ onNavigateHome, onNavigateToOverview }: QuickPla
     setStarForceItems(incompleteEquipment);
   }, [equipment]);
 
+  // Smart image preloading when equipment changes
+  useEffect(() => {
+    if (equipment.length > 0) {
+      // Get all equipment images that need to be loaded
+      const imageUrls = equipment
+        .map(eq => eq.image)
+        .filter(Boolean) as string[];
+      
+      // Preload images that haven't been loaded yet
+      imageUrls.forEach(imageUrl => {
+        if (!loadedImages.has(imageUrl)) {
+          const img = new Image();
+          img.onload = () => {
+            setLoadedImages(prev => new Set([...prev, imageUrl]));
+          };
+          img.onerror = () => {
+            console.warn(`Failed to load equipment image: ${imageUrl}`);
+          };
+          img.src = imageUrl;
+        }
+      });
+    }
+  }, [equipment, loadedImages]);
+
   const loadTemplates = async () => {
     setIsLoadingTemplates(true);
     try {

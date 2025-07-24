@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Character, Equipment, EquipmentSlot } from "@/types";
 import { mockCharacters } from "@/data/mockData";
 import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterCard } from "@/components/CharacterCard";
+import { CharacterForm } from "@/components/CharacterForm";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
+import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -19,14 +21,90 @@ import {
   Sparkles,
   Settings,
   ChevronDown,
-  Crown
+  Crown,
+  Edit,
+  Trash2,
+  RefreshCw
 } from "lucide-react";
 
 export default function CharacterDashboard() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [characterFormOpen, setCharacterFormOpen] = useState(false);
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Helper function to check if characters should be updated (once per day)
+  const shouldUpdateCharacters = (): boolean => {
+    try {
+      const lastUpdate = localStorage.getItem("lastCharacterUpdate");
+      if (!lastUpdate) return true;
+      
+      const now = new Date().getTime();
+      const lastUpdateTime = new Date(lastUpdate).getTime();
+      const twentyFourHours = 24 * 60 * 60 * 1000;
+      
+      return (now - lastUpdateTime) >= twentyFourHours;
+    } catch (error) {
+      console.error("Error checking update timestamp:", error);
+      return true; // Default to updating if we can't read the timestamp
+    }
+  };
+
+  // Function to update all characters from MapleRanks
+  const updateCharactersFromMapleRanks = useCallback(async () => {
+    if (characters.length === 0) return;
+    
+    setIsUpdating(true);
+    let updatedCount = 0;
+    
+    try {
+      const updatedCharacters = await Promise.all(
+        characters.map(async (character) => {
+          try {
+            const mapleRanksData = await fetchCharacterFromMapleRanks(character.name);
+            if (mapleRanksData) {
+              updatedCount++;
+              return {
+                ...character,
+                level: mapleRanksData.level,
+                class: mapleRanksData.class,
+                image: mapleRanksData.image
+              };
+            }
+            return character;
+          } catch (error) {
+            console.warn(`Failed to update character ${character.name}:`, error);
+            return character;
+          }
+        })
+      );
+
+      if (updatedCount > 0) {
+        setCharacters(updatedCharacters);
+        saveToLocalStorage(updatedCharacters);
+        const now = new Date().toISOString();
+        localStorage.setItem("lastCharacterUpdate", now);
+        setLastUpdateTime(now);
+        toast({
+          title: "Characters Updated",
+          description: `Updated ${updatedCount} character${updatedCount !== 1 ? 's' : ''} from MapleRanks`,
+        });
+      }
+    } catch (error) {
+      console.error("Error updating characters:", error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update character data from MapleRanks",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [characters, toast]);
 
   // Initialize data on component mount
   useEffect(() => {
@@ -36,6 +114,12 @@ export default function CharacterDashboard() {
     } else {
       // Only show mock data if no stored data exists
       setCharacters(mockCharacters);
+    }
+
+    // Load last update timestamp
+    const lastUpdate = localStorage.getItem("lastCharacterUpdate");
+    if (lastUpdate) {
+      setLastUpdateTime(lastUpdate);
     }
   }, []);
 
@@ -51,20 +135,54 @@ export default function CharacterDashboard() {
     }
   }, [characters, selectedCharacter]);
 
+  // Check for daily updates when characters are loaded
+  useEffect(() => {
+    if (characters.length > 0 && shouldUpdateCharacters()) {
+      updateCharactersFromMapleRanks();
+    }
+  }, [characters.length, updateCharactersFromMapleRanks]);
+
   const handleCreateCharacter = (newCharacter: Omit<Character, 'id'>) => {
-    const character: Character = {
-      ...newCharacter,
-      id: crypto.randomUUID(),
-      starForceItems: [],
-    };
+    if (editingCharacter) {
+      // Update existing character
+      const updatedCharacters = characters.map(char => 
+        char.id === editingCharacter.id 
+          ? { ...char, ...newCharacter }
+          : char
+      );
+      setCharacters(updatedCharacters);
+      
+      // Update selected character if it was the one being edited
+      if (selectedCharacter?.id === editingCharacter.id) {
+        const updatedSelectedCharacter = updatedCharacters.find(char => char.id === editingCharacter.id);
+        if (updatedSelectedCharacter) {
+          setSelectedCharacter(updatedSelectedCharacter);
+        }
+      }
+      
+      toast({
+        title: "Character Updated",
+        description: `${newCharacter.name} has been updated successfully!`,
+      });
+    } else {
+      // Create new character
+      const character: Character = {
+        ...newCharacter,
+        id: crypto.randomUUID(),
+        starForceItems: [],
+      };
+      
+      setCharacters(prev => [...prev, character]);
+      setSelectedCharacter(character);
+      
+      toast({
+        title: "Character Created",
+        description: `${character.name} has been added to your roster!`,
+      });
+    }
     
-    setCharacters(prev => [...prev, character]);
-    setSelectedCharacter(character);
-    
-    toast({
-      title: "Character Created",
-      description: `${character.name} has been added to your roster!`,
-    });
+    setCharacterFormOpen(false);
+    setEditingCharacter(null);
   };
 
   const handleSelectCharacter = (character: Character) => {
@@ -72,8 +190,8 @@ export default function CharacterDashboard() {
   };
 
   const handleEditCharacter = (character: Character) => {
-    // TODO: Implement character editing
-    console.log('Edit character:', character);
+    setEditingCharacter(character);
+    setCharacterFormOpen(true);
   };
 
   const handleDeleteCharacter = (id: string) => {
@@ -227,10 +345,29 @@ export default function CharacterDashboard() {
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Characters</h1>
           <p className="text-sm text-muted-foreground">
             Manage your MapleStory characters and plan their StarForce upgrades
+            {lastUpdateTime && (
+              <>
+                <br />
+                <span className="text-xs">
+                  Last updated from MapleRanks: {new Date(lastUpdateTime).toLocaleDateString()} at {new Date(lastUpdateTime).toLocaleTimeString()}
+                </span>
+              </>
+            )}
           </p>
         </div>
         
         <div className="flex items-center gap-2">
+          <Button 
+            onClick={updateCharactersFromMapleRanks}
+            disabled={isUpdating || characters.length === 0}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
+            {isUpdating ? 'Updating...' : 'Refresh from MapleRanks'}
+          </Button>
+          
           <Button 
             onClick={() => setWizardOpen(true)}
             className="flex items-center gap-2"
@@ -279,12 +416,22 @@ export default function CharacterDashboard() {
                   {/* Action Buttons */}
                   {selectedCharacter && (
                     <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm">
-                        <Calculator className="w-4 h-4 mr-2" />
-                        Calculator
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleEditCharacter(selectedCharacter)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
                       </Button>
-                      <Button variant="outline" size="sm">
-                        <Settings className="w-4 h-4" />
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleDeleteCharacter(selectedCharacter.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete
                       </Button>
                     </div>
                   )}
@@ -493,6 +640,15 @@ export default function CharacterDashboard() {
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onComplete={handleCreateCharacter}
+      />
+
+      {/* Character Edit Form */}
+      <CharacterForm 
+        open={characterFormOpen}
+        onOpenChange={setCharacterFormOpen}
+        onAddCharacter={handleCreateCharacter}
+        editingCharacter={editingCharacter}
+        onEditingChange={setEditingCharacter}
       />
     </div>
   );

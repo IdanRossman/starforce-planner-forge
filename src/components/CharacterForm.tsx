@@ -46,6 +46,8 @@ interface CharacterFormProps {
   onAddCharacter: (character: Omit<Character, 'id'>) => void;
   editingCharacter?: Character | null;
   onEditingChange?: (character: Character | null) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const MAPLE_CLASSES = [
@@ -61,10 +63,14 @@ const MAPLE_CLASSES = [
   'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
 ];
 
-export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange }: CharacterFormProps) {
-  const [open, setOpen] = useState(false);
+export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange, open: externalOpen, onOpenChange: externalOnOpenChange }: CharacterFormProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isLoadingCharacter, setIsLoadingCharacter] = useState(false);
   const [characterNotFound, setCharacterNotFound] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = externalOnOpenChange || setInternalOpen;
 
   const form = useForm<CharacterFormData>({
     resolver: zodResolver(characterSchema),
@@ -136,7 +142,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       });
       setOpen(true);
     }
-  }, [editingCharacter, form]);
+  }, [editingCharacter, form, setOpen]);
 
   const onSubmit = (data: CharacterFormData) => {
     const newCharacter: Omit<Character, 'id'> = {
