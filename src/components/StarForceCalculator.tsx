@@ -26,6 +26,8 @@ interface StarForceCalculatorProps {
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   mode?: 'standalone' | 'equipment-table';
+  characterId?: string; // For per-character localStorage
+  characterName?: string; // Fallback for characters without ID
 }
 
 // Based on proven working calculator logic
@@ -360,8 +362,44 @@ export function StarForceCalculator({
   additionalEquipment = [],
   onUpdateStarforce,
   onUpdateActualCost,
-  mode = 'standalone'
+  mode = 'standalone',
+  characterId,
+  characterName
 }: StarForceCalculatorProps) {
+  // Helper functions for per-character localStorage
+  const getCharacterStorageKey = useCallback((key: string) => {
+    if (mode === 'equipment-table') {
+      if (characterId) {
+        return `starforce-${key}-${characterId}`;
+      } else if (characterName) {
+        // Use character name as fallback for existing characters without ID
+        return `starforce-${key}-${characterName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      }
+    }
+    return `starforce-${key}`;
+  }, [characterId, characterName, mode]);
+
+  const loadCharacterSettings = useCallback((key: string, defaultValue: unknown) => {
+    try {
+      const storageKey = getCharacterStorageKey(key);
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error(`Failed to load ${key} from localStorage:`, error);
+    }
+    return defaultValue;
+  }, [getCharacterStorageKey]);
+
+  const saveCharacterSettings = useCallback((key: string, value: unknown) => {
+    try {
+      const storageKey = getCharacterStorageKey(key);
+      localStorage.setItem(storageKey, JSON.stringify(value));
+    } catch (error) {
+      console.error(`Failed to save ${key} to localStorage:`, error);
+    }
+  }, [getCharacterStorageKey]);
   // State for input fields (standalone mode)
   const [itemLevel, setItemLevel] = useState(150);
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -376,33 +414,21 @@ export function StarForceCalculator({
   
   // Enhanced settings for equipment mode with localStorage persistence
   const [enhancedSettings, setEnhancedSettings] = useState(() => {
-    try {
-      const saved = localStorage.getItem('starforce-settings');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error('Failed to load StarForce settings from localStorage:', error);
-    }
-    
-    // Default settings
-    return {
+    const defaultSettings = {
       discountEvent: false, // 30% off event
       starcatchEvent: false, // 5/10/15 event
       isInteractive: false, // Interactive server toggle
       spareCount: 0, // Number of spares
       sparePrice: 0, // Price per spare in mesos
     };
+    
+    return loadCharacterSettings('settings', defaultSettings);
   });
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
-    try {
-      localStorage.setItem('starforce-settings', JSON.stringify(enhancedSettings));
-    } catch (error) {
-      console.error('Failed to save StarForce settings to localStorage:', error);
-    }
-  }, [enhancedSettings]);
+    saveCharacterSettings('settings', enhancedSettings);
+  }, [enhancedSettings, saveCharacterSettings]);
 
   // Equipment table editing states
   const [editingStarforce, setEditingStarforce] = useState<string | null>(null);
@@ -412,19 +438,50 @@ export function StarForceCalculator({
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
   // Per-item safeguard settings
-  const [itemSafeguard, setItemSafeguard] = useState<{ [equipmentId: string]: boolean }>({});
+  const [itemSafeguard, setItemSafeguard] = useState<{ [equipmentId: string]: boolean }>(() => {
+    return loadCharacterSettings('item-safeguard', {}) as { [equipmentId: string]: boolean };
+  });
   
   // Per-item star catching settings (default to true)
-  const [itemStarCatching, setItemStarCatching] = useState<{ [equipmentId: string]: boolean }>({});
+  const [itemStarCatching, setItemStarCatching] = useState<{ [equipmentId: string]: boolean }>(() => {
+    return loadCharacterSettings('item-starcatching', {}) as { [equipmentId: string]: boolean };
+  });
   
   // Per-item spare count
-  const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>({});
+  const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>(() => {
+    return loadCharacterSettings('item-spares', {}) as { [equipmentId: string]: number };
+  });
   
   // Per-item spare prices (for Interactive server)
-  const [itemSparePrices, setItemSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+  const [itemSparePrices, setItemSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
+    return loadCharacterSettings('item-spare-prices', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
+  });
   
   // Per-item actual costs with units
-  const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+  const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
+    return loadCharacterSettings('item-actual-costs', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
+  });
+  
+  // Save per-item settings to localStorage
+  useEffect(() => {
+    saveCharacterSettings('item-safeguard', itemSafeguard);
+  }, [itemSafeguard, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('item-starcatching', itemStarCatching);
+  }, [itemStarCatching, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('item-spares', itemSpares);
+  }, [itemSpares, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('item-spare-prices', itemSparePrices);
+  }, [itemSparePrices, saveCharacterSettings]);
+
+  useEffect(() => {
+    saveCharacterSettings('item-actual-costs', itemActualCosts);
+  }, [itemActualCosts, saveCharacterSettings]);
   
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null

@@ -43,6 +43,8 @@ interface EnhancedEquipmentManagerProps {
   additionalEquipment?: Equipment[]; // StarForce items beyond standard slots
   onSaveAdditionalEquipment?: (equipment: Equipment) => void;
   onDeleteAdditionalEquipment?: (equipmentId: string) => void;
+  characterId?: string; // For per-character localStorage
+  characterName?: string; // Fallback for characters without ID
 }
 
 type FilterType = "all" | "pending" | "completed" | "starforceable";
@@ -58,7 +60,9 @@ export function EnhancedEquipmentManager({
   selectedJob,
   additionalEquipment = [],
   onSaveAdditionalEquipment,
-  onDeleteAdditionalEquipment
+  onDeleteAdditionalEquipment,
+  characterId,
+  characterName
 }: EnhancedEquipmentManagerProps) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [editingStarforce, setEditingStarforce] = useState<string | null>(null);
@@ -482,6 +486,8 @@ export function EnhancedEquipmentManager({
               {pendingEquipment.length > 0 ? (
                 <StarForceCalculator
                   mode="equipment-table"
+                  characterId={characterId}
+                  characterName={characterName}
                   equipment={equipment}
                   additionalEquipment={additionalEquipment}
                   onUpdateStarforce={onUpdateStarforce}

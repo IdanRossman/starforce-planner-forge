@@ -867,6 +867,8 @@ export default function CharacterDashboard() {
                     onUpdateActualCost={handleUpdateActualCost}
                     onSaveEquipment={handleSaveEquipment}
                     selectedJob={selectedCharacter.class}
+                    characterId={selectedCharacter.id}
+                    characterName={selectedCharacter.name}
                   />
                 </CardContent>
               </Card>

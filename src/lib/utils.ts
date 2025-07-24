@@ -26,18 +26,85 @@ export const getDefaultTargetStarForce = (level: number): number => {
   return maxStars;
 };
 
+interface CharacterStarForceSettings {
+  enhancedSettings?: {
+    discountEvent: boolean;
+    starcatchEvent: boolean;
+    isInteractive: boolean;
+    spareCount: number;
+    sparePrice: number;
+  };
+  itemSafeguard?: { [equipmentId: string]: boolean };
+  itemStarCatching?: { [equipmentId: string]: boolean };
+  itemSpares?: { [equipmentId: string]: number };
+  itemSparePrices?: { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
+  itemActualCosts?: { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
+}
+
 interface ExportData {
   version: string;
   characters: Character[];
   starForceItems: Equipment[];
+  starForceSettings?: { [characterId: string]: CharacterStarForceSettings };
   timestamp: string;
 }
 
 export function exportCharacterData(characters: Character[], starForceItems: Equipment[] = []): string {
+  // Collect StarForce settings for each character
+  const starForceSettings: { [characterId: string]: CharacterStarForceSettings } = {};
+  
+  characters.forEach(character => {
+    const settings: CharacterStarForceSettings = {};
+    
+    // Helper function to get character-specific localStorage key
+    const getStorageKey = (key: string) => `starforce-${key}-${character.id}`;
+    
+    try {
+      // Load each type of setting from localStorage
+      const enhancedSettings = localStorage.getItem(getStorageKey('settings'));
+      if (enhancedSettings) {
+        settings.enhancedSettings = JSON.parse(enhancedSettings);
+      }
+      
+      const itemSafeguard = localStorage.getItem(getStorageKey('item-safeguard'));
+      if (itemSafeguard) {
+        settings.itemSafeguard = JSON.parse(itemSafeguard);
+      }
+      
+      const itemStarCatching = localStorage.getItem(getStorageKey('item-starcatching'));
+      if (itemStarCatching) {
+        settings.itemStarCatching = JSON.parse(itemStarCatching);
+      }
+      
+      const itemSpares = localStorage.getItem(getStorageKey('item-spares'));
+      if (itemSpares) {
+        settings.itemSpares = JSON.parse(itemSpares);
+      }
+      
+      const itemSparePrices = localStorage.getItem(getStorageKey('item-spare-prices'));
+      if (itemSparePrices) {
+        settings.itemSparePrices = JSON.parse(itemSparePrices);
+      }
+      
+      const itemActualCosts = localStorage.getItem(getStorageKey('item-actual-costs'));
+      if (itemActualCosts) {
+        settings.itemActualCosts = JSON.parse(itemActualCosts);
+      }
+      
+      // Only include character settings if there's any data
+      if (Object.keys(settings).length > 0) {
+        starForceSettings[character.id] = settings;
+      }
+    } catch (error) {
+      console.warn(`Failed to export settings for character ${character.name}:`, error);
+    }
+  });
+
   const data: ExportData = {
-    version: "1.0",
+    version: "1.1", // Updated version to include StarForce settings
     characters,
     starForceItems,
+    starForceSettings: Object.keys(starForceSettings).length > 0 ? starForceSettings : undefined,
     timestamp: new Date().toISOString(),
   };
   
@@ -58,6 +125,45 @@ export function importCharacterData(hash: string): ExportData {
     // Validate data structure
     if (!data.version || !Array.isArray(data.characters)) {
       throw new Error("Invalid data format");
+    }
+    
+    // Import StarForce settings if available (version 1.1+)
+    if (data.starForceSettings && data.version !== "1.0") {
+      Object.entries(data.starForceSettings).forEach(([characterId, settings]) => {
+        try {
+          // Helper function to set character-specific localStorage key
+          const setStorageKey = (key: string, value: unknown) => {
+            localStorage.setItem(`starforce-${key}-${characterId}`, JSON.stringify(value));
+          };
+          
+          // Restore each type of setting to localStorage
+          if (settings.enhancedSettings) {
+            setStorageKey('settings', settings.enhancedSettings);
+          }
+          
+          if (settings.itemSafeguard) {
+            setStorageKey('item-safeguard', settings.itemSafeguard);
+          }
+          
+          if (settings.itemStarCatching) {
+            setStorageKey('item-starcatching', settings.itemStarCatching);
+          }
+          
+          if (settings.itemSpares) {
+            setStorageKey('item-spares', settings.itemSpares);
+          }
+          
+          if (settings.itemSparePrices) {
+            setStorageKey('item-spare-prices', settings.itemSparePrices);
+          }
+          
+          if (settings.itemActualCosts) {
+            setStorageKey('item-actual-costs', settings.itemActualCosts);
+          }
+        } catch (error) {
+          console.warn(`Failed to import settings for character ${characterId}:`, error);
+        }
+      });
     }
     
     return data;
