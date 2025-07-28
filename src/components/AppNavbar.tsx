@@ -34,12 +34,12 @@ export function AppNavbar() {
               <div className="w-6 h-6 bg-gradient-to-r from-primary to-maple-orange rounded-full flex items-center justify-center">
                 <Leaf className="w-3 h-3 text-white" />
               </div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent font-maplestory">
                 StarForce Planner
               </h1>
             </NavLink>
             
-            <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground/80">
+            <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground/80 font-maplestory">
               <span>#BuffMerc</span>
               <span>🦄</span>
             </div>
@@ -56,7 +56,7 @@ export function AppNavbar() {
               >
                 <div className="flex items-center gap-1">
                   <item.icon className="w-3 h-3" />
-                  <span className="text-xs">{item.title}</span>
+                  <span className="text-xs font-maplestory">{item.title}</span>
                 </div>
               </NavLink>
             ))}
@@ -73,7 +73,7 @@ export function AppNavbar() {
                   >
                     <div className="flex items-center gap-1">
                       <item.icon className="w-3 h-3" />
-                      <span className="text-xs">{item.title}</span>
+                      <span className="text-xs font-maplestory">{item.title}</span>
                     </div>
                   </NavLink>
                 ))}
@@ -90,10 +90,10 @@ export function AppNavbar() {
               <Leaf className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-maple-orange bg-clip-text text-transparent font-maplestory">
                 MapleStory StarForce Planner
               </h1>
-              <p className="text-xs text-muted-foreground">Plan your equipment upgrades efficiently</p>
+              <p className="text-xs text-muted-foreground font-maplestory">Plan your equipment upgrades efficiently</p>
             </div>
           </NavLink>
           
@@ -108,7 +108,7 @@ export function AppNavbar() {
               >
                 <div className="flex items-center gap-2">
                   <item.icon className="w-4 h-4" />
-                  <span>{item.title}</span>
+                  <span className="font-maplestory">{item.title}</span>
                 </div>
               </NavLink>
             ))}
@@ -125,7 +125,7 @@ export function AppNavbar() {
                   >
                     <div className="flex items-center gap-2">
                       <item.icon className="w-4 h-4" />
-                      <span>{item.title}</span>
+                      <span className="font-maplestory">{item.title}</span>
                     </div>
                   </NavLink>
                 ))}
@@ -134,7 +134,7 @@ export function AppNavbar() {
           </nav>
           
           {/* Hashtags - Far Right */}
-          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/80">
+          <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground/80 font-maplestory">
             <span>#BuffMerc</span>
             <span>#LetUsKeepTheDonkey</span>
             <span>🦄</span>
