@@ -35,7 +35,7 @@ export const globalTimingConfig = {
 export const assistantCharacters: Record<string, AssistantCharacter> = {
   'maple-admin': {
     name: "Maple Admin",
-    image: "/characters/maple-admin.png",
+    image: "./characters/maple-admin.png",
     tips: [
       {
         id: "welcome-tip",
@@ -141,7 +141,7 @@ export function addCharacter(key: string, character: AssistantCharacter): void {
 // Debug character for testing (with static message)
 export const debugCharacter: AssistantCharacter = {
   name: "Debug Assistant",
-  image: "/characters/maple-admin.png", 
+  image: "./characters/maple-admin.png", 
   tips: [
     {
       id: "debug-tip",
