@@ -277,7 +277,7 @@ export function GameAssistant({
                   </div>
                   {/* Character Name Tag */}
                   <div className="px-2 py-1 rounded-md shadow-sm" style={{ backgroundColor: '#707070' }}>
-                    <span className="text-xs font-bold text-white text-center block">
+                    <span className="text-xs font-bold text-white text-center block font-maplestory">
                       {activeCharacter.name}
                     </span>
                   </div>
@@ -292,7 +292,7 @@ export function GameAssistant({
                   >
                     <CardContent className="p-4 flex items-center h-full">
                       {/* Message Text */}
-                      <div className="text-sm text-gray-800 leading-relaxed flex items-center h-full w-full">
+                      <div className="text-sm text-gray-800 leading-relaxed flex items-center h-full w-full font-maplestory font-normal">
                         <p className="text-left w-full">
                           {displayedText}
                           {isTyping && <span className="animate-pulse">|</span>}
@@ -310,7 +310,7 @@ export function GameAssistant({
             <Button
               size="sm"
               onClick={handleClose}
-              className="h-5 px-10 text-xs text-white font-bold shadow-lg border-0"
+              className="h-5 px-10 text-xs text-white font-bold shadow-lg border-0 font-maplestory"
               style={{ 
                 background: 'linear-gradient(to top, #98CC21, #92CC75)',
                 transition: 'all 0.2s ease'
@@ -330,7 +330,7 @@ export function GameAssistant({
               <Button
                 size="sm"
                 onClick={showNextTip}
-                className="h-7 px-3 text-xs text-black font-bold shadow-lg border-0"
+                className="h-7 px-3 text-xs text-black font-bold shadow-lg border-0 font-maplestory"
                 style={{ 
                   background: 'linear-gradient(to top, #FFD700, #FFA500)',
                   transition: 'all 0.2s ease'
@@ -365,7 +365,7 @@ export function GameAssistant({
               />
               <label 
                 htmlFor="tips-toggle" 
-                className="text-xs text-white font-medium cursor-pointer select-none drop-shadow-sm"
+                className="text-xs text-white font-medium cursor-pointer select-none drop-shadow-sm font-maplestory"
               >
                 Disable tips
               </label>

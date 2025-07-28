@@ -49,20 +49,8 @@ export const assistantCharacters: Record<string, AssistantCharacter> = {
         context: ["homepage"]
       },
       {
-        id: "character-vs-quick",
-        message: "Here's a tip: Character Management saves your progress permanently, while Quick Calculator is perfect for one-time calculations.",
-        type: "info",
-        context: ["homepage"]
-      },
-      {
         id: "spare-management",
         message: "Pro tip: The character system includes advanced spare management - track your backup equipment and calculate realistic enhancement costs!",
-        type: "success",
-        context: ["homepage"]
-      },
-      {
-        id: "starforce-events",
-        message: "Don't forget: Both planning modes support StarForce events like 5/10/15 and 30% off! Those savings add up quickly!",
         type: "success",
         context: ["homepage"]
       },
@@ -71,12 +59,6 @@ export const assistantCharacters: Record<string, AssistantCharacter> = {
         message: "Good to know: Your character data is saved locally in your browser. No account needed - just bookmark this page!",
         type: "info",
         context: ["homepage"]
-      },
-      {
-        id: "equipment-form-help",
-        message: "Fill out the equipment details and I'll help you plan your StarForce journey. Don't forget to set realistic target stars!",
-        type: "info",
-        context: ["equipment-form"]
       },
       {
         id: "character-dashboard-tip",
@@ -94,12 +76,6 @@ export const assistantCharacters: Record<string, AssistantCharacter> = {
         id: "character-wizard-tip",
         message: "The Character Wizard makes it easy to create new characters. Just fill in the basics and I'll help you get started!",
         type: "info",
-        context: ["character-dashboard"]
-      },
-      {
-        id: "bulk-operations-tip",
-        message: "Pro tip: Use bulk operations to update multiple equipment pieces at once. Perfect for applying StarForce events!",
-        type: "success",
         context: ["character-dashboard"]
       },
       {
@@ -121,18 +97,6 @@ export const assistantCharacters: Record<string, AssistantCharacter> = {
         context: ["quick-planning"]
       },
       {
-        id: "no-save-reminder",
-        message: "Remember: Quick Planning doesn't save your work automatically. Export your data if you want to keep it!",
-        type: "warning",
-        context: ["quick-planning"]
-      },
-      {
-        id: "quick-starforce-tip",
-        message: "Use the Quick StarForce Table to see enhancement costs at a glance. Perfect for budget planning!",
-        type: "info",
-        context: ["quick-planning"]
-      },
-      {
         id: "lost-help",
         message: "Looks like you've stumbled into uncharted territory! Don't worry, I can help you find your way back.",
         type: "info",
@@ -146,54 +110,6 @@ export const assistantCharacters: Record<string, AssistantCharacter> = {
       }
     ]
   },
-
-  'maple-helper': {
-    name: "Maple Helper",
-    image: "/characters/maple-helper.png",
-    tips: [
-      {
-        id: "helper-welcome",
-        message: "Hi there! I'm here to help you navigate the StarForce system. Let me know if you need any guidance!",
-        type: "general"
-      },
-      {
-        id: "quick-calc-tip",
-        message: "The Quick Calculator is perfect for fast calculations without saving data. Great for experimenting!",
-        type: "info",
-        context: ["quick-planning"]
-      },
-      {
-        id: "template-system-tip",
-        message: "Try the template system! Load pre-configured equipment sets for different jobs and situations. It's a huge time saver!",
-        type: "success",
-        context: ["quick-planning"]
-      },
-      {
-        id: "no-save-reminder",
-        message: "Remember: Quick Planning doesn't save your work automatically. Export your data if you want to keep it!",
-        type: "warning",
-        context: ["quick-planning"]
-      },
-      {
-        id: "quick-starforce-tip",
-        message: "Use the Quick StarForce Table to see enhancement costs at a glance. Perfect for budget planning!",
-        type: "info",
-        context: ["quick-planning"]
-      },
-      {
-        id: "lost-help",
-        message: "Looks like you've stumbled into uncharted territory! Don't worry, I can help you find your way back.",
-        type: "info",
-        context: ["not-found"]
-      },
-      {
-        id: "navigation-help",
-        message: "Use the navigation links to get back to the main sections: Character Dashboard or Quick Planning are great starting points!",
-        type: "success",
-        context: ["not-found"]
-      }
-    ]
-  }
 };
 
 // Page-specific character assignments
