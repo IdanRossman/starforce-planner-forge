@@ -354,10 +354,10 @@ export function EquipmentForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="font-maplestory">
             {isEditing ? 'Edit Equipment' : 'Add Equipment'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="font-maplestory">
             {isEditing 
               ? 'Update your equipment details and StarForce goals.' 
               : 'Add a new piece of equipment to track its StarForce progress.'
@@ -376,7 +376,7 @@ export function EquipmentForm({
                   const SlotIcon = getSlotIcon(field.value);
                   return (
                     <FormItem>
-                      <FormLabel>Equipment Slot</FormLabel>
+                      <FormLabel className="font-maplestory">Equipment Slot</FormLabel>
                       <Select 
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -388,7 +388,7 @@ export function EquipmentForm({
                         disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="font-maplestory">
                             <SelectValue placeholder="Select equipment slot">
                               {field.value && (
                                 <div className="flex items-center gap-2">
@@ -406,12 +406,12 @@ export function EquipmentForm({
                                <SelectItem key={slot.value} value={slot.value}>
                                  <div className="flex items-center gap-2">
                                    <IconComponent className="h-4 w-4" />
-                                   {slot.label}
+                                   <span className="font-maplestory">{slot.label}</span>
                                    {(slot.value === 'overall' && (currentSlot === 'top' || currentSlot === 'bottom')) && 
-                                     <span className="text-xs text-muted-foreground">(conflicts with top/bottom)</span>
+                                     <span className="text-xs text-muted-foreground font-maplestory">(conflicts with top/bottom)</span>
                                    }
                                    {((slot.value === 'top' || slot.value === 'bottom') && currentSlot === 'overall') && 
-                                     <span className="text-xs text-muted-foreground">(conflicts with overall)</span>
+                                     <span className="text-xs text-muted-foreground font-maplestory">(conflicts with overall)</span>
                                    }
                                  </div>
                                </SelectItem>
@@ -431,7 +431,7 @@ export function EquipmentForm({
                 name="set"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Equipment</FormLabel>
+                    <FormLabel className="font-maplestory">Equipment</FormLabel>
                     <Select onValueChange={(value) => {
                       field.onChange(value);
                       // Auto-update tier and level based on equipment selection
@@ -473,7 +473,7 @@ export function EquipmentForm({
                       }
                     }} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="font-maplestory">
                           <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"}>
                             {field.value && (
                               <div className="flex items-center gap-2">
@@ -487,10 +487,10 @@ export function EquipmentForm({
                                         size="sm"
                                         fallbackIcon={getSlotIcon(selectedSlot)}
                                       />
-                                      <span>{selectedEquip.name} (Lv.{selectedEquip.level})</span>
+                                      <span className="font-maplestory">{selectedEquip.name} (Lv.{selectedEquip.level})</span>
                                     </>
                                   ) : (
-                                    <span>{field.value}</span>
+                                    <span className="font-maplestory">{field.value}</span>
                                   );
                                 })()}
                               </div>
@@ -500,17 +500,17 @@ export function EquipmentForm({
                       </FormControl>
                       <SelectContent>
                         {equipmentLoading ? (
-                          <div className="p-2 text-center text-sm text-muted-foreground">
+                          <div className="p-2 text-center text-sm text-muted-foreground font-maplestory">
                             Loading equipment...
                           </div>
                         ) : availableEquipment.length === 0 ? (
-                          <div className="p-2 text-center text-sm text-muted-foreground">
+                          <div className="p-2 text-center text-sm text-muted-foreground font-maplestory">
                             No equipment found for this slot
                           </div>
                         ) : (
                           <>
                             {equipmentSource === 'local' && (
-                              <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b">
+                              <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b font-maplestory">
                                 ⚠️ Using local data (API unavailable)
                               </div>
                             )}
@@ -523,7 +523,7 @@ export function EquipmentForm({
                                 size="md"
                                 fallbackIcon={getSlotIcon(selectedSlot)}
                               />
-                              <span>
+                              <span className="font-maplestory">
                                 {equipment.name && equipment.name.trim() 
                                   ? `${equipment.name} (Lv.${equipment.level})`
                                   : `Level ${equipment.level} Equipment`
@@ -547,7 +547,7 @@ export function EquipmentForm({
                 name="tier"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Potential Tier</FormLabel>
+                    <FormLabel className="font-maplestory">Potential Tier</FormLabel>
                     <Select 
                       onValueChange={(value) => {
                         if (value === "none") {
@@ -559,15 +559,15 @@ export function EquipmentForm({
                       value={field.value ?? "none"}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="font-maplestory">
                           <SelectValue placeholder="Select potential tier (optional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">No Potential</SelectItem>
+                        <SelectItem value="none"><span className="font-maplestory">No Potential</span></SelectItem>
                         {EQUIPMENT_TIERS.map((tier) => (
                           <SelectItem key={tier.value} value={tier.value}>
-                            {tier.label}
+                            <span className="font-maplestory">{tier.label}</span>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -584,10 +584,10 @@ export function EquipmentForm({
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
-                      <FormLabel className="text-base">
+                      <FormLabel className="text-base font-maplestory">
                         StarForce Enhancement
                       </FormLabel>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-muted-foreground font-maplestory">
                         Can this equipment be enhanced with StarForce?
                       </div>
                     </div>
@@ -609,7 +609,7 @@ export function EquipmentForm({
                   <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm text-blue-700 dark:text-blue-300">
+                      <span className="text-sm text-blue-700 dark:text-blue-300 font-maplestory">
                         Star force values auto-adjusted to match level {watchLevel} limits
                         {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
                          autoAdjusted.current ? ' (current)' : ' (target)'}
@@ -625,7 +625,7 @@ export function EquipmentForm({
                   const maxStars = getMaxStarForce(watchLevel);
                   return (
                     <FormItem>
-                      <FormLabel>Current StarForce: {field.value}★</FormLabel>
+                      <FormLabel className="font-maplestory">Current StarForce: {field.value}★</FormLabel>
                       <div className="space-y-3">
                         <FormControl>
                           <Slider
@@ -638,7 +638,7 @@ export function EquipmentForm({
                           />
                         </FormControl>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Direct input:</span>
+                          <span className="text-sm text-muted-foreground font-maplestory">Direct input:</span>
                           <Input
                             type="number"
                             min={0}
@@ -651,7 +651,7 @@ export function EquipmentForm({
                             }}
                             className="w-20 text-center"
                           />
-                          <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                          <span className="text-sm text-muted-foreground font-maplestory">/ {maxStars}★</span>
                         </div>
                       </div>
                       <FormMessage />
@@ -667,7 +667,7 @@ export function EquipmentForm({
                   const maxStars = getMaxStarForce(watchLevel);
                   return (
                     <FormItem>
-                      <FormLabel>Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
+                      <FormLabel className="font-maplestory">Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
                       <div className="space-y-3">
                         <FormControl>
                           <Slider
@@ -680,7 +680,7 @@ export function EquipmentForm({
                           />
                         </FormControl>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">Direct input:</span>
+                          <span className="text-sm text-muted-foreground font-maplestory">Direct input:</span>
                           <Input
                             type="number"
                             min={0}
@@ -693,7 +693,7 @@ export function EquipmentForm({
                             }}
                             className="w-20 text-center"
                           />
-                          <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                          <span className="text-sm text-muted-foreground font-maplestory">/ {maxStars}★</span>
                         </div>
                       </div>
                       <FormMessage />
@@ -705,10 +705,10 @@ export function EquipmentForm({
               )}
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-maplestory">
                   Cancel
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="font-maplestory">
                   {isEditing ? 'Update' : 'Add'} Equipment
                 </Button>
               </DialogFooter>

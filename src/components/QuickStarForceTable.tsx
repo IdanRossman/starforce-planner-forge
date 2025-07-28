@@ -162,10 +162,10 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
         <div className="mx-auto w-16 h-16 bg-muted/30 rounded-full flex items-center justify-center mb-4">
           <Calculator className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2 font-maplestory">
           No Equipment to Calculate
         </h3>
-        <p className="text-muted-foreground max-w-sm mx-auto">
+        <p className="text-muted-foreground max-w-sm mx-auto font-maplestory">
           Select a template or add equipment that needs StarForce upgrades to see cost calculations.
         </p>
       </div>
@@ -180,8 +180,8 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
           <div className="flex items-center justify-center gap-3">
             <Coins className="w-5 h-5 text-primary" />
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">Total Expected Cost</p>
-              <p className="text-2xl font-bold text-primary">
+              <p className="text-sm text-muted-foreground font-maplestory">Total Expected Cost</p>
+              <p className="text-2xl font-bold text-primary font-maplestory">
                 {formatMesos(totalCost)} mesos
               </p>
             </div>
@@ -200,7 +200,7 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                 setEvents(prev => ({ ...prev, starCatching: checked }))
               }
             />
-            <Label htmlFor="starCatching" className="text-sm font-medium">
+            <Label htmlFor="starCatching" className="text-sm font-medium font-maplestory">
               Star Catching (All Equipment)
             </Label>
           </div>
@@ -213,7 +213,7 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                 setEvents(prev => ({ ...prev, fiveTenFifteen: checked }))
               }
             />
-            <Label htmlFor="fiveTenFifteen" className="text-sm font-medium">
+            <Label htmlFor="fiveTenFifteen" className="text-sm font-medium font-maplestory">
               5/10/15 Event
             </Label>
           </div>
@@ -226,7 +226,7 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                 setEvents(prev => ({ ...prev, thirtyPercentOff: checked }))
               }
             />
-            <Label htmlFor="thirtyPercentOff" className="text-sm font-medium">
+            <Label htmlFor="thirtyPercentOff" className="text-sm font-medium font-maplestory">
               30% Off Event
             </Label>
           </div>
@@ -238,10 +238,10 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Equipment</TableHead>
-              <TableHead className="text-center">Current ★</TableHead>
-              <TableHead className="text-center">Target ★</TableHead>
-              <TableHead className="text-center">Expected Cost</TableHead>
+              <TableHead className="font-maplestory">Equipment</TableHead>
+              <TableHead className="text-center font-maplestory">Current ★</TableHead>
+              <TableHead className="text-center font-maplestory">Target ★</TableHead>
+              <TableHead className="text-center font-maplestory">Expected Cost</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -265,7 +265,7 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                     
                     {/* Equipment Details */}
                     <div>
-                      <div className="font-medium">
+                      <div className="font-medium font-maplestory">
                         {calc.equipment.name || calc.equipment.set 
                           ? `${calc.equipment.name || calc.equipment.set}` 
                           : `Lv.${calc.equipment.level} Equipment`
@@ -273,11 +273,11 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         {calc.equipment.tier && (
-                          <Badge variant="outline" className={getTierColor(calc.equipment.tier)}>
+                          <Badge variant="outline" className={`${getTierColor(calc.equipment.tier)} font-maplestory`}>
                             {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground capitalize">
+                        <span className="text-xs text-muted-foreground capitalize font-maplestory">
                           {calc.equipment.slot}
                         </span>
                       </div>
@@ -286,19 +286,19 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                 </TableCell>
                 
                 <TableCell className="text-center">
-                  <Badge variant="outline" className={`${getDangerColor(calc.equipment.currentStarForce)}`}>
+                  <Badge variant="outline" className={`${getDangerColor(calc.equipment.currentStarForce)} font-maplestory`}>
                     ★{calc.equipment.currentStarForce}
                   </Badge>
                 </TableCell>
                 
                 <TableCell className="text-center">
-                  <Badge variant="outline" className="text-primary">
+                  <Badge variant="outline" className="text-primary font-maplestory">
                     ★{calc.equipment.targetStarForce}
                   </Badge>
                 </TableCell>
                 
                 <TableCell className="text-center">
-                  <span className="font-semibold text-foreground">
+                  <span className="font-semibold text-foreground font-maplestory">
                     {formatMesos(calc.expectedCost)}
                   </span>
                 </TableCell>

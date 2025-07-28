@@ -153,13 +153,13 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           {equipment.starforceable && (
             <div className="flex items-center justify-center gap-0.5 text-xs">
               <Star className="w-2.5 h-2.5 text-yellow-400" />
-              <span className="text-yellow-400 font-medium text-xs">
+              <span className="text-yellow-400 font-medium text-xs font-maplestory">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-muted-foreground text-xs">→</span>
-                  <span className="text-primary font-medium text-xs">
+                  <span className="text-muted-foreground text-xs font-maplestory">→</span>
+                  <span className="text-primary font-medium text-xs font-maplestory">
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -175,10 +175,10 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
               {getSlotIcon(slot)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground truncate">
+              <p className="text-xs font-medium text-foreground truncate font-maplestory">
                 {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-xs text-muted-foreground truncate font-maplestory">
                 {label}
               </p>
             </div>
@@ -187,13 +187,13 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           {equipment.starforceable && (
             <div className="flex items-center gap-1 text-xs">
               <Star className="w-3 h-3 text-yellow-400" />
-              <span className="text-yellow-400 font-medium">
+              <span className="text-yellow-400 font-medium font-maplestory">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="text-primary font-medium">
+                  <span className="text-muted-foreground font-maplestory">→</span>
+                  <span className="text-primary font-medium font-maplestory">
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -276,7 +276,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           ) : (
             <div className="h-full w-full flex flex-col gap-2 items-center justify-center text-muted-foreground">
               <Plus className="w-4 h-4" />
-              <span className="text-xs">{label}</span>
+              <span className="text-xs font-maplestory">{label}</span>
             </div>
           )}
         </CardContent>
@@ -300,7 +300,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
         <div className="lg:hidden space-y-4">
           {Object.entries(categorizedSlots).map(([category, slots]) => (
             <div key={category} className="bg-card/30 rounded-lg border border-border/50 p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2 font-maplestory">
                 {category === 'Weapons' && <Sword className="w-4 h-4" />}
                 {category === 'Armor' && <Shield className="w-4 h-4" />}
                 {category === 'Accessories' && <Eye className="w-4 h-4" />}
@@ -357,10 +357,10 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                               <div className="flex items-start gap-2">
                                 {getSlotIcon(slot)}
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-medium text-foreground truncate">
+                                  <p className="text-xs font-medium text-foreground truncate font-maplestory">
                                     {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
                                   </p>
-                                  <p className="text-xs text-muted-foreground truncate">
+                                  <p className="text-xs text-muted-foreground truncate font-maplestory">
                                     {label}
                                   </p>
                                 </div>

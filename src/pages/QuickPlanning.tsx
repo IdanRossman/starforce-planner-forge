@@ -213,7 +213,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   variant="ghost" 
                   size="sm"
                   onClick={onNavigateHome}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 font-maplestory"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   Back
@@ -224,11 +224,11 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   <Sparkles className="w-6 h-6 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl flex items-center gap-2">
+                  <CardTitle className="text-xl flex items-center gap-2 font-maplestory">
                     Quick StarForce Planning
-                    <Badge variant="secondary" className="text-xs">No signup required</Badge>
+                    <Badge variant="secondary" className="text-xs font-maplestory">No signup required</Badge>
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-1 font-maplestory">
                     Choose a job class and customize your equipment setup
                   </p>
                 </div>
@@ -247,13 +247,13 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                 <Target className="w-8 h-8 text-primary" />
               </div>
               <div>
-                <CardTitle className="text-2xl flex items-center gap-3">
+                <CardTitle className="text-2xl flex items-center gap-3 font-maplestory">
                   Setup Your Build
-                  <Badge variant="outline" className="text-sm bg-primary/10 border-primary/30">
+                  <Badge variant="outline" className="text-sm bg-primary/10 border-primary/30 font-maplestory">
                     Step 1
                   </Badge>
                 </CardTitle>
-                <p className="text-muted-foreground text-lg mt-2">
+                <p className="text-muted-foreground text-lg mt-2 font-maplestory">
                   Choose your job class and starting template
                 </p>
               </div>
@@ -263,7 +263,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
               {/* Job Selection */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="text-lg font-semibold flex items-center gap-2 font-maplestory">
                   <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-sm font-bold flex items-center justify-center">1</span>
                   Select Job Class
                 </h3>
@@ -273,7 +273,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                     setSelectedJob(value);
                   }}
                 >
-                  <SelectTrigger className="w-full h-14 text-lg border-primary/30 bg-background/80 backdrop-blur-sm">
+                  <SelectTrigger className="w-full h-14 text-lg border-primary/30 bg-background/80 backdrop-blur-sm font-maplestory">
                     <SelectValue placeholder="Select a job class">
                       {selectedJob && (
                         <div className="flex items-center gap-2">
@@ -288,13 +288,13 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                                 <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                   <JobIcon className="w-3 h-3 text-white" />
                                 </div>
-                                <span>{selectedJob}</span>
+                                <span className="font-maplestory">{selectedJob}</span>
                                 {jobCategory && classSubcategory && (
                                   <div className="flex gap-1">
-                                    <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                    <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text} font-maplestory`}>
                                       {jobCategory}
                                     </span>
-                                    <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                    <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground font-maplestory">
                                       {classSubcategory}
                                     </span>
                                   </div>
@@ -309,7 +309,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   <SelectContent>
                     {Object.entries(ORGANIZED_CLASSES).map(([key, category]) => (
                       <div key={key}>
-                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
+                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b font-maplestory">
                           {category.name}
                         </div>
                         {category.classes.map((cls) => {
@@ -323,8 +323,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                                 <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
                                   <ClassIcon className="w-2.5 h-2.5 text-white" />
                                 </div>
-                                <span className="flex-1">{cls}</span>
-                                <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
+                                <span className="flex-1 font-maplestory">{cls}</span>
+                                <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text} font-maplestory`}>
                                   {classCategory}
                                 </span>
                               </div>
@@ -339,7 +339,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
 
               {/* Template Selection */}
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
+                <h3 className="text-lg font-semibold flex items-center gap-2 font-maplestory">
                   <span className={`w-6 h-6 rounded-full ${selectedJob ? 'bg-secondary/20 text-secondary' : 'bg-muted text-muted-foreground'} text-sm font-bold flex items-center justify-center`}>2</span>
                   Choose Template
                 </h3>
@@ -348,7 +348,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   onValueChange={handleTemplateSelect}
                   disabled={!selectedJob || isLoadingTemplates || isLoadingTemplateEquipment}
                 >
-                  <SelectTrigger className={`w-full h-14 text-lg ${selectedJob ? 'border-secondary/30' : 'border-muted'} bg-background/80 backdrop-blur-sm ${!selectedJob ? 'opacity-50' : ''}`}>
+                  <SelectTrigger className={`w-full h-14 text-lg ${selectedJob ? 'border-secondary/30' : 'border-muted'} bg-background/80 backdrop-blur-sm ${!selectedJob ? 'opacity-50' : ''} font-maplestory`}>
                     <SelectValue placeholder={selectedJob ? "Choose a template" : "Select job class first"}>
                       {selectedTemplate && (
                         <div className="flex items-center gap-2">
@@ -357,8 +357,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-gray-400 to-gray-500 flex items-center justify-center">
                                 <Target className="w-3 h-3 text-white" />
                               </div>
-                              <span>Empty Template</span>
-                              <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                              <span className="font-maplestory">Empty Template</span>
+                              <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground font-maplestory">
                                 Custom Build
                               </span>
                             </>
@@ -370,8 +370,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                                   <div className="w-5 h-5 rounded-full bg-gradient-to-r from-secondary to-blue-500 flex items-center justify-center">
                                     <FileText className="w-3 h-3 text-white" />
                                   </div>
-                                  <span>{template.name}</span>
-                                  <span className="text-xs px-2 py-1 rounded bg-secondary/10 text-secondary">
+                                  <span className="font-maplestory">{template.name}</span>
+                                  <span className="text-xs px-2 py-1 rounded bg-secondary/10 text-secondary font-maplestory">
                                     Template
                                   </span>
                                 </>
@@ -388,8 +388,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                         <div className="w-4 h-4 rounded-full bg-gradient-to-r from-gray-400 to-gray-500 flex items-center justify-center">
                           <Target className="w-2.5 h-2.5 text-white" />
                         </div>
-                        <span className="flex-1">Empty Template</span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                        <span className="flex-1 font-maplestory">Empty Template</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-maplestory">
                           Custom
                         </span>
                       </div>
@@ -398,7 +398,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                       <SelectItem value="loading" disabled>
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 animate-spin rounded-full border-2 border-secondary border-t-transparent"></div>
-                          <span>Loading templates...</span>
+                          <span className="font-maplestory">Loading templates...</span>
                         </div>
                       </SelectItem>
                     ) : (
@@ -409,13 +409,13 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                               <div className="w-4 h-4 rounded-full bg-gradient-to-r from-secondary to-blue-500 flex items-center justify-center">
                                 <FileText className="w-2.5 h-2.5 text-white" />
                               </div>
-                              <span className="flex-1 font-medium">{template.name}</span>
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-secondary/10 text-secondary">
+                              <span className="flex-1 font-medium font-maplestory">{template.name}</span>
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-maplestory">
                                 Template
                               </span>
                             </div>
                             {template.description && (
-                              <p className="text-xs text-muted-foreground ml-6 max-w-xs">
+                              <p className="text-xs text-muted-foreground ml-6 max-w-xs font-maplestory">
                                 {template.description}
                               </p>
                             )}
@@ -430,7 +430,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                 {isLoadingTemplateEquipment && (
                   <div className="flex items-center justify-center gap-2 text-secondary">
                     <div className="w-4 h-4 animate-spin rounded-full border-2 border-secondary border-t-transparent"></div>
-                    <span className="text-sm">Loading template equipment...</span>
+                    <span className="text-sm font-maplestory">Loading template equipment...</span>
                   </div>
                 )}
               </div>
@@ -444,14 +444,14 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
         {/* Equipment Grid */}
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 font-maplestory">
               <Target className="w-5 h-5 text-primary" />
               Equipment Grid
-              <Badge variant="outline" className="text-xs bg-secondary/50">
+              <Badge variant="outline" className="text-xs bg-secondary/50 font-maplestory">
                 Step 2
               </Badge>
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 font-maplestory">
               {selectedJob 
                 ? `Click any equipment slot to see ${selectedJob}-specific equipment options`
                 : "Complete setup above to enable equipment customization"
@@ -464,7 +464,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                 <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-muted">
                   <div className="text-center space-y-2">
                     <Target className="w-8 h-8 text-muted-foreground mx-auto" />
-                    <p className="text-sm text-muted-foreground font-medium">
+                    <p className="text-sm text-muted-foreground font-medium font-maplestory">
                       Select a job class to unlock equipment grid
                     </p>
                   </div>
@@ -483,14 +483,14 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
         {/* StarForce Calculation Table */}
         <Card className="h-fit">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
+            <CardTitle className="text-lg flex items-center gap-2 font-maplestory">
               <Calculator className="w-5 h-5 text-primary" />
               Live Calculations
-              <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30">
+              <Badge variant="outline" className="text-xs bg-green-500/10 border-green-500/30 font-maplestory">
                 Step 3
               </Badge>
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-sm text-muted-foreground mt-1 font-maplestory">
               Automatic cost calculations update as you make changes
             </p>
           </CardHeader>
@@ -506,9 +506,9 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-2 mb-2">
               <Coins className="w-5 h-5 text-primary" />
-              <h3 className="text-lg font-semibold">Ready for More?</h3>
+              <h3 className="text-lg font-semibold font-maplestory">Ready for More?</h3>
             </div>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto font-maplestory">
               This is just a taste of what StarForce Planner can do! Create characters, save your equipment, 
               track progress across multiple builds, and access advanced planning features.
             </p>
@@ -518,6 +518,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   onClick={onNavigateHome}
                   variant="outline"
                   size="lg"
+                  className="font-maplestory"
                 >
                   <Home className="w-5 h-5 mr-2" />
                   Home
@@ -543,11 +544,11 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
       <AlertDialog open={showTemplateConfirmDialog} onOpenChange={setShowTemplateConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2 font-maplestory">
               <AlertTriangle className="w-5 h-5 text-amber-500" />
               Replace Current Equipment?
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription className="space-y-2 font-maplestory">
               <p>
                 You currently have <strong>{equipment.length} equipment item{equipment.length !== 1 ? 's' : ''}</strong> configured. 
                 Loading this template will replace all current equipment with the template's pre-configured setup.
@@ -558,12 +559,12 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelTemplateLoad}>
+            <AlertDialogCancel onClick={cancelTemplateLoad} className="font-maplestory">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={confirmTemplateLoad}
-              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+              className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 font-maplestory"
             >
               Yes, Replace Equipment
             </AlertDialogAction>

@@ -578,13 +578,13 @@ export default function CharacterDashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Characters</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2 font-maplestory">Characters</h1>
+          <p className="text-sm text-muted-foreground font-maplestory">
             Manage your MapleStory characters and plan their StarForce upgrades
             {lastUpdateTime && (
               <>
                 <br />
-                <span className="text-xs">
+                <span className="text-xs font-maplestory">
                   Last updated from MapleRanks: {new Date(lastUpdateTime).toLocaleDateString()} at {new Date(lastUpdateTime).toLocaleTimeString()}
                 </span>
               </>
@@ -598,7 +598,7 @@ export default function CharacterDashboard() {
             disabled={characters.length === 0}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 font-maplestory"
           >
             <Download className="w-4 h-4" />
             Export
@@ -608,7 +608,7 @@ export default function CharacterDashboard() {
             onClick={() => setImportDialogOpen(true)}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 font-maplestory"
           >
             <Upload className="w-4 h-4" />
             Import
@@ -619,7 +619,7 @@ export default function CharacterDashboard() {
             disabled={isUpdating || characters.length === 0}
             variant="outline"
             size="sm"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 font-maplestory"
           >
             <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
             {isUpdating ? 'Updating...' : 'Refresh from MapleRanks'}
@@ -627,7 +627,7 @@ export default function CharacterDashboard() {
           
           <Button 
             onClick={() => setWizardOpen(true)}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 font-maplestory"
           >
             <Plus className="w-4 h-4" />
             New Character
@@ -640,27 +640,27 @@ export default function CharacterDashboard() {
         <Card>
           <CardContent className="py-16 text-center">
             <Users className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-            <h3 className="text-xl font-semibold text-foreground mb-2">
+            <h3 className="text-xl font-semibold text-foreground mb-2 font-maplestory">
               Welcome to StarForce Planner!
             </h3>
-            <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-6 max-w-md mx-auto font-maplestory">
               Create your first character to start planning equipment upgrades and calculating StarForce costs.
             </p>
             <div className="flex items-center gap-4 justify-center">
               <Button 
                 onClick={() => setWizardOpen(true)}
                 size="lg"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 font-maplestory"
               >
                 <Sparkles className="w-5 h-5" />
                 Create Your First Character
               </Button>
-              <div className="text-muted-foreground">or</div>
+              <div className="text-muted-foreground font-maplestory">or</div>
               <Button 
                 onClick={() => setImportDialogOpen(true)}
                 variant="outline"
                 size="lg"
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 font-maplestory"
               >
                 <Upload className="w-5 h-5" />
                 Import Characters
@@ -679,7 +679,7 @@ export default function CharacterDashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Crown className="w-6 h-6 text-primary" />
-                    <h2 className="text-xl font-semibold text-foreground">Active Character</h2>
+                    <h2 className="text-xl font-semibold text-foreground font-maplestory">Active Character</h2>
                   </div>
                   
                   {/* Action Buttons */}
@@ -689,6 +689,7 @@ export default function CharacterDashboard() {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleEditCharacter(selectedCharacter)}
+                        className="font-maplestory"
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
@@ -697,7 +698,7 @@ export default function CharacterDashboard() {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleDeleteCharacter(selectedCharacter.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 font-maplestory"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
@@ -717,7 +718,7 @@ export default function CharacterDashboard() {
                         if (character) handleSelectCharacter(character);
                       }}
                     >
-                      <SelectTrigger className="w-full h-16 bg-background/80 text-left">
+                      <SelectTrigger className="w-full h-16 bg-background/80 text-left font-maplestory">
                         <SelectValue placeholder="Select a character to get started">
                           {selectedCharacter ? (
                             <div className="flex items-center gap-4">
@@ -725,9 +726,9 @@ export default function CharacterDashboard() {
                                 <Crown className="w-6 h-6 text-primary" />
                               </div>
                               <div>
-                                <div className="font-medium text-lg">{selectedCharacter.name}</div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Badge variant="outline" className="text-xs">
+                                <div className="font-medium text-lg font-maplestory">{selectedCharacter.name}</div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
+                                  <Badge variant="outline" className="text-xs font-maplestory">
                                     {selectedCharacter.class}
                                   </Badge>
                                   <span>Level {selectedCharacter.level}</span>
@@ -756,12 +757,12 @@ export default function CharacterDashboard() {
                                 )}
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
-                                    <span className="font-medium">{character.name}</span>
-                                    <Badge variant="outline" className="text-xs">
+                                    <span className="font-medium font-maplestory">{character.name}</span>
+                                    <Badge variant="outline" className="text-xs font-maplestory">
                                       {character.class}
                                     </Badge>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="text-xs text-muted-foreground font-maplestory">
                                     Lv.{character.level} • {stats.totalEquipment} items • {stats.pendingStarforce} pending
                                   </div>
                                 </div>
@@ -797,12 +798,12 @@ export default function CharacterDashboard() {
                       {/* Character Stats */}
                       <div className="space-y-4">
                         <div>
-                          <h3 className="text-2xl font-bold text-foreground">{selectedCharacter.name}</h3>
+                          <h3 className="text-2xl font-bold text-foreground font-maplestory">{selectedCharacter.name}</h3>
                           <div className="flex items-center gap-3 mt-1">
-                            <Badge variant="secondary" className="px-3 py-1">
+                            <Badge variant="secondary" className="px-3 py-1 font-maplestory">
                               {selectedCharacter.class}
                             </Badge>
-                            <span className="text-muted-foreground">Level {selectedCharacter.level}</span>
+                            <span className="text-muted-foreground font-maplestory">Level {selectedCharacter.level}</span>
                           </div>
                         </div>
                         
@@ -814,23 +815,23 @@ export default function CharacterDashboard() {
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Target className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium">{stats.totalEquipment}</span>
+                                    <span className="text-sm font-medium font-maplestory">{stats.totalEquipment}</span>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">Equipment</div>
+                                  <div className="text-xs text-muted-foreground font-maplestory">Equipment</div>
                                 </div>
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Calculator className="w-4 h-4 text-orange-500" />
-                                    <span className="text-sm font-medium text-orange-500">{stats.pendingStarforce}</span>
+                                    <span className="text-sm font-medium text-orange-500 font-maplestory">{stats.pendingStarforce}</span>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">Pending</div>
+                                  <div className="text-xs text-muted-foreground font-maplestory">Pending</div>
                                 </div>
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Sparkles className="w-4 h-4 text-green-500" />
-                                    <span className="text-sm font-medium text-green-500">{stats.completionRate}%</span>
+                                    <span className="text-sm font-medium text-green-500 font-maplestory">{stats.completionRate}%</span>
                                   </div>
-                                  <div className="text-xs text-muted-foreground">Progress</div>
+                                  <div className="text-xs text-muted-foreground font-maplestory">Progress</div>
                                 </div>
                               </>
                             );
@@ -850,11 +851,11 @@ export default function CharacterDashboard() {
               {/* Enhanced Equipment Manager - Full Width */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 font-maplestory">
                     <Target className="w-5 h-5 text-primary" />
                     Equipment Management
                   </CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-maplestory">
                     Manage your equipment and StarForce goals with real-time editing
                   </p>
                 </CardHeader>
@@ -878,10 +879,10 @@ export default function CharacterDashboard() {
             <Card>
               <CardContent className="py-16 text-center">
                 <Target className="w-16 h-16 text-muted-foreground mx-auto mb-6" />
-                <h3 className="text-xl font-semibold text-foreground mb-2">
+                <h3 className="text-xl font-semibold text-foreground mb-2 font-maplestory">
                   Select a Character
                 </h3>
-                <p className="text-muted-foreground">
+                <p className="text-muted-foreground font-maplestory">
                   Choose a character from the dropdown above to view their equipment and start planning upgrades.
                 </p>
               </CardContent>
@@ -910,14 +911,14 @@ export default function CharacterDashboard() {
       <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-maplestory">
               <Upload className="w-5 h-5" />
               Import Characters
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block font-maplestory">
                 Character Data
               </label>
               <Textarea
@@ -934,10 +935,11 @@ export default function CharacterDashboard() {
                   setImportDialogOpen(false);
                   setImportText("");
                 }}
+                className="font-maplestory"
               >
                 Cancel
               </Button>
-              <Button onClick={handleImport}>
+              <Button onClick={handleImport} className="font-maplestory">
                 <Upload className="w-4 h-4 mr-2" />
                 Import Characters
               </Button>
@@ -950,14 +952,14 @@ export default function CharacterDashboard() {
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-maplestory">
               <Download className="w-5 h-5" />
               Export Characters
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block font-maplestory">
                 Character Data ({characters.length} character{characters.length !== 1 ? 's' : ''})
               </label>
               <Textarea
@@ -969,14 +971,14 @@ export default function CharacterDashboard() {
             </div>
             
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
+              <h4 className="font-medium text-sm mb-2 flex items-center gap-2 font-maplestory">
                 <Share className="w-4 h-4" />
                 How to Share
               </h4>
-              <p className="text-sm text-muted-foreground mb-3">
+              <p className="text-sm text-muted-foreground mb-3 font-maplestory">
                 Copy the data above and share it with others. They can import it using the Import Characters feature.
               </p>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground font-maplestory">
                 Data size: ~{Math.ceil(exportText.length / 1024)}KB • 
                 Includes: character info, equipment, and StarForce data
               </div>
@@ -986,12 +988,13 @@ export default function CharacterDashboard() {
               <Button
                 variant="outline"
                 onClick={() => setExportDialogOpen(false)}
+                className="font-maplestory"
               >
                 Close
               </Button>
               <Button 
                 onClick={() => copyToClipboard(exportText)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 font-maplestory"
               >
                 <Copy className="w-4 h-4" />
                 {copied ? 'Copied!' : 'Copy to Clipboard'}
