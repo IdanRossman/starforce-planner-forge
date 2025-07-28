@@ -368,353 +368,353 @@ export function EquipmentForm({
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
-            {/* First line: Slot (readonly with icon) */}
-            <FormField
-              control={form.control}
-              name="slot"
-              render={({ field }) => {
-                const SlotIcon = getSlotIcon(field.value);
-                return (
+              {/* First line: Slot (readonly with icon) */}
+              <FormField
+                control={form.control}
+                name="slot"
+                render={({ field }) => {
+                  const SlotIcon = getSlotIcon(field.value);
+                  return (
+                    <FormItem>
+                      <FormLabel>Equipment Slot</FormLabel>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Clear equipment selection when slot changes since equipment might not be valid for new slot
+                          form.setValue('set', '');
+                          setSelectedEquipmentImage('');
+                        }} 
+                        value={field.value}
+                        disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select equipment slot">
+                              {field.value && (
+                                <div className="flex items-center gap-2">
+                                  <SlotIcon className="h-4 w-4" />
+                                  {EQUIPMENT_SLOTS.find(s => s.value === field.value)?.label}
+                                </div>
+                              )}
+                            </SelectValue>
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                           {EQUIPMENT_SLOTS.map((slot) => {
+                             const IconComponent = getSlotIcon(slot.value);
+                             return (
+                               <SelectItem key={slot.value} value={slot.value}>
+                                 <div className="flex items-center gap-2">
+                                   <IconComponent className="h-4 w-4" />
+                                   {slot.label}
+                                   {(slot.value === 'overall' && (currentSlot === 'top' || currentSlot === 'bottom')) && 
+                                     <span className="text-xs text-muted-foreground">(conflicts with top/bottom)</span>
+                                   }
+                                   {((slot.value === 'top' || slot.value === 'bottom') && currentSlot === 'overall') && 
+                                     <span className="text-xs text-muted-foreground">(conflicts with overall)</span>
+                                   }
+                                 </div>
+                               </SelectItem>
+                             );
+                           })}
+                         </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              {/* Second line: Equipment (main selection) */}
+              <FormField
+                control={form.control}
+                name="set"
+                render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Equipment Slot</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        // Clear equipment selection when slot changes since equipment might not be valid for new slot
-                        form.setValue('set', '');
-                        setSelectedEquipmentImage('');
-                      }} 
-                      value={field.value}
-                      disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
-                    >
+                    <FormLabel>Equipment</FormLabel>
+                    <Select onValueChange={(value) => {
+                      field.onChange(value);
+                      // Auto-update tier and level based on equipment selection
+                      const equipData = availableEquipment.find(eq => eq.name === value);
+                      if (equipData) {
+                        form.setValue('tier', equipData.tier);
+                        form.setValue('level', equipData.level);
+                        // Update the image state immediately
+                        setSelectedEquipmentImage(equipData.image);
+                        
+                        // Auto-determine type based on slot
+                        const slot = form.getValues('slot');
+                        if (['weapon', 'secondary', 'emblem'].includes(slot)) {
+                          form.setValue('type', 'weapon');
+                        } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
+                          form.setValue('type', 'armor');
+                        } else {
+                          form.setValue('type', 'accessory');
+                        }
+                        
+                        // Set starforceable based on API data
+                        form.setValue('starforceable', equipData.starforceable);
+                        
+                        // Reset StarForce if not starforceable
+                        if (!equipData.starforceable) {
+                          form.setValue('currentStarForce', 0);
+                          form.setValue('targetStarForce', 0);
+                        } else {
+                          // If starforceable, set target to default for current level and ensure current is valid
+                          const defaultTarget = getDefaultTargetStarForce(equipData.level);
+                          form.setValue('targetStarForce', defaultTarget);
+                          // Ensure current StarForce doesn't exceed the max for this level
+                          const maxStars = getMaxStarForce(equipData.level);
+                          const currentCurrent = form.getValues('currentStarForce');
+                          if (currentCurrent > maxStars) {
+                            form.setValue('currentStarForce', 0);
+                          }
+                        }
+                      }
+                    }} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select equipment slot">
+                          <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"}>
                             {field.value && (
                               <div className="flex items-center gap-2">
-                                <SlotIcon className="h-4 w-4" />
-                                {EQUIPMENT_SLOTS.find(s => s.value === field.value)?.label}
+                                {(() => {
+                                  const selectedEquip = availableEquipment.find(eq => eq.name === field.value);
+                                  return selectedEquip ? (
+                                    <>
+                                      <EquipmentImage 
+                                        src={selectedEquip.image} 
+                                        alt={selectedEquip.name || `Equipment ${selectedEquip.id}`}
+                                        size="sm"
+                                        fallbackIcon={getSlotIcon(selectedSlot)}
+                                      />
+                                      <span>{selectedEquip.name} (Lv.{selectedEquip.level})</span>
+                                    </>
+                                  ) : (
+                                    <span>{field.value}</span>
+                                  );
+                                })()}
                               </div>
                             )}
                           </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                         {EQUIPMENT_SLOTS.map((slot) => {
-                           const IconComponent = getSlotIcon(slot.value);
-                           return (
-                             <SelectItem key={slot.value} value={slot.value}>
-                               <div className="flex items-center gap-2">
-                                 <IconComponent className="h-4 w-4" />
-                                 {slot.label}
-                                 {(slot.value === 'overall' && (currentSlot === 'top' || currentSlot === 'bottom')) && 
-                                   <span className="text-xs text-muted-foreground">(conflicts with top/bottom)</span>
-                                 }
-                                 {((slot.value === 'top' || slot.value === 'bottom') && currentSlot === 'overall') && 
-                                   <span className="text-xs text-muted-foreground">(conflicts with overall)</span>
-                                 }
-                               </div>
-                             </SelectItem>
-                           );
-                         })}
-                       </SelectContent>
+                        {equipmentLoading ? (
+                          <div className="p-2 text-center text-sm text-muted-foreground">
+                            Loading equipment...
+                          </div>
+                        ) : availableEquipment.length === 0 ? (
+                          <div className="p-2 text-center text-sm text-muted-foreground">
+                            No equipment found for this slot
+                          </div>
+                        ) : (
+                          <>
+                            {equipmentSource === 'local' && (
+                              <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b">
+                                ⚠️ Using local data (API unavailable)
+                              </div>
+                            )}
+                            {availableEquipment.map((equipment) => (
+                          <SelectItem key={equipment.id} value={equipment.name || equipment.id}>
+                            <div className="flex items-center gap-2">
+                              <EquipmentImage 
+                                src={equipment.image} 
+                                alt={equipment.name || `Equipment ${equipment.id}`}
+                                size="md"
+                                fallbackIcon={getSlotIcon(selectedSlot)}
+                              />
+                              <span>
+                                {equipment.name && equipment.name.trim() 
+                                  ? `${equipment.name} (Lv.${equipment.level})`
+                                  : `Level ${equipment.level} Equipment`
+                                }
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                          </>
+                        )}
+                      </SelectContent>
                     </Select>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
 
-            {/* Second line: Equipment (main selection) */}
-            <FormField
-              control={form.control}
-              name="set"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Equipment</FormLabel>
-                  <Select onValueChange={(value) => {
-                    field.onChange(value);
-                    // Auto-update tier and level based on equipment selection
-                    const equipData = availableEquipment.find(eq => eq.name === value);
-                    if (equipData) {
-                      form.setValue('tier', equipData.tier);
-                      form.setValue('level', equipData.level);
-                      // Update the image state immediately
-                      setSelectedEquipmentImage(equipData.image);
-                      
-                      // Auto-determine type based on slot
-                      const slot = form.getValues('slot');
-                      if (['weapon', 'secondary', 'emblem'].includes(slot)) {
-                        form.setValue('type', 'weapon');
-                      } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
-                        form.setValue('type', 'armor');
-                      } else {
-                        form.setValue('type', 'accessory');
-                      }
-                      
-                      // Set starforceable based on API data
-                      form.setValue('starforceable', equipData.starforceable);
-                      
-                      // Reset StarForce if not starforceable
-                      if (!equipData.starforceable) {
-                        form.setValue('currentStarForce', 0);
-                        form.setValue('targetStarForce', 0);
-                      } else {
-                        // If starforceable, set target to default for current level and ensure current is valid
-                        const defaultTarget = getDefaultTargetStarForce(equipData.level);
-                        form.setValue('targetStarForce', defaultTarget);
-                        // Ensure current StarForce doesn't exceed the max for this level
-                        const maxStars = getMaxStarForce(equipData.level);
-                        const currentCurrent = form.getValues('currentStarForce');
-                        if (currentCurrent > maxStars) {
-                          form.setValue('currentStarForce', 0);
+              {/* Third line: Potential Tier */}
+              <FormField
+                control={form.control}
+                name="tier"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Potential Tier</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        if (value === "none") {
+                          field.onChange(null);
+                        } else {
+                          field.onChange(value);
                         }
-                      }
-                    }
-                  }} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"}>
-                          {field.value && (
-                            <div className="flex items-center gap-2">
-                              {(() => {
-                                const selectedEquip = availableEquipment.find(eq => eq.name === field.value);
-                                return selectedEquip ? (
-                                  <>
-                                    <EquipmentImage 
-                                      src={selectedEquip.image} 
-                                      alt={selectedEquip.name || `Equipment ${selectedEquip.id}`}
-                                      size="sm"
-                                      fallbackIcon={getSlotIcon(selectedSlot)}
-                                    />
-                                    <span>{selectedEquip.name} (Lv.{selectedEquip.level})</span>
-                                  </>
-                                ) : (
-                                  <span>{field.value}</span>
-                                );
-                              })()}
-                            </div>
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {equipmentLoading ? (
-                        <div className="p-2 text-center text-sm text-muted-foreground">
-                          Loading equipment...
-                        </div>
-                      ) : availableEquipment.length === 0 ? (
-                        <div className="p-2 text-center text-sm text-muted-foreground">
-                          No equipment found for this slot
-                        </div>
-                      ) : (
-                        <>
-                          {equipmentSource === 'local' && (
-                            <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b">
-                              ⚠️ Using local data (API unavailable)
-                            </div>
-                          )}
-                          {availableEquipment.map((equipment) => (
-                        <SelectItem key={equipment.id} value={equipment.name || equipment.id}>
-                          <div className="flex items-center gap-2">
-                            <EquipmentImage 
-                              src={equipment.image} 
-                              alt={equipment.name || `Equipment ${equipment.id}`}
-                              size="md"
-                              fallbackIcon={getSlotIcon(selectedSlot)}
-                            />
-                            <span>
-                              {equipment.name && equipment.name.trim() 
-                                ? `${equipment.name} (Lv.${equipment.level})`
-                                : `Level ${equipment.level} Equipment`
-                              }
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                        </>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Third line: Potential Tier */}
-            <FormField
-              control={form.control}
-              name="tier"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Potential Tier</FormLabel>
-                  <Select 
-                    onValueChange={(value) => {
-                      if (value === "none") {
-                        field.onChange(null);
-                      } else {
-                        field.onChange(value);
-                      }
-                    }} 
-                    value={field.value ?? "none"}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select potential tier (optional)" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">No Potential</SelectItem>
-                      {EQUIPMENT_TIERS.map((tier) => (
-                        <SelectItem key={tier.value} value={tier.value}>
-                          {tier.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* StarForce Toggle */}
-            <FormField
-              control={form.control}
-              name="starforceable"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      StarForce Enhancement
-                    </FormLabel>
-                    <div className="text-sm text-muted-foreground">
-                      Can this equipment be enhanced with StarForce?
-                    </div>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-
-            {/* StarForce Sliders - Only show if starforceable */}
-            {watchStarforceable && (
-              <>
-              {/* Auto-adjustment notification */}
-              {(autoAdjusted.current || autoAdjusted.target) && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                    <span className="text-sm text-blue-700 dark:text-blue-300">
-                      Star force values auto-adjusted to match level {watchLevel} limits
-                      {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
-                       autoAdjusted.current ? ' (current)' : ' (target)'}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-            <FormField
-              control={form.control}
-              name="currentStarForce"
-              render={({ field }) => {
-                const maxStars = getMaxStarForce(watchLevel);
-                return (
-                  <FormItem>
-                    <FormLabel>Current StarForce: {field.value}★</FormLabel>
-                    <div className="space-y-3">
+                      }} 
+                      value={field.value ?? "none"}
+                    >
                       <FormControl>
-                        <Slider
-                          min={0}
-                          max={maxStars}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
-                          className="w-full"
-                        />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select potential tier (optional)" />
+                        </SelectTrigger>
                       </FormControl>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Direct input:</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={maxStars}
-                          value={field.value}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 0;
-                            const clampedValue = Math.min(Math.max(value, 0), maxStars);
-                            field.onChange(clampedValue);
-                          }}
-                          className="w-20 text-center"
-                        />
-                        <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
-                      </div>
-                    </div>
+                      <SelectContent>
+                        <SelectItem value="none">No Potential</SelectItem>
+                        {EQUIPMENT_TIERS.map((tier) => (
+                          <SelectItem key={tier.value} value={tier.value}>
+                            {tier.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
-                );
-              }}
-            />
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="targetStarForce"
-              render={({ field }) => {
-                const maxStars = getMaxStarForce(watchLevel);
-                return (
-                  <FormItem>
-                    <FormLabel>Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
-                    <div className="space-y-3">
-                      <FormControl>
-                        <Slider
-                          min={0}
-                          max={maxStars}
-                          step={1}
-                          value={[field.value]}
-                          onValueChange={(value) => field.onChange(value[0])}
-                          className="w-full"
-                        />
-                      </FormControl>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-muted-foreground">Direct input:</span>
-                        <Input
-                          type="number"
-                          min={0}
-                          max={maxStars}
-                          value={field.value}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value) || 0;
-                            const clampedValue = Math.min(Math.max(value, 0), maxStars);
-                            field.onChange(clampedValue);
-                          }}
-                          className="w-20 text-center"
-                        />
-                        <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+              {/* StarForce Toggle */}
+              <FormField
+                control={form.control}
+                name="starforceable"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">
+                        StarForce Enhancement
+                      </FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Can this equipment be enhanced with StarForce?
                       </div>
                     </div>
-                    <FormMessage />
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
-                );
-              }}
-            />
-              </>
-            )}
+                )}
+              />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">
-                {isEditing ? 'Update' : 'Add'} Equipment
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
-  );
-}
+              {/* StarForce Sliders - Only show if starforceable */}
+              {watchStarforceable && (
+                <>
+                {/* Auto-adjustment notification */}
+                {(autoAdjusted.current || autoAdjusted.target) && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="text-sm text-blue-700 dark:text-blue-300">
+                        Star force values auto-adjusted to match level {watchLevel} limits
+                        {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
+                         autoAdjusted.current ? ' (current)' : ' (target)'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+              <FormField
+                control={form.control}
+                name="currentStarForce"
+                render={({ field }) => {
+                  const maxStars = getMaxStarForce(watchLevel);
+                  return (
+                    <FormItem>
+                      <FormLabel>Current StarForce: {field.value}★</FormLabel>
+                      <div className="space-y-3">
+                        <FormControl>
+                          <Slider
+                            min={0}
+                            max={maxStars}
+                            step={1}
+                            value={[field.value]}
+                            onValueChange={(value) => field.onChange(value[0])}
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Direct input:</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={maxStars}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const clampedValue = Math.min(Math.max(value, 0), maxStars);
+                              field.onChange(clampedValue);
+                            }}
+                            className="w-20 text-center"
+                          />
+                          <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+
+              <FormField
+                control={form.control}
+                name="targetStarForce"
+                render={({ field }) => {
+                  const maxStars = getMaxStarForce(watchLevel);
+                  return (
+                    <FormItem>
+                      <FormLabel>Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
+                      <div className="space-y-3">
+                        <FormControl>
+                          <Slider
+                            min={0}
+                            max={maxStars}
+                            step={1}
+                            value={[field.value]}
+                            onValueChange={(value) => field.onChange(value[0])}
+                            className="w-full"
+                          />
+                        </FormControl>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">Direct input:</span>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={maxStars}
+                            value={field.value}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value) || 0;
+                              const clampedValue = Math.min(Math.max(value, 0), maxStars);
+                              field.onChange(clampedValue);
+                            }}
+                            className="w-20 text-center"
+                          />
+                          <span className="text-sm text-muted-foreground">/ {maxStars}★</span>
+                        </div>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+                </>
+              )}
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  {isEditing ? 'Update' : 'Add'} Equipment
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    );
+  }

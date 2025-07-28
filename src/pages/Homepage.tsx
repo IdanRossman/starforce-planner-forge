@@ -4,6 +4,7 @@ import { Character, Equipment } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GameAssistant } from "@/components/GameAssistant";
 import { 
   Star, 
   Users, 
@@ -271,6 +272,11 @@ export default function Homepage() {
           </div>
         </div>
       </div>
+      
+      {/* Game Assistant */}
+      <GameAssistant 
+        pageContext="homepage"
+      />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { QuickStarForceTable } from "@/components/QuickStarForceTable";
 import { EquipmentForm } from "@/components/EquipmentForm";
+import { GameAssistant } from "@/components/GameAssistant";
 import { getAllTemplates, getTemplateEquipmentForJob } from "@/services/templateService";
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { 
@@ -569,6 +570,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      <GameAssistant pageContext="quick-planning" />
     </div>
   );
 }

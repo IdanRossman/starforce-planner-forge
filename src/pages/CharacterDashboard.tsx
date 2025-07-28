@@ -5,6 +5,7 @@ import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterCard } from "@/components/CharacterCard";
 import { CharacterForm } from "@/components/CharacterForm";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
+import { GameAssistant } from "@/components/GameAssistant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -999,6 +1000,8 @@ export default function CharacterDashboard() {
           </div>
         </DialogContent>
       </Dialog>
+      
+      <GameAssistant pageContext="character-dashboard" />
     </div>
   );
 }
