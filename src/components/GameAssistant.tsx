@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AssistantTip, AssistantCharacter, GameAssistantProps } from '@/types';
 import { getCharacterForPage, globalTimingConfig } from '@/data/assistantCharacters';
 
 // Session storage key for tracking if user has been greeted
 const GREETING_SESSION_KEY = 'starforce-planner-greeted';
+// Session storage key for tips disabled state
+const TIPS_DISABLED_SESSION_KEY = 'starforce-planner-tips-disabled';
 
 export function GameAssistant({ 
   character, 
@@ -21,6 +24,9 @@ export function GameAssistant({
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [typewriterComplete, setTypewriterComplete] = useState(false);
+  const [tipsDisabled, setTipsDisabled] = useState(() => {
+    return sessionStorage.getItem(TIPS_DISABLED_SESSION_KEY) === 'true';
+  });
 
   // Get character from centralized config if not provided
   const activeCharacter = character || getCharacterForPage(pageContext);
@@ -55,6 +61,17 @@ export function GameAssistant({
       onClose?.();
     }, 400);
   }, [onClose]);
+
+  const toggleTips = useCallback(() => {
+    const newDisabledState = !tipsDisabled;
+    setTipsDisabled(newDisabledState);
+    sessionStorage.setItem(TIPS_DISABLED_SESSION_KEY, newDisabledState.toString());
+    
+    if (newDisabledState) {
+      // If disabling tips, close the component
+      handleClose();
+    }
+  }, [tipsDisabled, handleClose]);
 
   const showNextTip = useCallback(() => {
     if (contextualTips.length === 0) return;
@@ -95,7 +112,7 @@ export function GameAssistant({
   // Show the tip after component mounts with slide + fade-in effect
   // In debug mode, tip persists; otherwise it cycles through tips
   useEffect(() => {
-    if (contextualTips.length === 0) return;
+    if (contextualTips.length === 0 || tipsDisabled) return;
     
     const initialDelay = debugMode ? globalTimingConfig.debugInitialDelay : globalTimingConfig.initialDelay;
     
@@ -175,7 +192,7 @@ export function GameAssistant({
       clearTimeout(timer);
       if (tipCycleTimer) clearTimeout(tipCycleTimer);
     };
-  }, [debugMode, handleClose, contextualTips]); // Removed timing props from dependencies
+  }, [debugMode, handleClose, contextualTips, tipsDisabled]); // Added tipsDisabled to dependencies
 
   // Typewriter effect
   useEffect(() => {
@@ -206,6 +223,11 @@ export function GameAssistant({
       setTypewriterComplete(true);
     }
   };
+
+  // If tips are disabled, don't show anything - respect the user's choice for this session
+  if (tipsDisabled) {
+    return null;
+  }
 
   if (!isVisible || !currentTip) {
     return null;
@@ -323,6 +345,31 @@ export function GameAssistant({
                 NEXT TIP
               </Button>
             )}
+          </div>
+          
+          {/* Tips Toggle positioned at bottom right of blue border */}
+          <div className="absolute bottom-1 right-1">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="tips-toggle"
+                checked={!tipsDisabled}
+                onCheckedChange={(checked) => {
+                  if (!checked) {
+                    toggleTips();
+                  }
+                }}
+                className="h-4 w-4 border-2 border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 data-[state=checked]:border-white"
+                style={{
+                  backgroundColor: tipsDisabled ? 'transparent' : 'white'
+                }}
+              />
+              <label 
+                htmlFor="tips-toggle" 
+                className="text-xs text-white font-medium cursor-pointer select-none drop-shadow-sm"
+              >
+                Disable tips
+              </label>
+            </div>
           </div>
         </CardContent>
       </Card>
