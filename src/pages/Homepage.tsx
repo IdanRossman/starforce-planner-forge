@@ -4,6 +4,7 @@ import { Character, Equipment } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { GameAssistant } from "@/components/GameAssistant";
 import { 
   Star, 
   Users, 
@@ -60,12 +61,12 @@ export default function Homepage() {
                 <Star className="w-12 h-12 text-yellow-400" />
                 <Zap className="w-6 h-6 text-blue-400 absolute -top-1 -right-1" />
               </div>
-              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-purple-500 to-secondary bg-clip-text text-transparent font-maplestory">
                 StarForce Planner
               </h1>
             </div>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto font-maplestory">
               Plan, track, and optimize your MapleStory StarForce journey across all your characters. 
               Save your progress, calculate costs with spares management, and achieve your enhancement goals with confidence.
             </p>
@@ -76,25 +77,25 @@ export default function Homepage() {
                 <div className="bg-card/50 backdrop-blur-sm rounded-lg p-4 border border-border/50">
                   <div className="flex items-center gap-2 mb-1">
                     <Users className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">Characters</span>
+                    <span className="text-sm text-muted-foreground font-maplestory">Characters</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{totalCharacters}</p>
+                  <p className="text-2xl font-bold text-foreground font-maplestory">{totalCharacters}</p>
                 </div>
                 
                 <div className="bg-card/50 backdrop-blur-sm rounded-lg p-4 border border-border/50">
                   <div className="flex items-center gap-2 mb-1">
                     <Target className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">Equipment</span>
+                    <span className="text-sm text-muted-foreground font-maplestory">Equipment</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{totalEquipment}</p>
+                  <p className="text-2xl font-bold text-foreground font-maplestory">{totalEquipment}</p>
                 </div>
                 
                 <div className="bg-card/50 backdrop-blur-sm rounded-lg p-4 border border-border/50">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="w-4 h-4 text-primary" />
-                    <span className="text-sm text-muted-foreground">Progress</span>
+                    <span className="text-sm text-muted-foreground font-maplestory">Progress</span>
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{Math.round(completionRate)}%</p>
+                  <p className="text-2xl font-bold text-foreground font-maplestory">{Math.round(completionRate)}%</p>
                 </div>
               </div>
             )}
@@ -103,13 +104,13 @@ export default function Homepage() {
             <div className="text-center">
               <Button 
                 size="lg" 
-                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 mb-3"
+                className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white shadow-lg hover:shadow-xl transition-all duration-200 mb-3 font-maplestory"
                 onClick={() => navigate('/characters')}
               >
                 <Users className="w-5 h-5 mr-2" />
                 {totalCharacters > 0 ? 'Manage Characters' : 'Get Started'}
               </Button>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground font-maplestory">
                 Or explore all planning options below
               </p>
             </div>
@@ -121,8 +122,8 @@ export default function Homepage() {
       <div className="px-6 py-16 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Choose Your Planning Style</h2>
-            <p className="text-lg text-muted-foreground">
+            <h2 className="text-3xl font-bold mb-4 font-maplestory">Choose Your Planning Style</h2>
+            <p className="text-lg text-muted-foreground font-maplestory">
               Quick calculations for immediate needs or comprehensive character management for long-term success
             </p>
           </div>
@@ -133,39 +134,39 @@ export default function Homepage() {
               <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                   <Calculator className="w-6 h-6 text-orange-400" />
-                  <CardTitle className="text-xl">Quick Calculator</CardTitle>
-                  <Badge variant="secondary" className="bg-orange-500/20 text-orange-600 border-orange-500/30">
+                  <CardTitle className="text-xl font-maplestory">Quick Calculator</CardTitle>
+                  <Badge variant="secondary" className="bg-orange-500/20 text-orange-600 border-orange-500/30 font-maplestory">
                     Session-based
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-maplestory">
                   Perfect for instant calculations and one-time planning sessions
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Zap className="w-4 h-4 text-orange-400" />
                     Instant calculations with preset templates
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Calculator className="w-4 h-4 text-orange-400" />
                     StarForce event support (5/10/15, 30% off)
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Target className="w-4 h-4 text-orange-400" />
                     Basic cost and success rate calculations
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
                     <span className="w-4 h-4 text-center">✗</span>
                     No data persistence or character tracking
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
                     <span className="w-4 h-4 text-center">✗</span>
                     No spare management or advanced planning
                   </div>
                 </div>
-                <Button variant="outline" className="w-full border-orange-500/30 hover:bg-orange-500/10" onClick={() => navigate('/quick-planning')}>
+                <Button variant="outline" className="w-full border-orange-500/30 hover:bg-orange-500/10 font-maplestory" onClick={() => navigate('/quick-planning')}>
                   Try Quick Calculator
                 </Button>
               </CardContent>
@@ -174,46 +175,46 @@ export default function Homepage() {
             {/* Character Management */}
             <Card className="bg-gradient-to-br from-primary/10 to-purple-600/10 border-primary/20 ring-2 ring-primary/30 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-primary to-purple-600 text-white px-4 py-1">
+                <Badge className="bg-gradient-to-r from-primary to-purple-600 text-white px-4 py-1 font-maplestory">
                   Recommended
                 </Badge>
               </div>
               <CardHeader className="pt-8">
                 <div className="flex items-center gap-3 mb-2">
                   <Users className="w-6 h-6 text-primary" />
-                  <CardTitle className="text-xl">Character Management</CardTitle>
-                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                  <CardTitle className="text-xl font-maplestory">Character Management</CardTitle>
+                  <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30 font-maplestory">
                     Long-term
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">
-                  Comprehensive planning with persistent data and advanced features
+                <p className="text-sm text-muted-foreground font-maplestory">
+                  Ideal planning with persistent data and advanced features
                 </p>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Shield className="w-4 h-4 text-primary" />
                     Persistent data storage across sessions
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Crown className="w-4 h-4 text-primary" />
                     Multiple character tracking and management
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <Coins className="w-4 h-4 text-primary" />
                     <strong>Advanced spare management and cost planning</strong>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <BarChart3 className="w-4 h-4 text-primary" />
                     Progress tracking and completion analytics
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm font-maplestory">
                     <TrendingUp className="w-4 h-4 text-primary" />
                     Long-term planning with equipment progression
                   </div>
                 </div>
-                <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90" onClick={() => navigate('/characters')}>
+                <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 font-maplestory" onClick={() => navigate('/characters')}>
                   {totalCharacters > 0 ? 'Manage Characters' : 'Start Long-Term Planning'}
                 </Button>
               </CardContent>
@@ -225,17 +226,17 @@ export default function Homepage() {
       {/* Features Section */}
       <div className="px-6 pb-16">
         <div className="max-w-6xl mx-auto">
-          <h3 className="text-2xl font-bold text-center mb-8">Why Choose StarForce Planner?</h3>
+          <h3 className="text-2xl font-bold text-center mb-8 font-maplestory">Why Choose StarForce Planner?</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card className="bg-gradient-to-br from-card to-card/80">
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <Coins className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-lg">Advanced Cost Planning</CardTitle>
+                  <CardTitle className="text-lg font-maplestory">Advanced Cost Planning</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-maplestory">
                   Detailed spare management, boom probability calculations, and comprehensive cost breakdowns with event support for optimal meso planning.
                 </p>
               </CardContent>
@@ -245,11 +246,11 @@ export default function Homepage() {
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-lg">Persistent Progress</CardTitle>
+                  <CardTitle className="text-lg font-maplestory">Persistent Progress</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-maplestory">
                   All your character data, equipment, and spare counts are automatically saved locally. Pick up exactly where you left off.
                 </p>
               </CardContent>
@@ -259,11 +260,11 @@ export default function Homepage() {
               <CardHeader>
                 <div className="flex items-center gap-2 mb-2">
                   <Crown className="w-5 h-5 text-primary" />
-                  <CardTitle className="text-lg">Smart Organization</CardTitle>
+                  <CardTitle className="text-lg font-maplestory">Smart Organization</CardTitle>
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground font-maplestory">
                   Visual equipment grids, multi-character management, and intelligent progress tracking across your entire MapleStory account.
                 </p>
               </CardContent>
@@ -271,6 +272,11 @@ export default function Homepage() {
           </div>
         </div>
       </div>
+      
+      {/* Game Assistant */}
+      <GameAssistant 
+        pageContext="homepage"
+      />
     </div>
   );
 }

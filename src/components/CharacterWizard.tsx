@@ -297,11 +297,11 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader className="pb-4">
-          <DialogTitle className="flex items-center gap-2 text-xl">
+          <DialogTitle className="flex items-center gap-2 text-xl font-maplestory">
             <Wand2 className="w-5 h-5 text-primary" />
             Create New Character
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="font-maplestory">
             Follow the steps below to set up your character with the perfect equipment template
           </DialogDescription>
         </DialogHeader>
@@ -331,7 +331,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                       <StepIcon className="w-4 h-4" />
                     )}
                   </div>
-                  <span className={`ml-2 text-sm font-medium ${
+                  <span className={`ml-2 text-sm font-medium font-maplestory ${
                     isActive ? 'text-foreground' : 'text-muted-foreground'
                   }`}>
                     {step.title}
@@ -360,8 +360,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             <div className="space-y-6">
               <div className="text-center pb-4">
                 <Crown className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Character Information</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg font-semibold font-maplestory">Character Information</h3>
+                <p className="text-sm text-muted-foreground font-maplestory">
                   Tell us about your MapleStory character
                 </p>
               </div>
@@ -389,7 +389,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                     
                     {/* Character Info Display */}
                     <div className="text-center space-y-2">
-                      <h4 className="text-lg font-bold text-foreground">{wizardData.name}</h4>
+                      <h4 className="text-lg font-bold text-foreground font-maplestory">{wizardData.name}</h4>
                       {wizardData.class && (
                         <div className="flex items-center justify-center gap-2">
                           {(() => {
@@ -400,14 +400,14 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                                 <div className={`w-6 h-6 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                   <JobIcon className="w-4 h-4 text-white" />
                                 </div>
-                                <span className="font-medium">{wizardData.class}</span>
+                                <span className="font-medium font-maplestory">{wizardData.class}</span>
                               </>
                             );
                           })()}
                         </div>
                       )}
-                      <p className="text-sm text-muted-foreground">Level {wizardData.level}</p>
-                      <div className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400">
+                      <p className="text-sm text-muted-foreground font-maplestory">Level {wizardData.level}</p>
+                      <div className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full dark:bg-green-900/30 dark:text-green-400 font-maplestory">
                         ✓ Found on MapleRanks
                       </div>
                     </div>
@@ -417,7 +417,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                   <div className="lg:col-span-2 space-y-6">
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="character-name">Character Name</Label>
+                        <Label htmlFor="character-name" className="font-maplestory">Character Name</Label>
                         <div className="flex gap-2">
                           <Input
                             id="character-name"
@@ -429,7 +429,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                               setMapleRanksStatus('idle');
                               setMapleRanksMessage('');
                             }}
-                            className="h-12"
+                            className="h-12 font-maplestory"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
                                 searchMapleRanks();
@@ -453,7 +453,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="character-level">Level</Label>
+                          <Label htmlFor="character-level" className="font-maplestory">Level</Label>
                           <Input
                             id="character-level"
                             type="number"
@@ -461,17 +461,17 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                             max="300"
                             value={wizardData.level}
                             onChange={(e) => setWizardData(prev => ({ ...prev, level: parseInt(e.target.value) || 200 }))}
-                            className="h-12"
+                            className="h-12 font-maplestory"
                           />
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="character-class">Job Class</Label>
+                          <Label htmlFor="character-class" className="font-maplestory">Job Class</Label>
                           <Select 
                             value={wizardData.class} 
                             onValueChange={(value) => setWizardData(prev => ({ ...prev, class: value }))}
                           >
-                            <SelectTrigger className="h-12">
+                            <SelectTrigger className="h-12 font-maplestory">
                               <SelectValue placeholder="Select your job class">
                                 {wizardData.class && (
                                   <div className="flex items-center gap-2">
@@ -486,13 +486,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                                           <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                             <JobIcon className="w-3 h-3 text-white" />
                                           </div>
-                                          <span>{wizardData.class}</span>
+                                          <span className="font-maplestory">{wizardData.class}</span>
                                           {jobCategory && classSubcategory && (
                                             <div className="flex gap-1">
-                                              <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                              <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text} font-maplestory`}>
                                                 {jobCategory}
                                               </span>
-                                              <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                              <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground font-maplestory">
                                                 {classSubcategory}
                                               </span>
                                             </div>
@@ -507,7 +507,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                             <SelectContent className="max-h-[300px]">
                               {Object.entries(ORGANIZED_CLASSES).map(([category, categoryData]) => (
                                 <div key={category}>
-                                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b">
+                                  <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b font-maplestory">
                                     {categoryData.name}
                                   </div>
                                   {categoryData.classes.map((jobClass) => {
@@ -519,7 +519,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                                           <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                             <JobIcon className="w-2.5 h-2.5 text-white" />
                                           </div>
-                                          <span>{jobClass}</span>
+                                          <span className="font-maplestory">{jobClass}</span>
                                         </div>
                                       </SelectItem>
                                     );
@@ -541,11 +541,11 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                       }`}>
                         {mapleRanksStatus === 'not-found' && <XCircle className="w-4 h-4" />}
                         {mapleRanksStatus === 'error' && <AlertCircle className="w-4 h-4" />}
-                        <span>{mapleRanksMessage}</span>
+                        <span className="font-maplestory">{mapleRanksMessage}</span>
                       </div>
                     )}
                     
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-maplestory">
                       💡 You can update the character details or search for a different character
                     </p>
                   </div>
@@ -553,7 +553,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
                   <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="character-name">Character Name</Label>
+                    <Label htmlFor="character-name" className="font-maplestory">Character Name</Label>
                     <div className="flex gap-2">
                       <Input
                         id="character-name"
@@ -565,7 +565,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                           setMapleRanksStatus('idle');
                           setMapleRanksMessage('');
                         }}
-                        className="h-12"
+                        className="h-12 font-maplestory"
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             searchMapleRanks();
@@ -598,17 +598,17 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                         {mapleRanksStatus === 'found' && <CheckCircle2 className="w-4 h-4" />}
                         {mapleRanksStatus === 'not-found' && <XCircle className="w-4 h-4" />}
                         {mapleRanksStatus === 'error' && <AlertCircle className="w-4 h-4" />}
-                        <span>{mapleRanksMessage}</span>
+                        <span className="font-maplestory">{mapleRanksMessage}</span>
                       </div>
                     )}
                     
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground font-maplestory">
                       💡 Click search to auto-fill character data from MapleRanks (beta feature)
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="character-level">Level</Label>
+                    <Label htmlFor="character-level" className="font-maplestory">Level</Label>
                     <Input
                       id="character-level"
                       type="number"
@@ -616,17 +616,17 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                       max="300"
                       value={wizardData.level}
                       onChange={(e) => setWizardData(prev => ({ ...prev, level: parseInt(e.target.value) || 200 }))}
-                      className="h-12"
+                      className="h-12 font-maplestory"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="character-class">Job Class</Label>
+                    <Label htmlFor="character-class" className="font-maplestory">Job Class</Label>
                     <Select 
                       value={wizardData.class} 
                       onValueChange={(value) => setWizardData(prev => ({ ...prev, class: value }))}
                     >
-                      <SelectTrigger className="h-12">
+                      <SelectTrigger className="h-12 font-maplestory">
                         <SelectValue placeholder="Select your job class">
                           {wizardData.class && (
                             <div className="flex items-center gap-2">
@@ -641,13 +641,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                                     <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                       <JobIcon className="w-3 h-3 text-white" />
                                     </div>
-                                    <span>{wizardData.class}</span>
+                                    <span className="font-maplestory">{wizardData.class}</span>
                                     {jobCategory && classSubcategory && (
                                       <div className="flex gap-1">
-                                        <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
+                                        <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text} font-maplestory`}>
                                           {jobCategory}
                                         </span>
-                                        <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                        <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground font-maplestory">
                                           {classSubcategory}
                                         </span>
                                       </div>
@@ -662,7 +662,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                       <SelectContent className="max-h-[300px]">
                         {Object.entries(ORGANIZED_CLASSES).map(([category, categoryData]) => (
                           <div key={category}>
-                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b">
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-b font-maplestory">
                               {categoryData.name}
                             </div>
                             {categoryData.classes.map((jobClass) => {
@@ -674,7 +674,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                                     <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
                                       <JobIcon className="w-2.5 h-2.5 text-white" />
                                     </div>
-                                    <span>{jobClass}</span>
+                                    <span className="font-maplestory">{jobClass}</span>
                                   </div>
                                 </SelectItem>
                               );
@@ -694,8 +694,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             <div className="space-y-6">
               <div className="text-center pb-4">
                 <Sparkles className="w-12 h-12 text-primary mx-auto mb-3" />
-                <h3 className="text-lg font-semibold">Choose Template & Review Equipment</h3>
-                <p className="text-sm text-muted-foreground">
+                <h3 className="text-lg font-semibold font-maplestory">Choose Template & Review Equipment</h3>
+                <p className="text-sm text-muted-foreground font-maplestory">
                   Select a template to see equipment preview, or start fresh and add your own gear
                 </p>
               </div>
@@ -703,12 +703,12 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
               <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
                 {/* Template Selection */}
                 <div className="xl:col-span-2 space-y-4">
-                  <h4 className="font-medium text-foreground">Equipment Template</h4>
+                  <h4 className="font-medium text-foreground font-maplestory">Equipment Template</h4>
                   
                   {isLoading ? (
                     <div className="text-center py-8">
                       <div className="w-8 h-8 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto mb-3"></div>
-                      <p className="text-sm text-muted-foreground">Loading templates...</p>
+                      <p className="text-sm text-muted-foreground font-maplestory">Loading templates...</p>
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-[400px] overflow-y-auto">
@@ -727,8 +727,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                               <Target className="w-4 h-4 text-muted-foreground" />
                             </div>
                             <div className="flex-1">
-                              <h5 className="font-medium text-sm">Start Fresh</h5>
-                              <p className="text-xs text-muted-foreground">
+                              <h5 className="font-medium text-sm font-maplestory">Start Fresh</h5>
+                              <p className="text-xs text-muted-foreground font-maplestory">
                                 Begin with no equipment
                               </p>
                             </div>
@@ -757,13 +757,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h5 className="font-medium text-sm">{template.name}</h5>
-                                  <Badge variant="outline" className="text-xs px-1 py-0">
+                                  <h5 className="font-medium text-sm font-maplestory">{template.name}</h5>
+                                  <Badge variant="outline" className="text-xs px-1 py-0 font-maplestory">
                                     Template
                                   </Badge>
                                 </div>
                                 {template.description && (
-                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                  <p className="text-xs text-muted-foreground line-clamp-2 font-maplestory">
                                     {template.description}
                                   </p>
                                 )}
@@ -782,9 +782,9 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                 {/* Equipment Preview */}
                 <div className="xl:col-span-3 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium text-foreground">Equipment Preview</h4>
+                    <h4 className="font-medium text-foreground font-maplestory">Equipment Preview</h4>
                     {wizardData.equipment.length > 0 && (
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-xs font-maplestory">
                         {wizardData.equipment.length} items
                       </Badge>
                     )}
@@ -801,8 +801,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                     ) : (
                       <div className="flex flex-col items-center justify-center h-[450px] text-center text-muted-foreground">
                         <Target className="w-12 h-12 mb-3" />
-                        <h5 className="font-medium mb-2">No Equipment Selected</h5>
-                        <p className="text-sm max-w-xs">
+                        <h5 className="font-medium mb-2 font-maplestory">No Equipment Selected</h5>
+                        <p className="text-sm max-w-xs font-maplestory">
                           {wizardData.selectedTemplate 
                             ? "Loading template equipment..." 
                             : "Choose a template to see equipment, or start fresh and add your own gear"
@@ -813,7 +813,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                   </div>
 
                   {wizardData.equipment.length > 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
+                    <p className="text-xs text-muted-foreground text-center font-maplestory">
                       💡 Click any equipment slot to edit details or add new items
                     </p>
                   )}
@@ -826,8 +826,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
           {currentStep === 2 && (
             <div className="space-y-6 text-center">
               <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold">Character Ready!</h3>
-              <p className="text-muted-foreground max-w-md mx-auto">
+              <h3 className="text-xl font-semibold font-maplestory">Character Ready!</h3>
+              <p className="text-muted-foreground max-w-md mx-auto font-maplestory">
                 Your character <strong>{wizardData.name}</strong> ({wizardData.class}) has been configured with{' '}
                 {wizardData.equipment.length} equipment item{wizardData.equipment.length !== 1 ? 's' : ''}.
               </p>
@@ -835,7 +835,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
               {/* Template Info */}
               {wizardData.selectedTemplate && (
                 <div className="bg-muted/30 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground font-maplestory">
                     Template: <strong>{wizardData.selectedTemplate.name}</strong>
                   </p>
                 </div>
@@ -846,15 +846,15 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                 <div className="bg-green-100 border border-green-300 rounded-lg p-4 max-w-md mx-auto dark:bg-green-900/20 dark:border-green-800">
                   <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-400">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-sm font-medium">MapleRanks Data Found</span>
+                    <span className="text-sm font-medium font-maplestory">MapleRanks Data Found</span>
                   </div>
-                  <p className="text-xs text-green-700 dark:text-green-500 mt-1">
+                  <p className="text-xs text-green-700 dark:text-green-500 mt-1 font-maplestory">
                     Character data was automatically loaded from MapleRanks
                   </p>
                 </div>
               )}
 
-              <div className="text-sm text-muted-foreground space-y-1">
+              <div className="text-sm text-muted-foreground space-y-1 font-maplestory">
                 <p>✓ Character data {mapleRanksStatus === 'found' ? 'imported from MapleRanks' : 'entered manually'}</p>
                 <p>✓ You can start planning StarForce upgrades immediately</p>
                 <p>✓ All data is saved locally and can be exported/shared</p>
@@ -870,13 +870,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             variant="outline"
             onClick={prevStep}
             disabled={currentStep === 0}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 font-maplestory"
           >
             <ArrowLeft className="w-4 h-4" />
             Previous
           </Button>
 
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground font-maplestory">
             Step {currentStep + 1} of {WIZARD_STEPS.length}
           </div>
 
@@ -884,7 +884,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             <Button
               onClick={nextStep}
               disabled={!canProceed() || isLoading}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 font-maplestory"
             >
               Next
               <ArrowRight className="w-4 h-4" />
@@ -893,7 +893,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             <Button
               onClick={handleComplete}
               disabled={!canProceed()}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 font-maplestory"
             >
               <CheckCircle className="w-4 h-4" />
               Create Character

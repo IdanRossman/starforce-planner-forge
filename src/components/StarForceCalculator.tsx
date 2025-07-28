@@ -1234,7 +1234,7 @@ export function StarForceCalculator({
         {/* Settings Panel */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 font-maplestory">
               <Settings className="w-5 h-5 text-primary" />
               Enhancement Settings
             </CardTitle>
@@ -1242,7 +1242,7 @@ export function StarForceCalculator({
           <CardContent className="space-y-4">
             {/* Event Settings */}
             <div>
-              <h4 className="font-medium text-sm mb-3 text-muted-foreground">Enhancement Settings</h4>
+              <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">Enhancement Settings</h4>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="flex items-center gap-3">
                   <Switch
@@ -1250,7 +1250,7 @@ export function StarForceCalculator({
                     checked={enhancedSettings.discountEvent}
                     onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
                   />
-                  <Label htmlFor="discount-event" className="text-sm cursor-pointer">30% Off Event</Label>
+                  <Label htmlFor="discount-event" className="text-sm cursor-pointer font-maplestory">30% Off Event</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
@@ -1258,7 +1258,7 @@ export function StarForceCalculator({
                     checked={enhancedSettings.starcatchEvent}
                     onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
                   />
-                  <Label htmlFor="starcatch-event" className="text-sm cursor-pointer">5/10/15 Event</Label>
+                  <Label htmlFor="starcatch-event" className="text-sm cursor-pointer font-maplestory">5/10/15 Event</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
@@ -1266,7 +1266,7 @@ export function StarForceCalculator({
                     checked={enhancedSettings.starCatching !== false}
                     onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starCatching: checked }))}
                   />
-                  <Label htmlFor="star-catching" className="text-sm cursor-pointer">Star Catching</Label>
+                  <Label htmlFor="star-catching" className="text-sm cursor-pointer font-maplestory">Star Catching</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
@@ -1274,7 +1274,7 @@ export function StarForceCalculator({
                     checked={enhancedSettings.isInteractive}
                     onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
                   />
-                  <Label htmlFor="interactive-server" className="text-sm cursor-pointer">Interactive Server</Label>
+                  <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory">Interactive Server</Label>
                 </div>
               </div>
             </div>
@@ -1291,10 +1291,10 @@ export function StarForceCalculator({
                     <Eye className="w-4 h-4 text-blue-500" />
                   </div>
                   <div>
-                    <div className="font-semibold text-sm">
+                    <div className="font-semibold text-sm font-maplestory">
                       {aggregateStats.includedCount} of {aggregateStats.totalCount} items included
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground font-maplestory">
                       {aggregateStats.totalCount - aggregateStats.includedCount > 0 
                         ? `${aggregateStats.totalCount - aggregateStats.includedCount} items excluded from calculations`
                         : 'All items included in calculations'
@@ -1322,8 +1322,8 @@ export function StarForceCalculator({
                   <Calculator className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400">{formatMesos(aggregateStats.totalExpectedCost)}</div>
-                  <div className="text-sm text-muted-foreground">Average Cost</div>
+                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost)}</div>
+                  <div className="text-sm text-muted-foreground font-maplestory">Average Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -1336,8 +1336,8 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400">{formatMesos(aggregateStats.totalExpectedCost * 0.85)}</div>
-                  <div className="text-sm text-muted-foreground">Median Cost</div>
+                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost * 0.85)}</div>
+                  <div className="text-sm text-muted-foreground font-maplestory">Median Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -1350,8 +1350,8 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400">{formatMesos(aggregateStats.totalP75Cost)}</div>
-                  <div className="text-sm text-muted-foreground">75th % Cost</div>
+                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos(aggregateStats.totalP75Cost)}</div>
+                  <div className="text-sm text-muted-foreground font-maplestory">75th % Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -1364,8 +1364,8 @@ export function StarForceCalculator({
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400">{formatMesos(aggregateStats.totalActualCost)}</div>
-                  <div className="text-sm text-muted-foreground">Actual Cost</div>
+                  <div className="text-2xl font-bold text-blue-400 font-maplestory">{formatMesos(aggregateStats.totalActualCost)}</div>
+                  <div className="text-sm text-muted-foreground font-maplestory">Actual Cost</div>
                 </div>
               </div>
             </CardContent>
@@ -1389,21 +1389,21 @@ export function StarForceCalculator({
                   <div className="text-center">
                     {aggregateStats.overallLuck ? (
                       <div 
-                        className={`text-2xl font-bold ${aggregateStats.overallLuck.color} flex flex-col cursor-help`}
+                        className={`text-2xl font-bold ${aggregateStats.overallLuck.color} flex flex-col cursor-help font-maplestory`}
                         title={aggregateStats.overallLuck.shareMessage}
                       >
                         <span>{aggregateStats.overallLuck.percentile.toFixed(1)}%</span>
                         <span className="text-sm opacity-75">{aggregateStats.overallLuck.rating}</span>
                       </div>
                     ) : (
-                      <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col`}>
+                      <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col font-maplestory`}>
                         <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
                         {getLuckText(aggregateStats.overallLuckPercentage) && (
                           <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
                         )}
                       </div>
                     )}
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground font-maplestory">
                       {aggregateStats.overallLuck ? 'Spending Percentile' : 'vs Average Cost'}
                     </div>
                   </div>
@@ -1418,11 +1418,11 @@ export function StarForceCalculator({
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 font-maplestory">
                 <Calculator className="w-5 h-5 text-primary" />
                 StarForce Planning Table
               </CardTitle>
-              <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2">
+              <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
                 <Download className="w-4 h-4" />
                 Export
               </Button>
@@ -1432,14 +1432,14 @@ export function StarForceCalculator({
             {isCalculating ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <h3 className="font-semibold text-lg mb-2">Calculating StarForce Costs</h3>
-                <p className="text-muted-foreground">Using enhanced simulation algorithms...</p>
+                <h3 className="font-semibold text-lg mb-2 font-maplestory">Calculating StarForce Costs</h3>
+                <p className="text-muted-foreground font-maplestory">Using enhanced simulation algorithms...</p>
               </div>
             ) : calculationError ? (
               <div className="text-center py-8">
                 <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2 text-red-600">Calculation Error</h3>
-                <p className="text-muted-foreground mb-4">{calculationError}</p>
+                <h3 className="font-semibold text-lg mb-2 text-red-600 font-maplestory">Calculation Error</h3>
+                <p className="text-muted-foreground mb-4 font-maplestory">{calculationError}</p>
                 <Button 
                   variant="outline" 
                   onClick={() => {
@@ -1447,6 +1447,7 @@ export function StarForceCalculator({
                     // Trigger recalculation by updating a dependency
                     setIsCalculating(true);
                   }}
+                  className="font-maplestory"
                 >
                   Try Again
                 </Button>
@@ -1454,8 +1455,8 @@ export function StarForceCalculator({
             ) : equipmentCalculations.length === 0 ? (
               <div className="text-center py-8">
                 <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2">No Pending Equipment</h3>
-                <p className="text-muted-foreground">All equipment is already at target StarForce levels!</p>
+                <h3 className="font-semibold text-lg mb-2 font-maplestory">No Pending Equipment</h3>
+                <p className="text-muted-foreground font-maplestory">All equipment is already at target StarForce levels!</p>
               </div>
             ) : (
               <div className="space-y-2 max-h-[600px] overflow-y-auto">
@@ -1465,7 +1466,7 @@ export function StarForceCalculator({
                       <TableHead>
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('name')}
                         >
                           <span className="flex items-center gap-1">
@@ -1477,7 +1478,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('currentStarForce')}
                         >
                           <span className="flex items-center gap-1">
@@ -1489,7 +1490,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('targetStarForce')}
                         >
                           <span className="flex items-center gap-1">
@@ -1498,15 +1499,15 @@ export function StarForceCalculator({
                           </span>
                         </Button>
                       </TableHead>
-                      <TableHead className="text-center">Safeguard</TableHead>
-                      <TableHead className="text-center">Spares</TableHead>
+                      <TableHead className="text-center font-maplestory">Safeguard</TableHead>
+                      <TableHead className="text-center font-maplestory">Spares</TableHead>
                       {enhancedSettings.isInteractive && (
-                        <TableHead className="text-center">Spare Price</TableHead>
+                        <TableHead className="text-center font-maplestory">Spare Price</TableHead>
                       )}
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + expected spare costs" : "Expected enhancement cost only"}>
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('averageCost')}
                         >
                           <span className="flex items-center gap-1">
@@ -1518,7 +1519,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + median spare costs" : "Median enhancement cost only"}>
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('medianCost')}
                         >
                           <span className="flex items-center gap-1">
@@ -1530,7 +1531,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + 75th percentile spare costs" : "75th percentile enhancement cost only"}>
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('p75Cost')}
                         >
                           <span className="flex items-center gap-1">
@@ -1542,7 +1543,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('averageBooms')}
                         >
                           <span className="flex items-center gap-1">
@@ -1554,7 +1555,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('medianBooms')}
                         >
                           <span className="flex items-center gap-1">
@@ -1566,7 +1567,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('p75Booms')}
                         >
                           <span className="flex items-center gap-1">
@@ -1578,7 +1579,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('actualCost')}
                         >
                           <span className="flex items-center gap-1">
@@ -1590,7 +1591,7 @@ export function StarForceCalculator({
                       <TableHead className="text-center">
                         <Button
                           variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent"
+                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
                           onClick={() => handleSort('luckPercentage')}
                         >
                           <span className="flex items-center gap-1">
@@ -1599,7 +1600,7 @@ export function StarForceCalculator({
                           </span>
                         </Button>
                       </TableHead>
-                      <TableHead className="text-center">Actions</TableHead>
+                      <TableHead className="text-center font-maplestory">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1613,7 +1614,7 @@ export function StarForceCalculator({
                           className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
                         >
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center">
                               <div className="relative flex-shrink-0">
                                 <EquipmentImage
                                   src={calc.equipment.image}
@@ -1628,14 +1629,6 @@ export function StarForceCalculator({
                                     <EyeOff className="w-3 h-3 text-white" />
                                   </div>
                                 )}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-medium text-sm truncate" title={calc.equipment.name}>
-                                  {calc.equipment.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {calc.equipment.slot}
-                                </span>
                               </div>
                             </div>
                           </TableCell>
@@ -2070,12 +2063,12 @@ export function StarForceCalculator({
     <Card className="bg-gradient-to-br from-card to-card/80">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-lg">
+          <div className="flex items-center gap-2 text-lg font-maplestory">
             <Calculator className="w-5 h-5 text-primary" />
             Advanced StarForce Calculator
           </div>
           {calculation && (
-            <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2">
+            <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
               <Download className="w-4 h-4" />
               Export
             </Button>
@@ -2087,7 +2080,7 @@ export function StarForceCalculator({
         <form onSubmit={handleCalculate} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-muted-foreground">Item Level</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Item Level</label>
               <Input
                 type="number"
                 value={itemLevel}
@@ -2099,7 +2092,7 @@ export function StarForceCalculator({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Item Type</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Item Type</label>
               <Select value={itemType} onValueChange={setItemType}>
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -2113,7 +2106,7 @@ export function StarForceCalculator({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-muted-foreground">Current Star</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Current Star</label>
               <Input
                 type="number"
                 value={currentLevel}
@@ -2125,7 +2118,7 @@ export function StarForceCalculator({
               />
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Target Star</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Target Star</label>
               <Input
                 type="number"
                 value={targetLevel}
@@ -2139,7 +2132,7 @@ export function StarForceCalculator({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm text-muted-foreground">Server</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Server</label>
               <Select value={server} onValueChange={setServer}>
                 <SelectTrigger className="mt-1">
                   <SelectValue />
@@ -2152,7 +2145,7 @@ export function StarForceCalculator({
               </Select>
             </div>
             <div>
-              <label className="text-sm text-muted-foreground">Event Type</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Event Type</label>
               <Select value={eventType} onValueChange={setEventType}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="No Event" />
@@ -2170,11 +2163,11 @@ export function StarForceCalculator({
           <div className="flex items-center gap-4">
             <div className="flex items-center space-x-2">
               <Checkbox checked={safeguard} onCheckedChange={(checked) => setSafeguard(checked === true)} />
-              <label className="text-sm text-muted-foreground">Safeguard (15-16★)</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Safeguard (15-16★)</label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox checked={starCatching} onCheckedChange={(checked) => setStarCatching(checked === true)} />
-              <label className="text-sm text-muted-foreground">Star Catching (+5%)</label>
+              <label className="text-sm text-muted-foreground font-maplestory">Star Catching (+5%)</label>
             </div>
           </div>
           
@@ -2185,17 +2178,17 @@ export function StarForceCalculator({
               onCheckedChange={(checked) => setYohiTapEvent(checked === true)} 
             />
             <div className="flex-1">
-              <label className="text-sm font-medium text-yellow-400">
+              <label className="text-sm font-medium text-yellow-400 font-maplestory">
                 🍀 Yohi Tap Event (Legendary Luck)
               </label>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground font-maplestory">
                 Activates Yohi's supernatural luck - halves all costs and spares needed!
               </p>
             </div>
           </div>
           
           <div>
-            <label className="text-sm text-muted-foreground">Cost Discount (%)</label>
+            <label className="text-sm text-muted-foreground font-maplestory">Cost Discount (%)</label>
             <Input
               type="number"
               value={costDiscount}
@@ -2206,7 +2199,7 @@ export function StarForceCalculator({
               className="mt-1"
             />
           </div>
-          <Button type="submit" className="w-full">
+          <Button type="submit" className="w-full font-maplestory">
             Calculate Enhancement Cost
           </Button>
         </form>
@@ -2214,7 +2207,7 @@ export function StarForceCalculator({
         {/* Results */}
         {calculation && (
           <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-3 font-maplestory">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="details">Star Details</TabsTrigger>
               <TabsTrigger value="recommendations">Tips</TabsTrigger>
@@ -2224,13 +2217,13 @@ export function StarForceCalculator({
               {/* Current Progress */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Current Level</span>
-                  <Badge className={`${dangerLevel.bg} ${dangerLevel.color} border-current/30`}>
+                  <span className="text-sm text-muted-foreground font-maplestory">Current Level</span>
+                  <Badge className={`${dangerLevel.bg} ${dangerLevel.color} border-current/30 font-maplestory`}>
                     ★{calculation.currentLevel}
                   </Badge>
                 </div>
                 <Progress value={progress} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-xs text-muted-foreground font-maplestory">
                   <span>★0</span>
                   <span>★23 (Max)</span>
                 </div>
@@ -2239,20 +2232,20 @@ export function StarForceCalculator({
               {/* Target and Stats */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
                     <Target className="w-4 h-4" />
                     Target Level
                   </div>
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="text-2xl font-bold text-primary font-maplestory">
                     ★{calculation.targetLevel}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
                     <TrendingUp className="w-4 h-4" />
                     Success Rate
                   </div>
-                  <div className="text-2xl font-bold text-green-400">
+                  <div className="text-2xl font-bold text-green-400 font-maplestory">
                     {calculation.successRate}%
                   </div>
                 </div>
@@ -2260,29 +2253,29 @@ export function StarForceCalculator({
 
               {/* Cost Breakdown */}
               <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-semibold text-foreground">Cost Analysis</h4>
+                <h4 className="font-semibold text-foreground font-maplestory">Cost Analysis</h4>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Per Attempt (Avg)</span>
-                    <p className="font-semibold text-yellow-400">
+                    <span className="text-muted-foreground font-maplestory">Per Attempt (Avg)</span>
+                    <p className="font-semibold text-yellow-400 font-maplestory">
                       {formatMesos(calculation.costPerAttempt)} mesos
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Average Total</span>
-                    <p className="font-semibold text-yellow-400">
+                    <span className="text-muted-foreground font-maplestory">Average Total</span>
+                    <p className="font-semibold text-yellow-400 font-maplestory">
                       {formatMesos(calculation.averageCost)} mesos
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Median Total</span>
-                    <p className="font-semibold text-orange-400">
+                    <span className="text-muted-foreground font-maplestory">Median Total</span>
+                    <p className="font-semibold text-orange-400 font-maplestory">
                       {formatMesos(calculation.medianCost)} mesos
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">75th % Total</span>
-                    <p className="font-semibold text-red-400">
+                    <span className="text-muted-foreground font-maplestory">75th % Total</span>
+                    <p className="font-semibold text-red-400 font-maplestory">
                       {formatMesos(calculation.p75Cost)} mesos
                     </p>
                   </div>
@@ -2292,8 +2285,8 @@ export function StarForceCalculator({
                     <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
                       <AlertTriangle className="w-4 h-4 text-red-400" />
                       <div className="text-sm">
-                        <span className="text-muted-foreground">Average Booms: </span>
-                        <span className="font-semibold text-red-400">
+                        <span className="text-muted-foreground font-maplestory">Average Booms: </span>
+                        <span className="font-semibold text-red-400 font-maplestory">
                           {calculation.averageBooms.toFixed(1)}
                         </span>
                       </div>
@@ -2301,8 +2294,8 @@ export function StarForceCalculator({
                     <div className="flex items-center gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded">
                       <AlertTriangle className="w-4 h-4 text-orange-400" />
                       <div className="text-sm">
-                        <span className="text-muted-foreground">Median Booms: </span>
-                        <span className="font-semibold text-orange-400">
+                        <span className="text-muted-foreground font-maplestory">Median Booms: </span>
+                        <span className="font-semibold text-orange-400 font-maplestory">
                           {calculation.medianBooms.toFixed(1)}
                         </span>
                       </div>
@@ -2310,8 +2303,8 @@ export function StarForceCalculator({
                     <div className="flex items-center gap-2 p-2 bg-red-600/10 border border-red-600/20 rounded">
                       <AlertTriangle className="w-4 h-4 text-red-600" />
                       <div className="text-sm">
-                        <span className="text-muted-foreground">75th % Booms: </span>
-                        <span className="font-semibold text-red-600">
+                        <span className="text-muted-foreground font-maplestory">75th % Booms: </span>
+                        <span className="font-semibold text-red-600 font-maplestory">
                           {calculation.p75Booms.toFixed(1)}
                         </span>
                       </div>
@@ -2323,23 +2316,23 @@ export function StarForceCalculator({
 
             <TabsContent value="details" className="space-y-4">
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground">Per-Star Analysis</h4>
+                <h4 className="font-semibold text-foreground font-maplestory">Per-Star Analysis</h4>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Star</TableHead>
-                      <TableHead>Success Rate</TableHead>
-                      <TableHead>Boom Rate</TableHead>
-                      <TableHead>Cost</TableHead>
+                      <TableHead className="font-maplestory">Star</TableHead>
+                      <TableHead className="font-maplestory">Success Rate</TableHead>
+                      <TableHead className="font-maplestory">Boom Rate</TableHead>
+                      <TableHead className="font-maplestory">Cost</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {calculation.perStarStats.map((stat) => (
                       <TableRow key={stat.star}>
-                        <TableCell className="font-medium">★{stat.star}</TableCell>
-                        <TableCell className="text-green-400">{stat.successRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-red-400">{stat.boomRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-yellow-400">{formatMesos(stat.cost)}</TableCell>
+                        <TableCell className="font-medium font-maplestory">★{stat.star}</TableCell>
+                        <TableCell className="text-green-400 font-maplestory">{stat.successRate.toFixed(1)}%</TableCell>
+                        <TableCell className="text-red-400 font-maplestory">{stat.boomRate.toFixed(1)}%</TableCell>
+                        <TableCell className="text-yellow-400 font-maplestory">{formatMesos(stat.cost)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -2349,20 +2342,20 @@ export function StarForceCalculator({
 
             <TabsContent value="recommendations" className="space-y-4">
               <div className="space-y-2">
-                <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <h4 className="font-semibold text-foreground flex items-center gap-2 font-maplestory">
                   <Info className="w-4 h-4" />
                   Enhancement Tips
                 </h4>
                 {calculation.recommendations.length > 0 ? (
                   <div className="space-y-2">
                     {calculation.recommendations.map((rec, index) => (
-                      <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded text-sm">
+                      <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded text-sm font-maplestory">
                         {rec}
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-muted-foreground text-sm font-maplestory">
                     Your enhancement strategy looks good! Proceed with caution and good luck!
                   </p>
                 )}

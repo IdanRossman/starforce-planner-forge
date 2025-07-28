@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { GameAssistant } from "@/components/GameAssistant";
 
 const NotFound = () => {
   const location = useLocation();
@@ -20,6 +21,8 @@ const NotFound = () => {
           Return to Home
         </a>
       </div>
+      
+      <GameAssistant pageContext="not-found" />
     </div>
   );
 };
