@@ -426,13 +426,40 @@ export function EquipmentForm({
     // Calculate the actual transferred star amount (source target - 1 for penalty)
     const transferredStarAmount = Math.max(0, sourceEquipment.targetStarForce - 1);
     
+    // Ensure we have the correct image for the target equipment
+    const targetImage = targetEquipment.image || availableEquipment.find(eq => eq.id === targetEquipment.id)?.image || '';
+    
+    // Determine the correct specific slot for the target equipment
+    // If target has a generic slot (pendant, ring), find an available specific slot
+    let targetSlot: EquipmentSlot = targetEquipment.slot;
+    const sourceSlot = sourceEquipment.slot;
+    
+    // Handle multi-slot types (rings, pendants) - check the string value of the slot
+    const targetSlotString = targetEquipment.slot as string;
+    if (targetSlotString === 'pendant' || targetSlotString === 'ring') {
+      // Find an available specific slot for this type
+      const possibleSlots: EquipmentSlot[] = targetSlotString === 'pendant' 
+        ? ['pendant1', 'pendant2'] 
+        : ['ring1', 'ring2', 'ring3', 'ring4'];
+      
+      // Find first available slot or use the source slot if it's the same type
+      const availableSlot = possibleSlots.find(slot => {
+        const existing = existingEquipment?.find(eq => eq.slot === slot && eq.id !== sourceEquipment.id);
+        return !existing;
+      });
+      
+      targetSlot = availableSlot || sourceSlot; // Fallback to source slot if no available slot found
+    }
+    
     // Create the updated target equipment with transferred stars
     const updatedTargetEquipment: Equipment = {
       ...targetEquipment,
+      slot: targetSlot, // Use the determined specific slot
       currentStarForce: targetCurrentStars,
       targetStarForce: targetTargetStars,
       transferredFrom: sourceEquipment.id, // Mark as transfer target
       transferredStars: transferredStarAmount, // Track the actual transferred star amount as minimum
+      image: targetImage, // Explicitly ensure the image is preserved
     };
 
     // Create the source equipment for the table (with transfer indicator)
