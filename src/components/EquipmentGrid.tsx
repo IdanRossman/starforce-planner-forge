@@ -121,34 +121,21 @@ const getSlotIcon = (slot: string) => {
 
 // Component to handle equipment display with image state
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  
-  // Reset state when equipment changes
-  useEffect(() => {
-    setImageLoaded(false);
-    setImageError(false);
-  }, [equipment.id]);
-
-  const hasValidImage = equipment.image && !imageError;
+  const [hasImage, setHasImage] = useState(false);
   
   return (
     <div className="space-y-2">
-      {hasValidImage ? (
+      {equipment.image ? (
         // Image-centered layout: image with centered StarForce below
         <div className="flex flex-col items-center justify-center space-y-1">
-          <div className="relative">
-            {!imageLoaded && (
-              <div className="w-12 h-12 bg-gray-100 rounded animate-pulse" />
-            )}
-            <img
-              src={equipment.image}
-              alt={equipment.name || equipment.set || "Equipment"}
-              className={`w-12 h-12 object-contain rounded shrink-0 ${imageLoaded ? 'block' : 'hidden'}`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-            />
-          </div>
+          <EquipmentImage
+            src={equipment.image}
+            alt={equipment.name || equipment.set || "Equipment"}
+            size="lg"
+            fallbackIcon={() => getSlotIcon(slot)}
+            onImageStatusChange={setHasImage}
+            className="shrink-0"
+          />
           {/* StarForce display - centered below image */}
           {equipment.starforceable && (
             <div className="flex items-center justify-center gap-0.5 text-xs">
@@ -168,7 +155,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           )}
         </div>
       ) : (
-        // Text layout: no image or image failed to load, show equipment details with slot icon
+        // Text layout: no image, show equipment details with slot icon
         <div className="space-y-2">
           <div className="flex items-start gap-2">
             <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded shrink-0">
@@ -217,11 +204,11 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
     } else {
       // If an item exists, prioritize target equipment over source equipment
       // Target equipment: has transferredFrom (it's receiving stars)
-      // Source equipment: has isTransferSource (it will be destroyed)
+      // Source equipment: has transferredTo (it will be destroyed)
       const isCurrentItemTarget = !!item.transferredFrom;
       const isExistingItemTarget = !!existingItem.transferredFrom;
-      const isCurrentItemSource = !!item.isTransferSource;
-      const isExistingItemSource = !!existingItem.isTransferSource;
+      const isCurrentItemSource = !!item.transferredTo;
+      const isExistingItemSource = !!existingItem.transferredTo;
       
       if (isCurrentItemTarget && isExistingItemSource) {
         // Current item is target, existing is source -> replace with target
