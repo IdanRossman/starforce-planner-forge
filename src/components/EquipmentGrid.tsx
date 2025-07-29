@@ -207,8 +207,34 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
 };
 
 export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator }: EquipmentGridProps) {
+  // Create equipment mapping, prioritizing target equipment over source equipment for display
   const equipmentBySlot = equipment.reduce((acc, item) => {
-    acc[item.slot] = item;
+    const existingItem = acc[item.slot];
+    
+    // If no item exists for this slot, add it
+    if (!existingItem) {
+      acc[item.slot] = item;
+    } else {
+      // If an item exists, prioritize target equipment over source equipment
+      // Target equipment: has transferredFrom (it's receiving stars)
+      // Source equipment: has isTransferSource (it will be destroyed)
+      const isCurrentItemTarget = !!item.transferredFrom;
+      const isExistingItemTarget = !!existingItem.transferredFrom;
+      const isCurrentItemSource = !!item.isTransferSource;
+      const isExistingItemSource = !!existingItem.isTransferSource;
+      
+      if (isCurrentItemTarget && isExistingItemSource) {
+        // Current item is target, existing is source -> replace with target
+        acc[item.slot] = item;
+      } else if (isExistingItemTarget && isCurrentItemSource) {
+        // Existing item is target, current is source -> keep existing target
+        // Do nothing, keep existing
+      } else {
+        // Neither has transfer flags or both have same flags -> use the later one (current behavior)
+        acc[item.slot] = item;
+      }
+    }
+    
     return acc;
   }, {} as Record<EquipmentSlot, Equipment>);
 

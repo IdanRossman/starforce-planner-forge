@@ -1,10 +1,87 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Character, Equipment } from "@/types"
+import { 
+  Sword, 
+  Shield, 
+  Crown, 
+  Shirt, 
+  Footprints,
+  Hand,
+  Glasses,
+  CircleDot,
+  Heart,
+  Gem,
+  Badge,
+  Eye,
+  Circle,
+  Square,
+  ArrowRight,
+  ArrowLeft
+} from 'lucide-react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+// Helper function to get slot icon component
+export const getSlotIcon = (slotValue: string) => {
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    weapon: Sword,
+    secondary: Shield,
+    emblem: Badge,
+    hat: Crown,
+    top: Shirt,
+    bottom: Square,
+    overall: Shirt,
+    shoes: Footprints,
+    gloves: Hand,
+    cape: Square,
+    belt: Circle,
+    shoulder: Square,
+    face: Glasses,
+    eye: Eye,
+    earring: CircleDot,
+    ring1: Circle,
+    ring2: Circle,
+    ring3: Circle,
+    ring4: Circle,
+    pendant1: Gem,
+    pendant2: Gem,
+    pocket: Square,
+    heart: Heart,
+    badge: Badge,
+    medal: Badge,
+  };
+  return iconMap[slotValue] || Square;
+};
+
+// Helper function to get transfer direction icon for equipment
+export const getTransferIcon = (equipment: Equipment): React.ComponentType<{ className?: string }> | null => {
+  if (equipment.transferredTo) {
+    return ArrowRight; // Arrow pointing right (transferred TO something)
+  }
+  if (equipment.transferredFrom) {
+    return ArrowLeft; // Arrow pointing left (transferred FROM something)
+  }
+  return null;
+};
+
+// Helper function to check if equipment was involved in a transfer
+export const isTransferEquipment = (equipment: Equipment): boolean => {
+  return !!(equipment.transferredTo || equipment.transferredFrom);
+};
+
+// Helper function to get transfer tooltip text
+export const getTransferTooltip = (equipment: Equipment): string => {
+  if (equipment.transferredTo) {
+    return `StarForce transferred to another equipment (${equipment.transferredTo})`;
+  }
+  if (equipment.transferredFrom) {
+    return `StarForce transferred from another equipment (${equipment.transferredFrom})`;
+  }
+  return '';
+};
 
 // Helper function to get max star force based on equipment level
 export const getMaxStarForce = (level: number): number => {

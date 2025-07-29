@@ -21,6 +21,11 @@ export interface Equipment {
   starforceable: boolean;
   image?: string; // Path to equipment image
   actualCost?: number; // Actual cost paid by user for tracking luck
+  transferredFrom?: string; // ID of equipment that was transferred from (for transfer targets)
+  transferredTo?: string; // ID of equipment that was transferred to (for transfer sources)
+  transferredStars?: number; // Number of stars transferred to this equipment (minimum current stars)
+  isTransferSource?: boolean; // Flag indicating this equipment will be destroyed after transfer
+  transferTargetId?: string; // ID of the target equipment for transfer source
 }
 
 export interface EquipmentWithCharacter extends Equipment {

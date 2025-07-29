@@ -1620,8 +1620,7 @@ export function StarForceCalculator({
                                 <EquipmentImage
                                   src={calc.equipment.image}
                                   alt={calc.equipment.name}
-                                  size="sm"
-                                  className="w-8 h-8"
+                                  size="md"
                                   maxRetries={2}
                                   showFallback={true}
                                 />
