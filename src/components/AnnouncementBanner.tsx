@@ -255,7 +255,7 @@ export function AnnouncementBanner() {
             <div className="relative flex-shrink-0 flex flex-col items-center">
               <div className="w-64 h-80 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/30 to-secondary/30 shadow-2xl ring-4 ring-primary/20 ring-offset-2 ring-offset-card">
                 <img 
-                  src="/alter.jpg" 
+                  src="./alter.jpg" 
                   alt="StarForce Planner" 
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                   style={{
