@@ -755,7 +755,8 @@ export function StarForceCalculator({
     }
 
     calculateEquipmentCosts();
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemSpares, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
 
   // Enhanced luck rating based on percentile tiers
   const getEnhancedLuckRating = (percentile: number) => {
@@ -1619,8 +1620,7 @@ export function StarForceCalculator({
                                 <EquipmentImage
                                   src={calc.equipment.image}
                                   alt={calc.equipment.name}
-                                  size="sm"
-                                  className="w-8 h-8"
+                                  size="md"
                                   maxRetries={2}
                                   showFallback={true}
                                 />

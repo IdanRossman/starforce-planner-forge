@@ -28,7 +28,8 @@ import {
   Minus,
   ChevronUp,
   ChevronDown,
-  DollarSign
+  DollarSign,
+  ArrowRightLeft
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -39,6 +40,7 @@ interface EnhancedEquipmentManagerProps {
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onSaveEquipment?: (equipment: Equipment) => void;
+  onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void;
   selectedJob?: string;
   additionalEquipment?: Equipment[]; // StarForce items beyond standard slots
   onSaveAdditionalEquipment?: (equipment: Equipment) => void;
@@ -57,6 +59,7 @@ export function EnhancedEquipmentManager({
   onUpdateStarforce,
   onUpdateActualCost,
   onSaveEquipment,
+  onTransfer,
   selectedJob,
   additionalEquipment = [],
   onSaveAdditionalEquipment,
@@ -313,8 +316,7 @@ export function EnhancedEquipmentManager({
                                   <EquipmentImage
                                     src={item.image}
                                     alt={item.name}
-                                    size="sm"
-                                    className="w-8 h-8"
+                                    size="md"
                                     maxRetries={2}
                                     showFallback={true}
                                   />
@@ -326,9 +328,31 @@ export function EnhancedEquipmentManager({
                                       {isAdditionalEquipment(item) && (
                                         <Badge variant="secondary" className="text-xs font-maplestory">Additional</Badge>
                                       )}
+                                      {item.transferredFrom && (
+                                        <Badge variant="outline" className="text-xs font-maplestory bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                                          <ArrowRightLeft className="w-3 h-3 mr-1" />
+                                          Transferred
+                                        </Badge>
+                                      )}
+                                      {item.isTransferSource && (
+                                        <Badge variant="outline" className="text-xs font-maplestory bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
+                                          <ArrowRightLeft className="w-3 h-3 mr-1" />
+                                          Source (will be destroyed)
+                                        </Badge>
+                                      )}
                                     </div>
                                     <div className="text-sm text-muted-foreground font-maplestory">
                                       {item.slot || 'No Slot'}
+                                      {item.transferredFrom && item.transferredStars && (
+                                        <span className="ml-2 text-blue-600 dark:text-blue-400">
+                                          • {item.transferredStars}★ transferred
+                                        </span>
+                                      )}
+                                      {item.isTransferSource && (
+                                        <span className="ml-2 text-orange-600 dark:text-orange-400">
+                                          • Will transfer {item.targetStarForce}★ and be destroyed
+                                        </span>
+                                      )}
                                     </div>
                                   </div>
                                 </TableCell>
@@ -344,8 +368,15 @@ export function EnhancedEquipmentManager({
                                     />
                                   ) : (
                                     <div className="flex items-center justify-center gap-1">
-                                      <Star className="w-3 h-3 text-yellow-500" />
-                                      <span className="font-medium font-maplestory">{item.currentStarForce || 0}</span>
+                                      <Star className={`w-3 h-3 ${item.transferredFrom ? 'text-blue-500' : item.isTransferSource ? 'text-orange-500' : 'text-yellow-500'}`} />
+                                      <span className={`font-medium font-maplestory ${item.transferredFrom ? 'text-blue-600 dark:text-blue-400' : item.isTransferSource ? 'text-orange-600 dark:text-orange-400' : ''}`}>
+                                        {item.currentStarForce || 0}
+                                        {item.isTransferSource && (
+                                          <span className="text-xs ml-1 opacity-75">
+                                            (→{item.targetStarForce})
+                                          </span>
+                                        )}
+                                      </span>
                                       {/* Quick Adjust Buttons - Current SF */}
                                       {hoveredRow === item.id && item.starforceable && (
                                         <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -539,8 +570,15 @@ export function EnhancedEquipmentManager({
         equipment={editingEquipment}
         defaultSlot={defaultSlot}
         onSave={handleSaveEquipmentForm}
+        onTransfer={(sourceEquipment, targetEquipment) => {
+          // Handle transfer: source will be removed, target gets the stars with transfer info
+          if (onTransfer) {
+            onTransfer(sourceEquipment, targetEquipment);
+          }
+        }}
         allowSlotEdit={true}
         selectedJob={selectedJob}
+        existingEquipment={allEquipment} // Pass all equipment (regular + additional) for transfer
       />
     </div>
   );

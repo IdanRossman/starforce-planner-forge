@@ -6,6 +6,7 @@ import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types'
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { EquipmentImage } from '@/components/EquipmentImage';
+import { StarForceTransferDialog } from '@/components/StarForceTransferDialog';
 import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
 import { 
   Sword, 
@@ -22,7 +23,8 @@ import {
   Eye,
   Circle,
   Square,
-  Info
+  Info,
+  ArrowRightLeft
 } from 'lucide-react';
 import {
   Dialog,
@@ -32,6 +34,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   Form,
   FormControl,
@@ -49,15 +57,16 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { getMaxStarForce, getDefaultTargetStarForce } from '@/lib/utils';
+import { getMaxStarForce, getDefaultTargetStarForce, getSlotIcon } from '@/lib/utils';
 
-const equipmentSchema = z.object({
+// Create dynamic schema that considers transferred stars
+const createEquipmentSchema = (transferredStars: number = 0) => z.object({
   slot: z.string().min(1, 'Equipment slot is required'),
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
   tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
-  currentStarForce: z.number().min(0),
+  currentStarForce: z.number().min(transferredStars, transferredStars > 0 ? `Current StarForce cannot be below ${transferredStars}★ (transferred stars)` : 'Current StarForce must be at least 0'),
   targetStarForce: z.number().min(0),
   starforceable: z.boolean(),
 }).refine((data) => {
@@ -77,6 +86,9 @@ const equipmentSchema = z.object({
   path: ["targetStarForce"],
 });
 
+// Default schema for new equipment (no transferred stars)
+const equipmentSchema = createEquipmentSchema(0);
+
 // Helper function to determine default starforceable status based on slot
 const getDefaultStarforceable = (slot: string): boolean => {
   const nonStarforceableSlots = ['pocket', 'emblem', 'badge', 'secondary'];
@@ -91,40 +103,11 @@ interface EquipmentFormProps {
   equipment?: Equipment;
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
+  onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void; // New transfer callback
   allowSlotEdit?: boolean;
   selectedJob?: string;
+  existingEquipment?: Equipment[]; // Add this for transfer functionality
 }
-
-const getSlotIcon = (slotValue: string) => {
-  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    weapon: Sword,
-    secondary: Shield,
-    emblem: Badge,
-    hat: Crown,
-    top: Shirt,
-    bottom: Square,
-    overall: Shirt,
-    shoes: Footprints,
-    gloves: Hand,
-    cape: Square,
-    belt: Circle,
-    shoulder: Square,
-    face: Glasses,
-    eye: Eye,
-    earring: CircleDot,
-    ring1: Circle,
-    ring2: Circle,
-    ring3: Circle,
-    ring4: Circle,
-    pendant1: Gem,
-    pendant2: Gem,
-    pocket: Square,
-    heart: Heart,
-    badge: Badge,
-    medal: Badge,
-  };
-  return iconMap[slotValue] || Square;
-};
 
 const EQUIPMENT_SLOTS = [
   { value: 'weapon', label: 'Weapon' },
@@ -173,8 +156,10 @@ export function EquipmentForm({
   equipment, 
   defaultSlot, 
   onSave,
+  onTransfer,
   allowSlotEdit = false,
-  selectedJob
+  selectedJob,
+  existingEquipment = []
 }: EquipmentFormProps) {
   const isEditing = !!equipment;
 
@@ -200,11 +185,40 @@ export function EquipmentForm({
   const [availableEquipment, setAvailableEquipment] = useState<Equipment[]>([]);
   const [equipmentLoading, setEquipmentLoading] = useState<boolean>(false);
   const [equipmentSource, setEquipmentSource] = useState<'api' | 'local'>('local');
+  // Transfer dialog state
+  const [showTransferDialog, setShowTransferDialog] = useState<boolean>(false);
 
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
   const watchSlot = form.watch('slot');
   const watchLevel = form.watch('level');
+  const watchCurrentStars = form.watch('currentStarForce');
+
+  // Real-time validation for transferred stars minimum
+  useEffect(() => {
+    const transferredStars = equipment?.transferredStars || 0;
+    if (transferredStars > 0 && watchCurrentStars < transferredStars) {
+      form.setError('currentStarForce', {
+        type: 'manual',
+        message: `Current StarForce cannot be below ${transferredStars}★ (transferred stars)`
+      });
+    } else {
+      // Clear the error if the value is valid
+      const errors = form.formState.errors;
+      if (errors.currentStarForce?.type === 'manual') {
+        form.clearErrors('currentStarForce');
+      }
+    }
+  }, [watchCurrentStars, equipment?.transferredStars, form]);
+
+  // Update form resolver when equipment changes to use correct schema for transferred stars
+  useEffect(() => {
+    const transferredStars = equipment?.transferredStars || 0;
+    const newSchema = createEquipmentSchema(transferredStars);
+    form.clearErrors(); // Clear any existing validation errors
+    // Note: We can't dynamically change the resolver in react-hook-form
+    // So we'll rely on the UI constraints instead
+  }, [equipment, form]);
 
   // Update StarForce values when level changes
   useEffect(() => {
@@ -317,7 +331,140 @@ export function EquipmentForm({
   // Watch for overall/top/bottom conflicts
   const currentSlot = form.watch('slot');
 
+  // Helper function to check if transfer is possible
+  const canTransfer = (source: Equipment, target: Equipment): boolean => {
+    // Same slot requirement
+    if (source.slot !== target.slot) return false;
+    
+    // Target level must be within 10 levels ABOVE the source (can only transfer up)
+    const levelDiff = target.level - source.level;
+    if (levelDiff < 0 || levelDiff > 10) return false;
+    
+    // Source must have StarForce target and be starforceable
+    if (!source.starforceable || source.targetStarForce === 0) return false;
+    
+    // Target must be starforceable
+    if (!target.starforceable) return false;
+    
+    // Can't transfer to the same equipment (check by ID, name, and level)
+    if (source.id === target.id) return false;
+    if (source.name === target.name && source.level === target.level) return false;
+    
+    return true;
+  };
+
+  // Watch form values for real-time transfer eligibility check
+  const watchedValues = form.watch();
+  
+  // Create current equipment object with form values for transfer dialog
+  // This works for both editing existing equipment and creating new equipment
+  const currentEquipmentForTransfer: Equipment | null = (() => {
+    // Must have required values for transfer
+    if (!watchedValues.level || watchedValues.currentStarForce === undefined || 
+        watchedValues.targetStarForce === undefined || watchedValues.starforceable === undefined) {
+      return null;
+    }
+    
+    // Get equipment name from either existing equipment or selected from dropdown
+    let equipmentName = '';
+    let equipmentImage = '';
+    
+    if (equipment) {
+      // Editing existing equipment
+      equipmentName = equipment.name;
+      equipmentImage = equipment.image || '';
+    } else if (watchedValues.set && availableEquipment.find(eq => eq.name === watchedValues.set)) {
+      // Creating new equipment and user selected from dropdown
+      const selectedEquipment = availableEquipment.find(eq => eq.name === watchedValues.set)!;
+      equipmentName = selectedEquipment.name;
+      equipmentImage = selectedEquipment.image || '';
+    } else {
+      // Creating new equipment without selecting from dropdown - no name yet
+      return null;
+    }
+    
+    // Base equipment from form values
+    const baseEquipment: Equipment = {
+      id: equipment?.id || crypto.randomUUID(), // Use existing ID or generate new one
+      name: equipmentName,
+      slot: watchedValues.slot as EquipmentSlot,
+      type: watchedValues.type as EquipmentType,
+      level: watchedValues.level,
+      currentStarForce: watchedValues.currentStarForce,
+      targetStarForce: watchedValues.targetStarForce,
+      starforceable: watchedValues.starforceable,
+      tier: watchedValues.tier as EquipmentTier | null | undefined,
+      set: watchedValues.set,
+      image: equipmentImage,
+      actualCost: equipment?.actualCost,
+    };
+    
+    // If user selected a different equipment from dropdown, merge that equipment's data
+    if (watchedValues.set && availableEquipment.find(eq => eq.name === watchedValues.set)) {
+      const selectedEquipment = availableEquipment.find(eq => eq.name === watchedValues.set)!;
+      return {
+        ...selectedEquipment,
+        id: baseEquipment.id, // Keep original ID for tracking
+        currentStarForce: watchedValues.currentStarForce,
+        targetStarForce: watchedValues.targetStarForce,
+        starforceable: watchedValues.starforceable,
+      };
+    }
+    
+    // Use base equipment with form values
+    return baseEquipment;
+  })();
+  
+  // Check if the current form values can transfer to any available equipment from API
+  // Works for both editing existing equipment and creating new equipment from dropdown
+  const hasValidTransferCandidates = currentEquipmentForTransfer && availableEquipment.some(eq => {
+    return canTransfer(currentEquipmentForTransfer, eq);
+  });
+
+  // Handle transfer completion
+  const handleTransfer = (sourceEquipment: Equipment, targetEquipment: Equipment, targetCurrentStars: number, targetTargetStars: number) => {
+    // Calculate the actual transferred star amount (source target - 1 for penalty)
+    const transferredStarAmount = Math.max(0, sourceEquipment.targetStarForce - 1);
+    
+    // Create the updated target equipment with transferred stars
+    const updatedTargetEquipment: Equipment = {
+      ...targetEquipment,
+      currentStarForce: targetCurrentStars,
+      targetStarForce: targetTargetStars,
+      transferredFrom: sourceEquipment.id, // Mark as transfer target
+      transferredStars: transferredStarAmount, // Track the actual transferred star amount as minimum
+    };
+
+    // Create the source equipment for the table (with transfer indicator)
+    const sourceForTable: Equipment = {
+      ...sourceEquipment,
+      transferredTo: targetEquipment.id, // Mark as transfer source
+    };
+
+    // Use the transfer callback if available, otherwise use regular save for the target
+    if (onTransfer) {
+      onTransfer(sourceForTable, updatedTargetEquipment);
+    } else {
+      // Fallback: just save the target equipment
+      onSave(updatedTargetEquipment);
+    }
+    onOpenChange(false);
+  };
+
   const onSubmit = (data: EquipmentFormData) => {
+    // Additional validation for transferred stars
+    const transferredStars = equipment?.transferredStars || 0;
+    if (transferredStars > 0 && data.currentStarForce < transferredStars) {
+      form.setError('currentStarForce', {
+        type: 'manual',
+        message: `Current StarForce cannot be below ${transferredStars}★ (transferred stars)`
+      });
+      return;
+    }
+
+    // Reset any manual errors
+    form.clearErrors('currentStarForce');
+
     // Find the selected equipment to get its image, prioritizing tracked state
     const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
     const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
@@ -351,8 +498,9 @@ export function EquipmentForm({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[525px]">
         <DialogHeader>
           <DialogTitle className="font-maplestory">
             {isEditing ? 'Edit Equipment' : 'Add Equipment'}
@@ -623,13 +771,21 @@ export function EquipmentForm({
                 name="currentStarForce"
                 render={({ field }) => {
                   const maxStars = getMaxStarForce(watchLevel);
+                  const minStars = equipment?.transferredStars || 0; // Minimum is transferred stars or 0
                   return (
                     <FormItem>
-                      <FormLabel className="font-maplestory">Current StarForce: {field.value}★</FormLabel>
+                      <FormLabel className="font-maplestory">
+                        Current StarForce: {field.value}★
+                        {minStars > 0 && (
+                          <span className="text-xs text-blue-600 ml-2">
+                            (min: {minStars}★ transferred)
+                          </span>
+                        )}
+                      </FormLabel>
                       <div className="space-y-3">
                         <FormControl>
                           <Slider
-                            min={0}
+                            min={minStars}
                             max={maxStars}
                             step={1}
                             value={[field.value]}
@@ -641,12 +797,12 @@ export function EquipmentForm({
                           <span className="text-sm text-muted-foreground font-maplestory">Direct input:</span>
                           <Input
                             type="number"
-                            min={0}
+                            min={minStars}
                             max={maxStars}
                             value={field.value}
                             onChange={(e) => {
                               const value = parseInt(e.target.value) || 0;
-                              const clampedValue = Math.min(Math.max(value, 0), maxStars);
+                              const clampedValue = Math.min(Math.max(value, minStars), maxStars);
                               field.onChange(clampedValue);
                             }}
                             className="w-20 text-center"
@@ -705,16 +861,54 @@ export function EquipmentForm({
               )}
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-maplestory">
-                  Cancel
-                </Button>
-                <Button type="submit" className="font-maplestory">
-                  {isEditing ? 'Update' : 'Add'} Equipment
-                </Button>
+                <div className="flex justify-between w-full">
+                  <div className="flex flex-col gap-2">
+                    {/* Transfer button - always show when transfer candidates exist, but disable if no callback */}
+                    {currentEquipmentForTransfer && hasValidTransferCandidates && (
+                      <div className="flex flex-col gap-1">
+                        <Button 
+                          type="button" 
+                          variant="secondary" 
+                          onClick={() => onTransfer ? setShowTransferDialog(true) : undefined} 
+                          disabled={!onTransfer}
+                          className="font-maplestory"
+                        >
+                          <ArrowRightLeft className="w-4 h-4 mr-2" />
+                          Transfer StarForce
+                        </Button>
+                        {!onTransfer && (
+                          <span className="text-xs text-muted-foreground font-maplestory">
+                            Available after character creation
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-maplestory">
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="font-maplestory">
+                      {isEditing ? 'Update' : 'Add'} Equipment
+                    </Button>
+                  </div>
+                </div>
               </DialogFooter>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
-    );
-  }
+
+      {/* StarForce Transfer Dialog - only render when transfer callback is available */}
+      {currentEquipmentForTransfer && onTransfer && (
+        <StarForceTransferDialog
+          open={showTransferDialog}
+          onOpenChange={setShowTransferDialog}
+          targetEquipment={currentEquipmentForTransfer!} // Pass current form values as source equipment
+          existingEquipment={availableEquipment} // Use API equipment as transfer targets
+          onTransfer={handleTransfer}
+        />
+      )}
+    </>
+  );
+}

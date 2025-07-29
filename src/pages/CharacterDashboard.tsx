@@ -555,6 +555,73 @@ export default function CharacterDashboard() {
     }
   };
 
+  const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
+    if (!selectedCharacter) return;
+
+    const updatedCharacters = characters.map(char => {
+      if (char.id === selectedCharacter.id) {
+        const baseEquipment = [...char.equipment];
+        
+        // Update source equipment - mark it for destruction but keep for cost calculation
+        const sourceIndex = baseEquipment.findIndex(eq => eq.id === sourceEquipment.id);
+        let updatedEquipment = baseEquipment;
+        
+        if (sourceIndex >= 0) {
+          // Source equipment exists - update it
+          updatedEquipment = baseEquipment.map((eq, index) => 
+            index === sourceIndex ? {
+              ...sourceEquipment,
+              // Keep source equipment visible for cost calculation until transfer stars are reached
+              isTransferSource: true, // New flag to indicate this will be destroyed after reaching target stars
+              transferTargetId: targetEquipment.id
+            } : eq
+          );
+        } else {
+          // Source equipment doesn't exist (new equipment from form) - add it
+          const sourceForTable = {
+            ...sourceEquipment,
+            isTransferSource: true,
+            transferTargetId: targetEquipment.id
+          };
+          updatedEquipment = [...baseEquipment, sourceForTable];
+        }
+        
+        // Add or update target equipment with transfer information
+        const existingTargetIndex = updatedEquipment.findIndex(eq => eq.id === targetEquipment.id);
+        
+        const targetWithTransferInfo = {
+          ...targetEquipment,
+          transferredFrom: sourceEquipment.id,
+          transferredStars: targetEquipment.currentStarForce
+        };
+        
+        if (existingTargetIndex >= 0) {
+          // Update existing target equipment
+          updatedEquipment = updatedEquipment.map((eq, index) => 
+            index === existingTargetIndex ? targetWithTransferInfo : eq
+          );
+        } else {
+          // Add new target equipment
+          updatedEquipment = [...updatedEquipment, targetWithTransferInfo];
+        }
+        
+        return { ...char, equipment: updatedEquipment };
+      }
+      return char;
+    });
+
+    setCharacters(updatedCharacters);
+    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
+    if (updatedCharacter) {
+      setSelectedCharacter(updatedCharacter);
+    }
+
+    toast({
+      title: "Transfer Planned",
+      description: `Transfer planned: ${sourceEquipment.name} (${sourceEquipment.currentStarForce}→${sourceEquipment.targetStarForce}★) will transfer ${targetEquipment.currentStarForce}★ to ${targetEquipment.name}. Both items show costs for planning.`,
+    });
+  };
+
   // Calculate character stats
   const getCharacterStats = (character: Character) => {
     const totalEquipment = character.equipment.length;
@@ -868,6 +935,7 @@ export default function CharacterDashboard() {
                     onUpdateStarforce={handleUpdateStarforce}
                     onUpdateActualCost={handleUpdateActualCost}
                     onSaveEquipment={handleSaveEquipment}
+                    onTransfer={handleTransferEquipment}
                     selectedJob={selectedCharacter.class}
                     characterId={selectedCharacter.id}
                     characterName={selectedCharacter.name}
