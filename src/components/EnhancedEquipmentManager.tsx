@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Equipment, EquipmentSlot } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,13 @@ import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
+import { 
+  trackEquipmentAdded, 
+  trackStarForceCalculation, 
+  trackStarForceCompletion, 
+  trackTabSwitch, 
+  trackEquipmentTransfer 
+} from "@/lib/analytics";
 import { 
   Target, 
   Calculator, 
@@ -76,6 +83,14 @@ export function EnhancedEquipmentManager({
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("equipment");
 
+  // Handle tab switching with analytics tracking
+  const handleTabChange = (newTab: string) => {
+    if (newTab !== activeTab) {
+      trackTabSwitch(activeTab, newTab);
+      setActiveTab(newTab);
+    }
+  };
+
   // Calculate stats including additional equipment
   const allEquipment = [...equipment, ...additionalEquipment];
   const starforceableEquipment = allEquipment.filter(eq => eq.starforceable);
@@ -84,6 +99,13 @@ export function EnhancedEquipmentManager({
   const completionRate = starforceableEquipment.length > 0 
     ? Math.round((completedEquipment.length / starforceableEquipment.length) * 100)
     : 0;
+
+  // Track calculator usage when switching to calculator tab with pending equipment
+  useEffect(() => {
+    if (activeTab === "calculator" && pendingEquipment.length > 0) {
+      trackStarForceCalculation(pendingEquipment.length);
+    }
+  }, [activeTab, pendingEquipment.length]);
 
   // Filter equipment based on selected filter
   const getFilteredEquipment = () => {
@@ -139,6 +161,9 @@ export function EnhancedEquipmentManager({
     
     const target = equipment.targetStarForce || 0;
     onUpdateStarforce(equipment.id, target, target);
+    
+    // Track StarForce completion
+    trackStarForceCompletion(equipment.name, target);
   };
 
   const handleAddAdditionalEquipment = () => {
@@ -169,6 +194,11 @@ export function EnhancedEquipmentManager({
     
     // If we're adding new equipment without a slot, or editing existing additional equipment
     const isAdditional = !equipment.slot || isEditingAdditional;
+    
+    // Track equipment addition (only for new equipment, not edits)
+    if (!editingEquipment) {
+      trackEquipmentAdded(equipment.slot || 'additional', equipment.name);
+    }
     
     if (isAdditional && onSaveAdditionalEquipment) {
       onSaveAdditionalEquipment(equipment);
@@ -202,7 +232,7 @@ export function EnhancedEquipmentManager({
       {/* Main Content with Tabs */}
       <Card>
         <CardContent className="pt-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory">
                 <Package className="w-4 h-4" />
@@ -236,7 +266,7 @@ export function EnhancedEquipmentManager({
                       onEditEquipment={(equipment) => handleOpenEquipmentForm(equipment)}
                       onAddEquipment={(slot) => handleOpenEquipmentForm(undefined, slot)}
                       onClearEquipment={onClearEquipment}
-                      onOpenCalculator={() => setActiveTab("calculator")}
+                      onOpenCalculator={() => handleTabChange("calculator")}
                     />
                   </CardContent>
                 </Card>
@@ -540,7 +570,7 @@ export function EnhancedEquipmentManager({
                     <div className="flex gap-4 justify-center">
                       <Button 
                         variant="outline" 
-                        onClick={() => setActiveTab("equipment")}
+                        onClick={() => handleTabChange("equipment")}
                         className="flex items-center gap-2 font-maplestory"
                       >
                         <Target className="w-4 h-4" />
@@ -571,6 +601,13 @@ export function EnhancedEquipmentManager({
         defaultSlot={defaultSlot}
         onSave={handleSaveEquipmentForm}
         onTransfer={(sourceEquipment, targetEquipment) => {
+          // Track equipment transfer
+          trackEquipmentTransfer(
+            sourceEquipment.name, 
+            targetEquipment.name, 
+            sourceEquipment.targetStarForce || 0
+          );
+          
           // Handle transfer: source will be removed, target gets the stars with transfer info
           if (onTransfer) {
             onTransfer(sourceEquipment, targetEquipment);

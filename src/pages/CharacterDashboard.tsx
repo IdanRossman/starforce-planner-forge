@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
+import { trackCharacterCreation, trackCharacterDeletion } from "@/lib/analytics";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 import { findEquipmentByName } from "@/data/equipmentDatabase";
 import { useToast } from "@/hooks/use-toast";
@@ -411,6 +412,9 @@ export default function CharacterDashboard() {
       setCharacters(prev => [...prev, character]);
       setSelectedCharacter(character);
       
+      // Track character creation
+      trackCharacterCreation(character.class, character.name);
+      
       toast({
         title: "Character Created",
         description: `${character.name} has been added to your roster!`,
@@ -431,6 +435,12 @@ export default function CharacterDashboard() {
   };
 
   const handleDeleteCharacter = (id: string) => {
+    const characterToDelete = characters.find(char => char.id === id);
+    if (characterToDelete) {
+      // Track character deletion
+      trackCharacterDeletion(characterToDelete.class);
+    }
+    
     setCharacters(prev => prev.filter(char => char.id !== id));
     if (selectedCharacter?.id === id) {
       setSelectedCharacter(null);
