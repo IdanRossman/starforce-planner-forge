@@ -132,8 +132,12 @@ export function MapleDialog({
                       <img 
                         src={character.image} 
                         alt={character.name}
-                        className="w-24 h-24 object-cover border-3 border-yellow-400"
-                        style={{ backgroundColor: 'transparent' }}
+                        className={`w-24 h-24 border-3 border-yellow-400 bg-gray-50 ${
+                          character.image.includes('/equipment/') || character.image.includes('equipment') 
+                            ? 'object-contain' 
+                            : 'object-cover rounded-full'
+                        }`}
+                        style={{ backgroundColor: 'rgba(245, 245, 245, 0.8)' }}
                         onError={(e) => {
                           e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
                         }}

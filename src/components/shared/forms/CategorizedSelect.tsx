@@ -7,11 +7,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 export interface SelectOption {
   value: string;
   label: string;
-  icon?: LucideIcon | React.ComponentType<{ className?: string }>;
+  icon?: LucideIcon | React.ComponentType<{ className?: string }> | (() => ReactNode);
   colors?: {
     bg: string;
     bgMuted: string;
@@ -58,10 +59,21 @@ export function CategorizedSelect({
     const Icon = option.icon;
     return (
       <div className="flex items-center gap-2">
-        {Icon && option.colors && (
-          <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
-            <Icon className="w-3 h-3 text-white" />
-          </div>
+        {Icon && (
+          <>
+            {typeof Icon === 'function' && Icon.length === 0 ? (
+              // Function that returns ReactNode (like our EquipmentImage)
+              <Icon />
+            ) : option.colors ? (
+              // Component with colors (original behavior)
+              <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
+                <Icon className="w-3 h-3 text-white" />
+              </div>
+            ) : (
+              // Component without colors
+              <Icon className="w-5 h-5" />
+            )}
+          </>
         )}
         <span className="text-black font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
@@ -81,10 +93,21 @@ export function CategorizedSelect({
     const Icon = option.icon;
     return (
       <div className="flex items-center gap-2">
-        {Icon && option.colors && (
-          <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
-            <Icon className="w-2.5 h-2.5 text-white" />
-          </div>
+        {Icon && (
+          <>
+            {typeof Icon === 'function' && Icon.length === 0 ? (
+              // Function that returns ReactNode (like our EquipmentImage)
+              <Icon />
+            ) : option.colors ? (
+              // Component with colors (original behavior)
+              <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
+                <Icon className="w-2.5 h-2.5 text-white" />
+              </div>
+            ) : (
+              // Component without colors
+              <Icon className="w-4 h-4" />
+            )}
+          </>
         )}
         <span className="flex-1 text-black font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
@@ -102,9 +125,13 @@ export function CategorizedSelect({
 
   return (
     <Select onValueChange={onValueChange} value={value} disabled={disabled}>
-      <SelectTrigger className={className}>
+      <SelectTrigger className={cn(className, "font-maplestory [&>span]:text-black [&_span]:text-black")}>
         <SelectValue placeholder={placeholder}>
-          {selectedOption && (renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption))}
+          {selectedOption ? (
+            renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption)
+          ) : (
+            <span className="text-black font-maplestory">{placeholder}</span>
+          )}
         </SelectValue>
       </SelectTrigger>
       <SelectContent className="bg-white">

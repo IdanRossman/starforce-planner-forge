@@ -6,7 +6,7 @@ import { Character } from '@/types';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { fetchCharacterFromMapleRanks } from '@/services/mapleRanksService';
 import { CategorizedSelect, SelectCategory, MapleButton, MapleDialog } from '@/components/shared';
-import { MapleInput } from '@/components/shared/forms';
+import { MapleInput, FormFieldWrapper } from '@/components/shared/forms';
 import {
   Form,
   FormControl,
@@ -318,66 +318,61 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                 )}
               />
 
-              <FormField
-                control={form.control}
+              <FormFieldWrapper
                 name="class"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-black font-maplestory font-medium">Class</FormLabel>
-                    <FormControl>
-                      <CategorizedSelect
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        placeholder="Select a class"
-                        categories={classCategories}
-                        className="bg-white border-gray-300 font-maplestory"
-                        renderSelectedValue={(option) => {
-                          const jobCategory = getJobCategoryName(option.value);
-                          const classSubcategory = getClassSubcategory(option.value);
-                          
-                          return (
-                            <div className="flex items-center gap-2">
-                              {option.icon && option.colors && (
-                                <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
-                                  <option.icon className="w-3 h-3 text-white" />
-                                </div>
-                              )}
-                              <span className="text-black font-maplestory">{option.label}</span>
-                              {jobCategory && classSubcategory && (
-                                <div className="flex gap-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${option.colors?.bgMuted} ${option.colors?.text}`}>
-                                    {jobCategory}
-                                  </span>
-                                  <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700">
-                                    {classSubcategory}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
+                label="Class"
                 control={form.control}
-                name="level"
-                render={({ field }) => (
-                  <FormItem>
-                    <MapleInput
-                      title="Level"
-                      type="number"
-                      placeholder="200"
-                      {...field}
-                    />
-                    <FormMessage />
-                  </FormItem>
+              >
+                {(field) => (
+                  <CategorizedSelect
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select a class"
+                    categories={classCategories}
+                    className="bg-white border-gray-300 font-maplestory"
+                    renderSelectedValue={(option) => {
+                      const jobCategory = getJobCategoryName(option.value);
+                      const classSubcategory = getClassSubcategory(option.value);
+                      
+                      return (
+                        <div className="flex items-center gap-2">
+                          {option.icon && option.colors && (
+                            <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
+                              <option.icon className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                          <span className="text-black font-maplestory">{option.label}</span>
+                          {jobCategory && classSubcategory && (
+                            <div className="flex gap-1">
+                              <span className={`text-xs px-2 py-1 rounded ${option.colors?.bgMuted} ${option.colors?.text}`}>
+                                {jobCategory}
+                              </span>
+                              <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700">
+                                {classSubcategory}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }}
+                  />
                 )}
-              />
+              </FormFieldWrapper>
+
+              <FormFieldWrapper
+                name="level"
+                label="Level"
+                control={form.control}
+              >
+                {(field) => (
+                  <MapleInput
+                    type="number"
+                    placeholder="200"
+                    value={field.value}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                  />
+                )}
+              </FormFieldWrapper>
 
               {/* Hidden field to store image */}
               <FormField
