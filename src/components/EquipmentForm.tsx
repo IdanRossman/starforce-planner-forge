@@ -3,28 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { EquipmentImage } from '@/components/EquipmentImage';
 import { StarForceTransferDialog } from '@/components/StarForceTransferDialog';
 import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
+import { MapleDialog, MapleButton, ApiStatusBadge } from '@/components/shared';
+import { CategorizedSelect, SelectCategory, MapleInput, StarForceSlider, FormFieldWrapper, ToggleField, StarForceSliderField } from '@/components/shared/forms';
 import { 
-  Sword, 
-  Shield, 
-  Crown, 
-  Shirt, 
-  Footprints,
-  Hand,
-  Glasses,
-  CircleDot,
-  Heart,
-  Gem,
-  Badge,
-  Eye,
-  Circle,
-  Square,
-  Info,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Info
 } from 'lucide-react';
 import {
   Dialog,
@@ -35,28 +21,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import {
   Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { getMaxStarForce, getDefaultTargetStarForce, getSlotIcon } from '@/lib/utils';
 
 // Create dynamic schema that considers transferred stars
@@ -137,6 +103,55 @@ const EQUIPMENT_SLOTS = [
   { value: 'medal', label: 'Medal' },
 ];
 
+// Create categorized equipment slots
+const EQUIPMENT_SLOT_CATEGORIES: SelectCategory[] = [
+  {
+    name: 'Weapons',
+    options: [
+      { value: 'weapon', label: 'Weapon', icon: getSlotIcon('weapon') },
+      { value: 'secondary', label: 'Secondary', icon: getSlotIcon('secondary') },
+      { value: 'emblem', label: 'Emblem', icon: getSlotIcon('emblem') },
+    ]
+  },
+  {
+    name: 'Armor',
+    options: [
+      { value: 'hat', label: 'Hat', icon: getSlotIcon('hat') },
+      { value: 'top', label: 'Top', icon: getSlotIcon('top') },
+      { value: 'bottom', label: 'Bottom', icon: getSlotIcon('bottom') },
+      { value: 'overall', label: 'Overall', icon: getSlotIcon('overall') },
+      { value: 'shoes', label: 'Shoes', icon: getSlotIcon('shoes') },
+      { value: 'gloves', label: 'Gloves', icon: getSlotIcon('gloves') },
+      { value: 'cape', label: 'Cape', icon: getSlotIcon('cape') },
+      { value: 'belt', label: 'Belt', icon: getSlotIcon('belt') },
+      { value: 'shoulder', label: 'Shoulder', icon: getSlotIcon('shoulder') },
+    ]
+  },
+  {
+    name: 'Accessories', 
+    options: [
+      { value: 'face', label: 'Face', icon: getSlotIcon('face') },
+      { value: 'eye', label: 'Eye', icon: getSlotIcon('eye') },
+      { value: 'earring', label: 'Earring', icon: getSlotIcon('earring') },
+      { value: 'ring1', label: 'Ring 1', icon: getSlotIcon('ring1') },
+      { value: 'ring2', label: 'Ring 2', icon: getSlotIcon('ring2') },
+      { value: 'ring3', label: 'Ring 3', icon: getSlotIcon('ring3') },
+      { value: 'ring4', label: 'Ring 4', icon: getSlotIcon('ring4') },
+      { value: 'pendant1', label: 'Pendant 1', icon: getSlotIcon('pendant1') },
+      { value: 'pendant2', label: 'Pendant 2', icon: getSlotIcon('pendant2') },
+    ]
+  },
+  {
+    name: 'Special',
+    options: [
+      { value: 'pocket', label: 'Pocket', icon: getSlotIcon('pocket') },
+      { value: 'heart', label: 'Heart', icon: getSlotIcon('heart') },
+      { value: 'badge', label: 'Badge', icon: getSlotIcon('badge') },
+      { value: 'medal', label: 'Medal', icon: getSlotIcon('medal') },
+    ]
+  }
+];
+
 const EQUIPMENT_TYPES = [
   { value: 'weapon', label: 'Weapon' },
   { value: 'armor', label: 'Armor' },
@@ -150,6 +165,20 @@ const EQUIPMENT_TIERS = [
   { value: 'legendary', label: 'Legendary' },
 ];
 
+// Create categorized potential tiers
+const POTENTIAL_TIER_CATEGORIES: SelectCategory[] = [
+  {
+    name: 'Potential Tiers',
+    options: [
+      { value: 'none', label: 'No Potential' },
+      { value: 'rare', label: 'Rare' },
+      { value: 'epic', label: 'Epic' },
+      { value: 'unique', label: 'Unique' },
+      { value: 'legendary', label: 'Legendary' },
+    ]
+  }
+];
+
 export function EquipmentForm({ 
   open, 
   onOpenChange, 
@@ -161,7 +190,34 @@ export function EquipmentForm({
   selectedJob,
   existingEquipment = []
 }: EquipmentFormProps) {
+  console.log('🔄 EquipmentForm render:', {
+    equipmentProp: equipment?.name || 'none',
+    equipmentExists: !!equipment,
+    open,
+    isEditing: !!equipment
+  });
+
   const isEditing = !!equipment;
+
+  // MapleDialog visibility states
+  const [isVisible, setIsVisible] = useState(false);
+  const [opacity, setOpacity] = useState(0);
+  const [transform, setTransform] = useState('scale(0.8)');
+
+  // Handle dialog open/close with proper animations
+  useEffect(() => {
+    if (open) {
+      setIsVisible(true);
+      setTimeout(() => {
+        setOpacity(1);
+        setTransform('scale(1)');
+      }, 10);
+    } else {
+      setOpacity(0);
+      setTransform('scale(0.8)');
+      setTimeout(() => setIsVisible(false), 200);
+    }
+  }, [open]);
 
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
@@ -359,9 +415,21 @@ export function EquipmentForm({
   // Create current equipment object with form values for transfer dialog
   // This works for both editing existing equipment and creating new equipment
   const currentEquipmentForTransfer: Equipment | null = (() => {
+    // Don't process transfer logic when dialog is closed to avoid form corruption
+    if (!open) {
+      console.log('⏸️ currentEquipmentForTransfer: Dialog closed, skipping processing');
+      return null;
+    }
+    
     // Must have required values for transfer
     if (!watchedValues.level || watchedValues.currentStarForce === undefined || 
         watchedValues.targetStarForce === undefined || watchedValues.starforceable === undefined) {
+      console.log('❌ currentEquipmentForTransfer: Missing required values', {
+        level: watchedValues.level,
+        currentStarForce: watchedValues.currentStarForce,
+        targetStarForce: watchedValues.targetStarForce,
+        starforceable: watchedValues.starforceable
+      });
       return null;
     }
     
@@ -373,13 +441,35 @@ export function EquipmentForm({
       // Editing existing equipment
       equipmentName = equipment.name;
       equipmentImage = equipment.image || '';
+      console.log('✅ currentEquipmentForTransfer: Using existing equipment', {
+        name: equipmentName,
+        originalTargetStarForce: equipment.targetStarForce,
+        formTargetStarForce: watchedValues.targetStarForce,
+        starforceable: watchedValues.starforceable,
+        isEditing,
+        equipmentExists: !!equipment
+      });
     } else if (watchedValues.set && availableEquipment.find(eq => eq.name === watchedValues.set)) {
       // Creating new equipment and user selected from dropdown
       const selectedEquipment = availableEquipment.find(eq => eq.name === watchedValues.set)!;
       equipmentName = selectedEquipment.name;
       equipmentImage = selectedEquipment.image || '';
+      console.log('✅ currentEquipmentForTransfer: Using new equipment from dropdown', {
+        name: equipmentName,
+        targetStarForce: watchedValues.targetStarForce,
+        selectedEquipmentStarforceable: selectedEquipment.starforceable,
+        formStarforceable: watchedValues.starforceable,
+        isEditing,
+        equipmentExists: !!equipment
+      });
     } else {
       // Creating new equipment without selecting from dropdown - no name yet
+      console.log('❌ currentEquipmentForTransfer: No equipment name available', {
+        isEditing,
+        equipmentExists: !!equipment,
+        watchedSet: watchedValues.set,
+        availableEquipmentCount: availableEquipment.length
+      });
       return null;
     }
     
@@ -404,10 +494,13 @@ export function EquipmentForm({
       const selectedEquipment = availableEquipment.find(eq => eq.name === watchedValues.set)!;
       return {
         ...selectedEquipment,
+        // Always prioritize form values over API values for StarForce settings
         id: baseEquipment.id, // Keep original ID for tracking
         currentStarForce: watchedValues.currentStarForce,
         targetStarForce: watchedValues.targetStarForce,
         starforceable: watchedValues.starforceable,
+        // Also preserve other critical form values that user might have customized
+        tier: watchedValues.tier as EquipmentTier | null | undefined,
       };
     }
     
@@ -526,254 +619,199 @@ export function EquipmentForm({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[525px]">
-        <DialogHeader>
-          <DialogTitle className="font-maplestory">
-            {isEditing ? 'Edit Equipment' : 'Add Equipment'}
-          </DialogTitle>
-          <DialogDescription className="font-maplestory">
-            {isEditing 
-              ? 'Update your equipment details and StarForce goals.' 
-              : 'Add a new piece of equipment to track its StarForce progress.'
-            }
-          </DialogDescription>
-        </DialogHeader>
-        
+      <MapleDialog
+        isVisible={isVisible}
+        opacity={opacity}
+        transform={transform}
+        position="center"
+        minWidth="600px"
+        className="max-w-3xl"
+        onClose={() => onOpenChange(false)}
+        character={{
+          name: form.getValues('set') || equipment?.name || 'Equipment',
+          image: selectedEquipmentImage || equipment?.image || '/placeholder.svg'
+        }}
+        bottomRightActions={
+          <MapleButton variant="orange" size="sm" onClick={form.handleSubmit(onSubmit)}>
+            Accept
+          </MapleButton>
+        }
+        bottomLeftActions={undefined}
+      >
+        <div className="space-y-4 p-4">
+          <div className="text-center">
+            <h2 className="text-xl font-bold font-maplestory text-black mb-2">
+              {isEditing ? 'Edit Equipment' : 'Add Equipment'}
+            </h2>
+            <p className="text-sm text-gray-700 font-maplestory">
+              {isEditing 
+                ? 'Update your equipment details and StarForce goals.' 
+                : 'Add a new piece of equipment to track its StarForce progress.'
+              }
+            </p>
+          </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-
-              {/* First line: Slot (readonly with icon) */}
-              <FormField
-                control={form.control}
+              {/* Equipment Slot Selection */}
+              <FormFieldWrapper
                 name="slot"
-                render={({ field }) => {
-                  const SlotIcon = getSlotIcon(field.value);
-                  return (
-                    <FormItem>
-                      <FormLabel className="font-maplestory">Equipment Slot</FormLabel>
-                      <Select 
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          // Clear equipment selection when slot changes since equipment might not be valid for new slot
-                          form.setValue('set', '');
-                          setSelectedEquipmentImage('');
-                        }} 
-                        value={field.value}
-                        disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="font-maplestory">
-                            <SelectValue placeholder="Select equipment slot">
-                              {field.value && (
-                                <div className="flex items-center gap-2">
-                                  <SlotIcon className="h-4 w-4" />
-                                  {EQUIPMENT_SLOTS.find(s => s.value === field.value)?.label}
-                                </div>
-                              )}
-                            </SelectValue>
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                           {EQUIPMENT_SLOTS.map((slot) => {
-                             const IconComponent = getSlotIcon(slot.value);
-                             return (
-                               <SelectItem key={slot.value} value={slot.value}>
-                                 <div className="flex items-center gap-2">
-                                   <IconComponent className="h-4 w-4" />
-                                   <span className="font-maplestory">{slot.label}</span>
-                                   {(slot.value === 'overall' && (currentSlot === 'top' || currentSlot === 'bottom')) && 
-                                     <span className="text-xs text-muted-foreground font-maplestory">(conflicts with top/bottom)</span>
-                                   }
-                                   {((slot.value === 'top' || slot.value === 'bottom') && currentSlot === 'overall') && 
-                                     <span className="text-xs text-muted-foreground font-maplestory">(conflicts with overall)</span>
-                                   }
-                                 </div>
-                               </SelectItem>
-                             );
-                           })}
-                         </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
+                label="Equipment Slot"
+                control={form.control}
+              >
+                {(field) => (
+                  <CategorizedSelect
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Clear equipment selection when slot changes since equipment might not be valid for new slot
+                      form.setValue('set', '');
+                      setSelectedEquipmentImage('');
+                    }}
+                    placeholder="Select equipment slot"
+                    categories={EQUIPMENT_SLOT_CATEGORIES}
+                    className="bg-white border-gray-300 font-maplestory"
+                    disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
+                  />
+                )}
+              </FormFieldWrapper>
 
               {/* Second line: Equipment (main selection) */}
-              <FormField
-                control={form.control}
+              <FormFieldWrapper
                 name="set"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-maplestory">Equipment</FormLabel>
-                    <Select onValueChange={(value) => {
-                      field.onChange(value);
-                      // Auto-update tier and level based on equipment selection
-                      const equipData = availableEquipment.find(eq => eq.name === value);
-                      if (equipData) {
-                        form.setValue('tier', equipData.tier);
-                        form.setValue('level', equipData.level);
-                        // Update the image state immediately
-                        setSelectedEquipmentImage(equipData.image);
-                        
-                        // Auto-determine type based on slot
-                        const slot = form.getValues('slot');
-                        if (['weapon', 'secondary', 'emblem'].includes(slot)) {
-                          form.setValue('type', 'weapon');
-                        } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
-                          form.setValue('type', 'armor');
-                        } else {
-                          form.setValue('type', 'accessory');
-                        }
-                        
-                        // Set starforceable based on API data
-                        form.setValue('starforceable', equipData.starforceable);
-                        
-                        // Reset StarForce if not starforceable
-                        if (!equipData.starforceable) {
-                          form.setValue('currentStarForce', 0);
-                          form.setValue('targetStarForce', 0);
-                        } else {
-                          // If starforceable, set target to default for current level and ensure current is valid
-                          const defaultTarget = getDefaultTargetStarForce(equipData.level);
-                          form.setValue('targetStarForce', defaultTarget);
-                          // Ensure current StarForce doesn't exceed the max for this level
-                          const maxStars = getMaxStarForce(equipData.level);
-                          const currentCurrent = form.getValues('currentStarForce');
-                          if (currentCurrent > maxStars) {
-                            form.setValue('currentStarForce', 0);
+                label="Equipment"
+                control={form.control}
+                underText={equipmentSource === 'local' && availableEquipment.length > 0 ? (
+                  <ApiStatusBadge status="local" />
+                ) : undefined}
+              >
+                {(field) => {
+                  // Create categories for equipment selection
+                  const equipmentCategories: SelectCategory[] = (() => {
+                    if (equipmentLoading) return [];
+                    if (availableEquipment.length === 0) return [];
+                    
+                    // Single category with all equipment items
+                    return [{
+                      name: 'Available Equipment',
+                      options: availableEquipment
+                        .sort((a, b) => a.level - b.level) // Sort by level ascending
+                        .map(eq => ({
+                          value: eq.name || eq.id,
+                          label: eq.name && eq.name.trim() 
+                            ? `${eq.name} (Lv.${eq.level})`
+                            : `Level ${eq.level} Equipment`,
+                          icon: () => (
+                            <EquipmentImage 
+                              src={eq.image} 
+                              alt={eq.name || `Equipment ${eq.id}`}
+                              size="sm"
+                              fallbackIcon={getSlotIcon(selectedSlot)}
+                            />
+                          )
+                        }))
+                    }];
+                  })();
+                  
+                  if (equipmentLoading) {
+                    return (
+                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md">
+                        Loading equipment...
+                      </div>
+                    );
+                  }
+                  
+                  if (availableEquipment.length === 0) {
+                    return (
+                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md">
+                        No equipment found for this slot
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <CategorizedSelect
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Auto-update tier and level based on equipment selection
+                        const equipData = availableEquipment.find(eq => eq.name === value);
+                        if (equipData) {
+                          form.setValue('tier', equipData.tier);
+                          form.setValue('level', equipData.level);
+                          // Update the image state immediately
+                          setSelectedEquipmentImage(equipData.image);
+                          
+                          // Auto-determine type based on slot
+                          const slot = form.getValues('slot');
+                          if (['weapon', 'secondary', 'emblem'].includes(slot)) {
+                            form.setValue('type', 'weapon');
+                          } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
+                            form.setValue('type', 'armor');
+                          } else {
+                            form.setValue('type', 'accessory');
+                          }
+                          
+                          // Only auto-set StarForce values for new equipment, not when editing existing equipment
+                          if (!isEditing) {
+                            // Set starforceable based on API data for new equipment only
+                            form.setValue('starforceable', equipData.starforceable);
+                            
+                            // Reset StarForce if not starforceable
+                            if (!equipData.starforceable) {
+                              form.setValue('currentStarForce', 0);
+                              form.setValue('targetStarForce', 0);
+                            } else {
+                              // If starforceable, set target to default for current level and ensure current is valid
+                              const defaultTarget = getDefaultTargetStarForce(equipData.level);
+                              form.setValue('targetStarForce', defaultTarget);
+                              // Ensure current StarForce doesn't exceed the max for this level
+                              const maxStars = getMaxStarForce(equipData.level);
+                              const currentCurrent = form.getValues('currentStarForce');
+                              if (currentCurrent > maxStars) {
+                                form.setValue('currentStarForce', 0);
+                              }
+                            }
                           }
                         }
-                      }
-                    }} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="font-maplestory">
-                          <SelectValue placeholder={equipmentLoading ? "Loading equipment..." : "Select equipment"}>
-                            {field.value && (
-                              <div className="flex items-center gap-2">
-                                {(() => {
-                                  const selectedEquip = availableEquipment.find(eq => eq.name === field.value);
-                                  return selectedEquip ? (
-                                    <>
-                                      <EquipmentImage 
-                                        src={selectedEquip.image} 
-                                        alt={selectedEquip.name || `Equipment ${selectedEquip.id}`}
-                                        size="sm"
-                                        fallbackIcon={getSlotIcon(selectedSlot)}
-                                      />
-                                      <span className="font-maplestory">{selectedEquip.name} (Lv.{selectedEquip.level})</span>
-                                    </>
-                                  ) : (
-                                    <span className="font-maplestory">{field.value}</span>
-                                  );
-                                })()}
-                              </div>
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {equipmentLoading ? (
-                          <div className="p-2 text-center text-sm text-muted-foreground font-maplestory">
-                            Loading equipment...
-                          </div>
-                        ) : availableEquipment.length === 0 ? (
-                          <div className="p-2 text-center text-sm text-muted-foreground font-maplestory">
-                            No equipment found for this slot
-                          </div>
-                        ) : (
-                          <>
-                            {equipmentSource === 'local' && (
-                              <div className="p-2 text-xs text-muted-foreground bg-yellow-50 border-b font-maplestory">
-                                ⚠️ Using local data (API unavailable)
-                              </div>
-                            )}
-                            {availableEquipment.map((equipment) => (
-                          <SelectItem key={equipment.id} value={equipment.name || equipment.id}>
-                            <div className="flex items-center gap-2">
-                              <EquipmentImage 
-                                src={equipment.image} 
-                                alt={equipment.name || `Equipment ${equipment.id}`}
-                                size="md"
-                                fallbackIcon={getSlotIcon(selectedSlot)}
-                              />
-                              <span className="font-maplestory">
-                                {equipment.name && equipment.name.trim() 
-                                  ? `${equipment.name} (Lv.${equipment.level})`
-                                  : `Level ${equipment.level} Equipment`
-                                }
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                          </>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                      }}
+                      placeholder="Select equipment"
+                      categories={equipmentCategories}
+                      className="bg-white border-gray-300 font-maplestory"
+                    />
+                  );
+                }}
+              </FormFieldWrapper>
 
-              {/* Third line: Potential Tier */}
-              <FormField
-                control={form.control}
+              {/* Potential Tier Selection */}
+              <FormFieldWrapper
                 name="tier"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="font-maplestory">Potential Tier</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        if (value === "none") {
-                          field.onChange(null);
-                        } else {
-                          field.onChange(value);
-                        }
-                      }} 
-                      value={field.value ?? "none"}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="font-maplestory">
-                          <SelectValue placeholder="Select potential tier (optional)" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none"><span className="font-maplestory">No Potential</span></SelectItem>
-                        {EQUIPMENT_TIERS.map((tier) => (
-                          <SelectItem key={tier.value} value={tier.value}>
-                            <span className="font-maplestory">{tier.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                label="Potential Tier"
+                control={form.control}
+              >
+                {(field) => (
+                  <CategorizedSelect
+                    value={field.value ?? "none"}
+                    onValueChange={(value) => {
+                      if (value === "none") {
+                        field.onChange(null);
+                      } else {
+                        field.onChange(value as EquipmentTier);
+                      }
+                    }}
+                    placeholder="Select potential tier (optional)"
+                    categories={POTENTIAL_TIER_CATEGORIES}
+                    className="bg-white border-gray-300 font-maplestory"
+                  />
                 )}
-              />
+              </FormFieldWrapper>
 
               {/* StarForce Toggle */}
-              <FormField
-                control={form.control}
+              <ToggleField
                 name="starforceable"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <FormLabel className="text-base font-maplestory">
-                        StarForce Enhancement
-                      </FormLabel>
-                      <div className="text-sm text-muted-foreground font-maplestory">
-                        Can this equipment be enhanced with StarForce?
-                      </div>
-                    </div>
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
+                title="StarForce Enhancement"
+                description="Can this equipment be enhanced with StarForce?"
+                control={form.control}
+                variant="amber"
               />
 
               {/* StarForce Sliders - Only show if starforceable */}
@@ -781,10 +819,10 @@ export function EquipmentForm({
                 <>
                 {/* Auto-adjustment notification */}
                 {(autoAdjusted.current || autoAdjusted.target) && (
-                  <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="p-3 bg-blue-100 border-2 border-blue-400 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span className="text-sm text-blue-700 dark:text-blue-300 font-maplestory">
+                      <Info className="w-4 h-4 text-blue-600" />
+                      <span className="text-sm text-blue-700 font-maplestory">
                         Star force values auto-adjusted to match level {watchLevel} limits
                         {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
                          autoAdjusted.current ? ' (current)' : ' (target)'}
@@ -793,145 +831,66 @@ export function EquipmentForm({
                   </div>
                 )}
 
-              <FormField
-                control={form.control}
+              <StarForceSliderField
                 name="currentStarForce"
-                render={({ field }) => {
-                  const maxStars = getMaxStarForce(watchLevel);
-                  const minStars = equipment?.transferredStars || 0; // Minimum is transferred stars or 0
-                  return (
-                    <FormItem>
-                      <FormLabel className="font-maplestory">
-                        Current StarForce: {field.value}★
-                        {minStars > 0 && (
-                          <span className="text-xs text-blue-600 ml-2">
-                            (min: {minStars}★ transferred)
-                          </span>
-                        )}
-                      </FormLabel>
-                      <div className="space-y-3">
-                        <FormControl>
-                          <Slider
-                            min={minStars}
-                            max={maxStars}
-                            step={1}
-                            value={[field.value]}
-                            onValueChange={(value) => field.onChange(value[0])}
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground font-maplestory">Direct input:</span>
-                          <Input
-                            type="number"
-                            min={minStars}
-                            max={maxStars}
-                            value={field.value}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const clampedValue = Math.min(Math.max(value, minStars), maxStars);
-                              field.onChange(clampedValue);
-                            }}
-                            className="w-20 text-center"
-                          />
-                          <span className="text-sm text-muted-foreground font-maplestory">/ {maxStars}★</span>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                title={`Current StarForce: ${watchCurrentStars}★`}
+                subtitle={(() => {
+                  const minStars = equipment?.transferredStars || 0;
+                  return minStars > 0 ? `(min: ${minStars}★ transferred)` : undefined;
+                })()}
+                control={form.control}
+                min={equipment?.transferredStars || 0}
+                max={getMaxStarForce(watchLevel)}
               />
 
-              <FormField
-                control={form.control}
+              <StarForceSliderField
                 name="targetStarForce"
-                render={({ field }) => {
-                  const maxStars = getMaxStarForce(watchLevel);
-                  return (
-                    <FormItem>
-                      <FormLabel className="font-maplestory">Target StarForce: {field.value}★ (Max: {maxStars}★ for Lv.{watchLevel})</FormLabel>
-                      <div className="space-y-3">
-                        <FormControl>
-                          <Slider
-                            min={0}
-                            max={maxStars}
-                            step={1}
-                            value={[field.value]}
-                            onValueChange={(value) => field.onChange(value[0])}
-                            className="w-full"
-                          />
-                        </FormControl>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground font-maplestory">Direct input:</span>
-                          <Input
-                            type="number"
-                            min={0}
-                            max={maxStars}
-                            value={field.value}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value) || 0;
-                              const clampedValue = Math.min(Math.max(value, 0), maxStars);
-                              field.onChange(clampedValue);
-                            }}
-                            className="w-20 text-center"
-                          />
-                          <span className="text-sm text-muted-foreground font-maplestory">/ {maxStars}★</span>
-                        </div>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
+                title={`Target StarForce: ${form.watch('targetStarForce')}★`}
+                subtitle={`(Max: ${getMaxStarForce(watchLevel)}★ for Lv.${watchLevel})`}
+                control={form.control}
+                min={0}
+                max={getMaxStarForce(watchLevel)}
               />
                 </>
               )}
 
-              <DialogFooter>
-                <div className="flex justify-between w-full">
+              {/* Transfer StarForce Button - Only show when transfer is possible */}
+              {currentEquipmentForTransfer && hasValidTransferCandidates && (
+                <div className="pt-4 border-t border-gray-200">
                   <div className="flex flex-col gap-2">
-                    {/* Transfer button - always show when transfer candidates exist, but disable if no callback */}
-                    {currentEquipmentForTransfer && hasValidTransferCandidates && (
-                      <div className="flex flex-col gap-1">
-                        <Button 
-                          type="button" 
-                          variant="secondary" 
-                          onClick={() => onTransfer ? setShowTransferDialog(true) : undefined} 
-                          disabled={!onTransfer}
-                          className="font-maplestory"
-                        >
-                          <ArrowRightLeft className="w-4 h-4 mr-2" />
-                          Transfer StarForce
-                        </Button>
-                        {!onTransfer && (
-                          <span className="text-xs text-muted-foreground font-maplestory">
-                            Available after character creation
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2 text-sm text-blue-700 font-maplestory">
+                      <Info className="w-4 h-4" />
+                      <span>StarForce Transfer Available</span>
+                    </div>
+                    <MapleButton 
+                      variant="blue"
+                      size="sm"
+                      type="button"
+                      onClick={() => onTransfer ? setShowTransferDialog(true) : undefined} 
+                      disabled={!onTransfer}
+                    >
+                      <ArrowRightLeft className="w-4 h-4 mr-2" />
+                      Transfer StarForce
+                    </MapleButton>
+                    {!onTransfer && (
+                      <span className="text-xs text-muted-foreground font-maplestory text-center">
+                        Available after character creation
+                      </span>
                     )}
                   </div>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="font-maplestory">
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="font-maplestory">
-                      {isEditing ? 'Update' : 'Add'} Equipment
-                    </Button>
-                  </div>
                 </div>
-              </DialogFooter>
+              )}
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </MapleDialog>
 
       {/* StarForce Transfer Dialog - only render when transfer callback is available */}
-      {currentEquipmentForTransfer && onTransfer && (
+      {onTransfer && currentEquipmentForTransfer && (
         <StarForceTransferDialog
           open={showTransferDialog}
           onOpenChange={setShowTransferDialog}
-          targetEquipment={currentEquipmentForTransfer!} // Pass current form values as source equipment
+          targetEquipment={currentEquipmentForTransfer} // Pass current form values as source equipment
           existingEquipment={availableEquipment} // Use API equipment as transfer targets
           onTransfer={handleTransfer}
         />

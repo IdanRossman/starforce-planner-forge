@@ -36,7 +36,7 @@ const mockAnnouncements: AnnouncementData[] = [
   {
     id: 'ui-improvements',
     title: 'Enhanced User Interface',
-    message: 'We\'ve updated the interface with better navigation and improved visual design for a smoother experience.',
+    message: 'We\'ve updated the interface with better navigation and improved visual design for a smoother experience. The card design now matches the in-game chat window style - I hope you like it!',
     type: 'info',
     priority: 'normal',
     startDate: '2025-01-20T00:00:00Z',

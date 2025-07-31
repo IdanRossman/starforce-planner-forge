@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { MapleDialog, MapleButton } from '@/components/shared';
 import { AssistantTip, AssistantCharacter, GameAssistantProps } from '@/types';
 import { getCharacterForPage, globalTimingConfig } from '@/data/assistantCharacters';
 
@@ -234,145 +233,63 @@ export function GameAssistant({
   }
 
   return (
-    <div 
-      className="fixed bottom-4 right-4 z-50 max-w-lg"
-      style={{ 
-        opacity: opacity,
-        transform: transform,
-        transition: 'opacity 0.4s ease-out, transform 0.4s ease-out'
+    <MapleDialog
+      isVisible={isVisible}
+      opacity={opacity}
+      transform={transform}
+      onCardClick={handleCardClick}
+      onClose={handleClose}
+      debugMode={debugMode}
+      debugInfo={contextualTips.length > 1 ? {
+        currentIndex: currentTipIndex,
+        totalCount: contextualTips.length
+      } : undefined}
+      character={{
+        name: activeCharacter.name,
+        image: activeCharacter.image
       }}
+      bottomLeftActions={
+        debugMode && contextualTips.length > 1 ? (
+          <MapleButton
+            variant="orange"
+            size="sm"
+            onClick={showNextTip}
+          >
+            NEXT TIP
+          </MapleButton>
+        ) : undefined
+      }
+      bottomRightActions={
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="tips-toggle"
+            checked={!tipsDisabled}
+            onCheckedChange={(checked) => {
+              if (!checked) {
+                toggleTips();
+              }
+            }}
+            className="h-4 w-4 border-2 border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 data-[state=checked]:border-white"
+            style={{
+              backgroundColor: tipsDisabled ? 'transparent' : 'white'
+            }}
+          />
+          <label 
+            htmlFor="tips-toggle" 
+            className="text-xs text-white font-medium cursor-pointer select-none drop-shadow-sm font-maplestory"
+          >
+            Disable tips
+          </label>
+        </div>
+      }
     >
-      {/* Blue outer card (MapleStory style frame) */}
-      <Card className="shadow-2xl border-4 backdrop-blur-sm relative min-w-[400px]" style={{ borderColor: '#2AA6DA', backgroundColor: 'rgba(42, 166, 218, 0.9)' }}>
-        {/* Debug Mode Indicator */}
-        {debugMode && (
-          <div className="absolute top-1 left-1 z-10 flex gap-2">
-            <span className="text-xs px-2 py-1 bg-yellow-400 text-black font-bold rounded shadow-lg">
-              DEBUG
-            </span>
-            {contextualTips.length > 1 && (
-              <span className="text-xs px-2 py-1 bg-blue-500 text-white font-bold rounded shadow-lg">
-                {currentTipIndex + 1}/{contextualTips.length}
-              </span>
-            )}
-          </div>
-        )}
-        <CardContent className="p-2 pb-8">
-          {/* Gray middle card with character image */}
-          <Card className="border-gray-700 border-2" style={{ backgroundColor: '#EEEEEE' }}>
-            <CardContent className="p-0">
-              <div className="flex items-stretch gap-0">
-                {/* Character Portrait Section */}
-                <div className="p-3 border-r-2 border-gray-500 flex flex-col items-center justify-center" style={{ backgroundColor: 'rgba(238, 238, 238, 0.9)' }}>
-                  <div className="relative mb-2">
-                    <img 
-                      src={activeCharacter.image} 
-                      alt={activeCharacter.name}
-                      className="w-24 h-24 object-cover border-3 border-yellow-400"
-                      style={{ backgroundColor: 'transparent' }}
-                      onError={(e) => {
-                        e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
-                      }}
-                    />
-                  </div>
-                  {/* Character Name Tag */}
-                  <div className="px-2 py-1 rounded-md shadow-sm" style={{ backgroundColor: '#707070' }}>
-                    <span className="text-xs font-bold text-white text-center block font-maplestory">
-                      {activeCharacter.name}
-                    </span>
-                  </div>
-                </div>
-                
-                {/* White content card (66% width) */}
-                <div className="flex-1" style={{ width: '66%' }}>
-                  <Card 
-                    className="border-0 h-full cursor-pointer hover:bg-opacity-95 transition-all duration-200" 
-                    style={{ backgroundColor: '#F9F9F9' }}
-                    onClick={handleCardClick}
-                  >
-                    <CardContent className="p-4 flex items-center h-full">
-                      {/* Message Text */}
-                      <div className="text-sm text-gray-800 leading-relaxed flex items-center h-full w-full font-maplestory font-normal">
-                        <p className="text-left w-full">
-                          {displayedText}
-                          {isTyping && <span className="animate-pulse">|</span>}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* END CHAT button positioned at bottom left of blue border */}
-          <div className="absolute bottom-1 left-1 flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleClose}
-              className="h-5 px-10 text-xs text-white font-bold shadow-lg border-0 font-maplestory"
-              style={{ 
-                background: 'linear-gradient(to top, #98CC21, #92CC75)',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(to top, #86B51E, #7FB866)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(to top, #98CC21, #92CC75)';
-              }}
-            >
-              END CHAT
-            </Button>
-            
-            {/* Debug Navigation Buttons */}
-            {debugMode && contextualTips.length > 1 && (
-              <Button
-                size="sm"
-                onClick={showNextTip}
-                className="h-7 px-3 text-xs text-black font-bold shadow-lg border-0 font-maplestory"
-                style={{ 
-                  background: 'linear-gradient(to top, #FFD700, #FFA500)',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(to top, #FFB300, #FF8C00)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'linear-gradient(to top, #FFD700, #FFA500)';
-                }}
-              >
-                NEXT TIP
-              </Button>
-            )}
-          </div>
-          
-          {/* Tips Toggle positioned at bottom right of blue border */}
-          <div className="absolute bottom-1 right-1">
-            <div className="flex items-center gap-2">
-              <Checkbox
-                id="tips-toggle"
-                checked={!tipsDisabled}
-                onCheckedChange={(checked) => {
-                  if (!checked) {
-                    toggleTips();
-                  }
-                }}
-                className="h-4 w-4 border-2 border-white data-[state=checked]:bg-white data-[state=checked]:text-blue-600 data-[state=checked]:border-white"
-                style={{
-                  backgroundColor: tipsDisabled ? 'transparent' : 'white'
-                }}
-              />
-              <label 
-                htmlFor="tips-toggle" 
-                className="text-xs text-white font-medium cursor-pointer select-none drop-shadow-sm font-maplestory"
-              >
-                Disable tips
-              </label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+      {/* Message Text */}
+      <div className="text-sm text-gray-800 leading-relaxed flex items-center h-full w-full font-maplestory font-normal">
+        <p className="text-left w-full">
+          {displayedText}
+          {isTyping && <span className="animate-pulse">|</span>}
+        </p>
+      </div>
+    </MapleDialog>
   );
 }
