@@ -41,7 +41,7 @@ export const MapleButton = forwardRef<HTMLButtonElement, MapleButtonProps>(
     return (
       <Button
         ref={ref}
-        className={`${sizeStyle} ${textColor} font-bold shadow-lg border-0 font-maplestory transition-all duration-200 ${className}`}
+        className={`${sizeStyle} ${textColor} font-bold shadow-lg border-0 font-maplestory transition-all duration-200 flex items-center justify-center ${className}`}
         style={{ 
           background: variantStyle.default,
           transition: 'all 0.2s ease'

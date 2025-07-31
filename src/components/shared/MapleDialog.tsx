@@ -1,6 +1,8 @@
 import { ReactNode } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { MapleButton } from './MapleButton';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MapleDialogProps {
   isVisible: boolean;
@@ -23,6 +25,19 @@ interface MapleDialogProps {
   className?: string;
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left' | 'center';
   minWidth?: string;
+  // Wizard functionality
+  wizardMode?: boolean;
+  wizardStep?: {
+    current: number;
+    total: number;
+  };
+  onNext?: () => void;
+  onBack?: () => void;
+  nextButtonText?: string;
+  backButtonText?: string;
+  nextButtonDisabled?: boolean;
+  backButtonDisabled?: boolean;
+  nextButtonVariant?: 'green' | 'orange' | 'blue' | 'red';
 }
 
 const positionClasses = {
@@ -30,8 +45,10 @@ const positionClasses = {
   'bottom-left': 'fixed bottom-4 left-4',
   'top-right': 'fixed top-4 right-4',
   'top-left': 'fixed top-4 left-4',
-  'center': 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
+  'center': 'fixed top-1/2 left-1/2'
 };
+
+const centerTransform = 'translate(-50%, -50%)';
 
 export function MapleDialog({
   isVisible,
@@ -47,18 +64,33 @@ export function MapleDialog({
   children,
   className = "",
   position = 'bottom-right',
-  minWidth = '400px'
+  minWidth = '400px',
+  // Wizard props
+  wizardMode = false,
+  wizardStep,
+  onNext,
+  onBack,
+  nextButtonText = "Next",
+  backButtonText = "Back",
+  nextButtonDisabled = false,
+  backButtonDisabled = false,
+  nextButtonVariant = "green"
 }: MapleDialogProps) {
   if (!isVisible) {
     return null;
   }
+
+  // Combine center positioning with animation transform
+  const finalTransform = position === 'center' 
+    ? `${centerTransform} ${transform}` 
+    : transform;
 
   return (
     <div 
       className={`${positionClasses[position]} z-50 max-w-lg ${className}`}
       style={{ 
         opacity: opacity,
-        transform: transform,
+        transform: finalTransform,
         transition: 'opacity 0.4s ease-out, transform 0.4s ease-out'
       }}
     >
@@ -122,8 +154,66 @@ export function MapleDialog({
                     style={{ backgroundColor: '#F9F9F9' }}
                     onClick={onCardClick}
                   >
-                    <CardContent className="p-4 flex items-center h-full">
-                      {children}
+                    <CardContent className="p-4 flex flex-col h-full">
+                      {/* Wizard Step Indicator */}
+                      {wizardMode && wizardStep && (
+                        <div className="flex justify-center mb-3">
+                          <div className="flex items-center gap-2">
+                            {Array.from({ length: wizardStep.total }, (_, i) => (
+                              <div
+                                key={i}
+                                className={`w-2 h-2 rounded-full transition-colors ${
+                                  i + 1 <= wizardStep.current 
+                                    ? 'bg-blue-500' 
+                                    : 'bg-gray-300'
+                                }`}
+                              />
+                            ))}
+                            <span className="text-xs text-gray-600 ml-2 font-maplestory">
+                              Step {wizardStep.current} of {wizardStep.total}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Main Content */}
+                      <div className="flex-1 flex items-center">
+                        {children}
+                      </div>
+                      
+                      {/* Wizard Navigation */}
+                      {wizardMode && (onNext || onBack) && (
+                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-300">
+                          <div>
+                            {onBack && (
+                              <MapleButton
+                                variant="green"
+                                size="sm"
+                                onClick={onBack}
+                                disabled={backButtonDisabled}
+                                className="gap-1"
+                              >
+                                <ChevronLeft className="w-3 h-3" />
+                                {backButtonText}
+                              </MapleButton>
+                            )}
+                          </div>
+                          <div>
+                            {onNext && (
+                              <MapleButton
+                                variant={nextButtonVariant}
+                                size="sm"
+                                onClick={onNext}
+                                disabled={nextButtonDisabled}
+                                className="gap-1"
+                              >
+                                {nextButtonText}
+                                <ChevronRight className="w-3 h-3" />
+                              </MapleButton>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 </div>

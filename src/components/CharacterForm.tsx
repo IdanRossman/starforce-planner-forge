@@ -3,19 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Character } from '@/types';
-import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { fetchCharacterFromMapleRanks } from '@/services/mapleRanksService';
-import { CategorizedSelect, SelectCategory } from '@/components/shared';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { CategorizedSelect, SelectCategory, MapleButton, MapleDialog } from '@/components/shared';
+import { MapleInput } from '@/components/shared/forms';
 import {
   Form,
   FormControl,
@@ -25,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Plus, Loader2, Search } from 'lucide-react';
+import { Plus, Loader2, Search, X } from 'lucide-react';
 
 const characterSchema = z.object({
   name: z.string().min(1, 'Character name is required').max(50, 'Name too long'),
@@ -61,6 +52,11 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
   const [internalOpen, setInternalOpen] = useState(false);
   const [isLoadingCharacter, setIsLoadingCharacter] = useState(false);
   const [characterNotFound, setCharacterNotFound] = useState(false);
+  
+  // Animation states for MapleDialog
+  const [isVisible, setIsVisible] = useState(false);
+  const [opacity, setOpacity] = useState(0);
+  const [transform, setTransform] = useState('translateY(-20px)');
 
   // Use external state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
@@ -172,189 +168,229 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (!newOpen) {
-      onEditingChange?.(null); // Reset editing state when dialog closes
-      setCharacterNotFound(false); // Reset not found state
-    } else if (!editingCharacter) {
-      // Reset form when opening for a new character (not editing)
-      form.reset({
-        name: '',
-        class: '',
-        level: 200,
-        image: '',
-      });
-      setCharacterNotFound(false); // Reset not found state
+    if (newOpen) {
+      setOpen(true);
+      setIsVisible(true);
+      // Start animation
+      setTimeout(() => {
+        setOpacity(1);
+        setTransform('translateY(0px)');
+      }, 50);
+      
+      if (!editingCharacter) {
+        // Reset form when opening for a new character (not editing)
+        form.reset({
+          name: '',
+          class: '',
+          level: 200,
+          image: '',
+        });
+        setCharacterNotFound(false); // Reset not found state
+      }
+    } else {
+      // Start close animation
+      setOpacity(0);
+      setTransform('translateY(-20px)');
+      setTimeout(() => {
+        setIsVisible(false);
+        setOpen(false);
+        onEditingChange?.(null); // Reset editing state when dialog closes
+        setCharacterNotFound(false); // Reset not found state
+      }, 300);
     }
   };
 
+  const handleClose = () => {
+    handleOpenChange(false);
+  };
+
+  // Handle animation when open state changes externally
+  useEffect(() => {
+    if (open && !isVisible) {
+      setIsVisible(true);
+      setTimeout(() => {
+        setOpacity(1);
+        setTransform('translateY(0px)');
+      }, 50);
+    } else if (!open && isVisible) {
+      setOpacity(0);
+      setTransform('translateY(-20px)');
+      setTimeout(() => {
+        setIsVisible(false);
+      }, 300);
+    }
+  }, [open, isVisible]);
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Character
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>{editingCharacter ? 'Edit Character' : 'Add New Character'}</DialogTitle>
-          <DialogDescription>
-            {editingCharacter ? 'Update character information.' : 'Create a new character to track their StarForce progress.'}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Character Image Preview */}
-            {form.watch('image') && (
-              <div className="flex justify-center">
-                <div className="relative">
-                  <img 
-                    src={form.watch('image')} 
-                    alt={form.watch('name') || 'Character'} 
-                    className="w-32 h-32 object-cover rounded-lg border-2 border-border"
-                    onError={(e) => {
-                      // Hide image if it fails to load
-                      e.currentTarget.style.display = 'none';
-                    }}
-                  />
-                  <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
-                    MapleRanks
-                  </div>
-                </div>
-              </div>
-            )}
+    <>
+      {/* Trigger Button */}
+      <MapleButton 
+        variant="blue" 
+        size="md"
+        onClick={() => handleOpenChange(true)}
+        className="gap-2"
+      >
+        <Plus className="w-4 h-4" />
+        Add Character
+      </MapleButton>
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Character Name</FormLabel>
-                  <FormControl>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Input 
-                          placeholder="Enter character name" 
-                          {...field} 
-                          onChange={(e) => {
-                            field.onChange(e);
-                            handleCharacterNameChange(e.target.value);
-                          }}
-                          onBlur={handleCharacterNameBlur}
-                        />
-                        {isLoadingCharacter && (
-                          <Loader2 className="absolute right-2 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={handleSearchClick}
-                        disabled={isLoadingCharacter || !field.value?.trim()}
-                        title="Search on MapleRanks"
-                      >
-                        <Search className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                  <p className="text-xs text-muted-foreground flex items-center gap-1">
-                    Auto-lookup from MapleRanks 
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      Beta
-                    </span>
-                  </p>
-                  {isLoadingCharacter && (
-                    <p className="text-sm text-muted-foreground">Looking up character on MapleRanks...</p>
-                  )}
-                  {characterNotFound && !isLoadingCharacter && (
-                    <p className="text-sm text-orange-600 dark:text-orange-400">
-                      Character not found on MapleRanks. You can still create the character manually.
-                    </p>
-                  )}
-                </FormItem>
-              )}
-            />
+      {/* MapleStory-styled Character Form Dialog */}
+      <MapleDialog
+        isVisible={isVisible}
+        opacity={opacity}
+        transform={transform}
+        position="center"
+        minWidth="500px"
+        className="max-w-2xl"
+        character={form.watch('image') ? {
+          name: form.watch('name') || 'New Character',
+          image: form.watch('image')
+        } : undefined}
+        bottomLeftActions={
+          <MapleButton 
+            variant="green" 
+            size="sm" 
+            onClick={handleClose}
+          >
+            END CHAT
+          </MapleButton>
+        }
+        bottomRightActions={
+          <MapleButton 
+            variant="green" 
+            size="sm" 
+            onClick={form.handleSubmit(onSubmit)}
+          >
+            {editingCharacter ? 'Update Character' : 'Create Character'}
+          </MapleButton>
+        }
+      >
+        {/* Form Content */}
+        <div className="w-full h-full flex flex-col space-y-4 p-2">
+          <div className="text-center mb-4">
+            <h2 className="text-lg font-bold text-black font-maplestory">
+              {editingCharacter ? 'Edit Character' : 'Add New Character'}
+            </h2>
+            <p className="text-sm text-gray-700 font-maplestory">
+              {editingCharacter ? 'Update character information.' : 'Create a new character to track their StarForce progress.'}
+            </p>
+          </div>
 
-             <FormField
-               control={form.control}
-               name="class"
-               render={({ field }) => (
-                 <FormItem>
-                   <FormLabel>Class</FormLabel>
-                   <FormControl>
-                     <CategorizedSelect
-                       value={field.value}
-                       onValueChange={field.onChange}
-                       placeholder="Select a class"
-                       categories={classCategories}
-                       renderSelectedValue={(option) => {
-                         const jobCategory = getJobCategoryName(option.value);
-                         const classSubcategory = getClassSubcategory(option.value);
-                         
-                         return (
-                           <div className="flex items-center gap-2">
-                             {option.icon && option.colors && (
-                               <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
-                                 <option.icon className="w-3 h-3 text-white" />
-                               </div>
-                             )}
-                             <span>{option.label}</span>
-                             {jobCategory && classSubcategory && (
-                               <div className="flex gap-1">
-                                 <span className={`text-xs px-2 py-1 rounded ${option.colors?.bgMuted} ${option.colors?.text}`}>
-                                   {jobCategory}
-                                 </span>
-                                 <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
-                                   {classSubcategory}
-                                 </span>
-                               </div>
-                             )}
-                           </div>
-                         );
-                       }}
-                     />
-                   </FormControl>
-                   <FormMessage />
-                 </FormItem>
-               )}
-             />
+          <Form {...form}>
+            <form className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <MapleInput
+                      title="Character Name"
+                      placeholder="Enter character name"
+                      {...field}
+                      onChange={(e) => {
+                        field.onChange(e);
+                        handleCharacterNameChange(e.target.value);
+                      }}
+                      onBlur={handleCharacterNameBlur}
+                      isLoading={isLoadingCharacter}
+                      underText={
+                        <span className="flex items-center gap-1">
+                          Auto-lookup from MapleRanks 
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Beta
+                          </span>
+                        </span>
+                      }
+                      errorMessage={characterNotFound && !isLoadingCharacter ? 
+                        "Character not found on MapleRanks. You can still create the character manually." : 
+                        undefined
+                      }
+                      searchButton={{
+                        icon: <Search className="h-3 w-3" />,
+                        onClick: handleSearchClick,
+                        disabled: !field.value?.trim(),
+                        title: "Search on MapleRanks",
+                        variant: "orange"
+                      }}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Level</FormLabel>
-                  <FormControl>
-                    <Input type="number" placeholder="200" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="class"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-black font-maplestory font-medium">Class</FormLabel>
+                    <FormControl>
+                      <CategorizedSelect
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        placeholder="Select a class"
+                        categories={classCategories}
+                        className="bg-white border-gray-300 font-maplestory"
+                        renderSelectedValue={(option) => {
+                          const jobCategory = getJobCategoryName(option.value);
+                          const classSubcategory = getClassSubcategory(option.value);
+                          
+                          return (
+                            <div className="flex items-center gap-2">
+                              {option.icon && option.colors && (
+                                <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
+                                  <option.icon className="w-3 h-3 text-white" />
+                                </div>
+                              )}
+                              <span className="text-black font-maplestory">{option.label}</span>
+                              {jobCategory && classSubcategory && (
+                                <div className="flex gap-1">
+                                  <span className={`text-xs px-2 py-1 rounded ${option.colors?.bgMuted} ${option.colors?.text}`}>
+                                    {jobCategory}
+                                  </span>
+                                  <span className="text-xs px-2 py-1 rounded bg-gray-200 text-gray-700">
+                                    {classSubcategory}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Hidden field to store image */}
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field }) => (
-                <input type="hidden" {...field} />
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="level"
+                render={({ field }) => (
+                  <FormItem>
+                    <MapleInput
+                      title="Level"
+                      type="number"
+                      placeholder="200"
+                      {...field}
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">{editingCharacter ? 'Update Character' : 'Create Character'}</Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+              {/* Hidden field to store image */}
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <input type="hidden" {...field} />
+                )}
+              />
+            </form>
+          </Form>
+        </div>
+      </MapleDialog>
+    </>
   );
 }

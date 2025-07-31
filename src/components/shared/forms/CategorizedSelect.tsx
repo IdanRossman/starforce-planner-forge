@@ -63,7 +63,7 @@ export function CategorizedSelect({
             <Icon className="w-3 h-3 text-white" />
           </div>
         )}
-        <span>{option.label}</span>
+        <span className="text-black font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -86,7 +86,7 @@ export function CategorizedSelect({
             <Icon className="w-2.5 h-2.5 text-white" />
           </div>
         )}
-        <span className="flex-1">{option.label}</span>
+        <span className="flex-1 text-black font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -107,14 +107,14 @@ export function CategorizedSelect({
           {selectedOption && (renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption))}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-white">
         {categories.map((category, categoryIndex) => (
           <div key={categoryIndex}>
-            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
+            <div className="px-2 py-1.5 text-sm font-semibold text-gray-600 bg-gray-100 border-b font-maplestory">
               {category.name}
             </div>
             {category.options.map((option) => (
-              <SelectItem key={option.value} value={option.value} className="pl-6">
+              <SelectItem key={option.value} value={option.value} className="pl-6 text-black font-maplestory">
                 {renderOption ? renderOption(option) : defaultRenderOption(option)}
               </SelectItem>
             ))}
