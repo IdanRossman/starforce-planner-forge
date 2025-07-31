@@ -62,7 +62,7 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
     name: '',
     class: '',
     level: 200,
-    image: '/characters/maple-admin.png', // Default character image
+    image: './characters/maple-admin.png', // Default character image
     selectedTemplate: null,
     equipment: [],
   });
