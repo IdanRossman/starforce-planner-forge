@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,6 +6,7 @@ import { Character } from '@/types';
 import { Button } from '@/components/ui/button';
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { fetchCharacterFromMapleRanks } from '@/services/mapleRanksService';
+import { CategorizedSelect, SelectCategory } from '@/components/shared';
 import {
   Dialog,
   DialogContent,
@@ -23,13 +24,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Plus, Loader2, Search } from 'lucide-react';
 
@@ -71,6 +65,25 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
   // Use external state if provided, otherwise use internal state
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const setOpen = externalOnOpenChange || setInternalOpen;
+
+  // Transform ORGANIZED_CLASSES into CategorizedSelect format
+  const classCategories = useMemo((): SelectCategory[] => {
+    return Object.entries(ORGANIZED_CLASSES).map(([key, category]) => ({
+      name: category.name,
+      options: category.classes.map(cls => ({
+        value: cls,
+        label: cls,
+        icon: getJobIcon(cls),
+        colors: getJobColors(cls),
+        badges: [
+          {
+            text: getJobCategoryName(cls),
+            className: `text-xs px-1.5 py-0.5 rounded ${getJobColors(cls).bgMuted} ${getJobColors(cls).text}`
+          }
+        ]
+      }))
+    }));
+  }, []);
 
   const form = useForm<CharacterFormData>({
     resolver: zodResolver(characterSchema),
@@ -269,73 +282,45 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
              <FormField
                control={form.control}
                name="class"
-               render={({ field }) => {
-                 const JobIcon = field.value ? getJobIcon(field.value) : null;
-                 const jobColors = field.value ? getJobColors(field.value) : null;
-                 const jobCategory = field.value ? getJobCategoryName(field.value) : null;
-                 const classSubcategory = field.value ? getClassSubcategory(field.value) : null;
-                 
-                 return (
-                   <FormItem>
-                     <FormLabel>Class</FormLabel>
-                     <Select onValueChange={field.onChange} value={field.value}>
-                       <FormControl>
-                         <SelectTrigger>
-                           <SelectValue placeholder="Select a class">
-                             {field.value && JobIcon && jobColors && (
-                               <div className="flex items-center gap-2">
-                                 <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center`}>
-                                   <JobIcon className="w-3 h-3 text-white" />
-                                 </div>
-                                 <span>{field.value}</span>
-                                 {jobCategory && classSubcategory && (
-                                   <div className="flex gap-1">
-                                     <span className={`text-xs px-2 py-1 rounded ${jobColors.bgMuted} ${jobColors.text}`}>
-                                       {jobCategory}
-                                     </span>
-                                     <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
-                                       {classSubcategory}
-                                     </span>
-                                   </div>
-                                 )}
+               render={({ field }) => (
+                 <FormItem>
+                   <FormLabel>Class</FormLabel>
+                   <FormControl>
+                     <CategorizedSelect
+                       value={field.value}
+                       onValueChange={field.onChange}
+                       placeholder="Select a class"
+                       categories={classCategories}
+                       renderSelectedValue={(option) => {
+                         const jobCategory = getJobCategoryName(option.value);
+                         const classSubcategory = getClassSubcategory(option.value);
+                         
+                         return (
+                           <div className="flex items-center gap-2">
+                             {option.icon && option.colors && (
+                               <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${option.colors.bg} flex items-center justify-center`}>
+                                 <option.icon className="w-3 h-3 text-white" />
                                </div>
                              )}
-                           </SelectValue>
-                         </SelectTrigger>
-                       </FormControl>
-                       <SelectContent>
-                         {Object.entries(ORGANIZED_CLASSES).map(([key, category]) => (
-                           <div key={key}>
-                             <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground bg-muted/50 border-b">
-                               {category.name}
-                             </div>
-                             {category.classes.map((cls) => {
-                               const ClassIcon = getJobIcon(cls);
-                               const classColors = getJobColors(cls);
-                               const classCategory = getJobCategoryName(cls);
-                               
-                               return (
-                                 <SelectItem key={cls} value={cls} className="pl-6">
-                                   <div className="flex items-center gap-2">
-                                     <div className={`w-4 h-4 rounded-full bg-gradient-to-r ${classColors.bg} flex items-center justify-center`}>
-                                       <ClassIcon className="w-2.5 h-2.5 text-white" />
-                                     </div>
-                                     <span className="flex-1">{cls}</span>
-                                     <span className={`text-xs px-1.5 py-0.5 rounded ${classColors.bgMuted} ${classColors.text}`}>
-                                       {classCategory}
-                                     </span>
-                                   </div>
-                                 </SelectItem>
-                               );
-                             })}
+                             <span>{option.label}</span>
+                             {jobCategory && classSubcategory && (
+                               <div className="flex gap-1">
+                                 <span className={`text-xs px-2 py-1 rounded ${option.colors?.bgMuted} ${option.colors?.text}`}>
+                                   {jobCategory}
+                                 </span>
+                                 <span className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground">
+                                   {classSubcategory}
+                                 </span>
+                               </div>
+                             )}
                            </div>
-                         ))}
-                       </SelectContent>
-                     </Select>
-                     <FormMessage />
-                   </FormItem>
-                 );
-               }}
+                         );
+                       }}
+                     />
+                   </FormControl>
+                   <FormMessage />
+                 </FormItem>
+               )}
              />
 
             <FormField
