@@ -11,6 +11,7 @@ import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
+import { StarForceOptimizer } from "@/components/StarForceOptimizer";
 import { 
   trackEquipmentAdded, 
   trackStarForceCalculation, 
@@ -208,6 +209,25 @@ export function EnhancedEquipmentManager({
     handleCloseEquipmentForm();
   };
 
+  const handleUpdateSafeguard = (equipmentId: string, safeguard: boolean) => {
+    // Find the equipment and update its safeguard setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const updatedEquipment = { ...targetEquipment, safeguard };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = isAdditionalEquipment(targetEquipment);
+      
+      if (isAdditional && onSaveAdditionalEquipment) {
+        onSaveAdditionalEquipment(updatedEquipment);
+      } else if (onSaveEquipment) {
+        onSaveEquipment(updatedEquipment);
+      }
+    }
+  };
+
   const getStarforceStatus = (equipment: Equipment) => {
     if (!equipment.starforceable) return "non-starforceable";
     if (equipment.currentStarForce >= equipment.targetStarForce) return "completed";
@@ -233,7 +253,7 @@ export function EnhancedEquipmentManager({
       <Card>
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory">
                 <Package className="w-4 h-4" />
                 Equipment Setup
@@ -244,6 +264,15 @@ export function EnhancedEquipmentManager({
                 {pendingEquipment.length > 0 && (
                   <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-400 font-maplestory">
                     {pendingEquipment.length}
+                  </Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="optimizer" className="flex items-center gap-2 font-maplestory">
+                <Sparkles className="w-4 h-4" />
+                Smart Planner
+                {pendingEquipment.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 bg-blue-500/20 text-blue-400 font-maplestory">
+                    AI
                   </Badge>
                 )}
               </TabsTrigger>
@@ -558,6 +587,7 @@ export function EnhancedEquipmentManager({
                   additionalEquipment={additionalEquipment}
                   onUpdateStarforce={onUpdateStarforce}
                   onUpdateActualCost={onUpdateActualCost}
+                  onUpdateSafeguard={handleUpdateSafeguard}
                 />
               ) : (
                 <Card>
@@ -588,6 +618,16 @@ export function EnhancedEquipmentManager({
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Smart Planner Tab */}
+            <TabsContent value="optimizer" className="mt-6">
+              <StarForceOptimizer
+                equipment={equipment}
+                additionalEquipment={additionalEquipment}
+                characterId={characterId}
+                characterName={characterName}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

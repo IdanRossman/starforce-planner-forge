@@ -1,5 +1,7 @@
 const API_BASE_URL = 'https://forge-service-production.up.railway.app';
 
+import { StarforceOptimizationRequestDto, StarforceOptimizationResponseDto } from '@/types';
+
 export interface ApiResponse<T> {
   data: T;
   success: boolean;
@@ -69,14 +71,14 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data: any): Promise<T> {
+  async post<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
     });
   }
 
-  async put<T>(endpoint: string, data: any): Promise<T> {
+  async put<T>(endpoint: string, data: unknown): Promise<T> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: JSON.stringify(data),
@@ -103,6 +105,11 @@ class ApiService {
 
   async getTemplateEquipment(templateId: number, job: string): Promise<TemplateEquipmentResponse[]> {
     return this.get<TemplateEquipmentResponse[]>(`/Templates/${templateId}/equipment?job=${encodeURIComponent(job)}`);
+  }
+
+  // StarForce Optimization method
+  async optimizeStarforce(request: StarforceOptimizationRequestDto): Promise<StarforceOptimizationResponseDto> {
+    return this.post<StarforceOptimizationResponseDto>('/Starforce/optimize', request);
   }
 }
 
