@@ -299,3 +299,101 @@ export function loadSparesFromLocalStorage(): Record<string, number> {
     return {};
   }
 }
+
+// Meso formatting and parsing utilities
+export function formatMeso(amount: number): string {
+  if (amount >= 1000000000) {
+    return `${(amount / 1000000000).toFixed(1)}B`;
+  } else if (amount >= 1000000) {
+    return `${(amount / 1000000).toFixed(1)}M`;
+  } else if (amount >= 1000) {
+    return `${(amount / 1000).toFixed(1)}K`;
+  }
+  return amount.toLocaleString();
+}
+
+export function parseMesoInput(input: string): number {
+  if (!input || input.trim() === '') return 0;
+  
+  const cleanInput = input.trim().toUpperCase();
+  const lastChar = cleanInput.slice(-1);
+  const numericPart = cleanInput.slice(0, -1);
+  
+  let multiplier = 1;
+  let numberStr = cleanInput;
+  
+  if (lastChar === 'K') {
+    multiplier = 1000;
+    numberStr = numericPart;
+  } else if (lastChar === 'M') {
+    multiplier = 1000000;
+    numberStr = numericPart;
+  } else if (lastChar === 'B') {
+    multiplier = 1000000000;
+    numberStr = numericPart;
+  }
+  
+  const number = parseFloat(numberStr);
+  if (isNaN(number)) return 0;
+  
+  return Math.floor(number * multiplier);
+}
+
+export function isValidMesoInput(input: string): boolean {
+  if (!input || input.trim() === '') return false;
+  
+  const cleanInput = input.trim().toUpperCase();
+  const lastChar = cleanInput.slice(-1);
+  const numericPart = cleanInput.slice(0, -1);
+  
+  // Check if it ends with valid unit or is just a number
+  if (['K', 'M', 'B'].includes(lastChar)) {
+    const number = parseFloat(numericPart);
+    return !isNaN(number) && number > 0;
+  } else {
+    const number = parseFloat(cleanInput);
+    return !isNaN(number) && number > 0;
+  }
+}
+
+// Character-specific StarForce settings utilities
+export function getCharacterStorageKey(characterId?: string, characterName?: string, key?: string): string {
+  if (!key) return '';
+  
+  if (characterId) {
+    return `starforce-${characterId}-${key}`;
+  } else if (characterName) {
+    return `starforce-${characterName.toLowerCase().replace(/\s+/g, '-')}-${key}`;
+  } else {
+    return `starforce-${key}`;
+  }
+}
+
+export function loadCharacterSpareData(characterId?: string, characterName?: string): {
+  spareCounts: Record<string, number>;
+  sparePrices: Record<string, { value: number; unit: 'M' | 'B' }>;
+  safeguardSettings: Record<string, boolean>;
+} {
+  try {
+    const spareCountsKey = getCharacterStorageKey(characterId, characterName, 'item-spares');
+    const sparePricesKey = getCharacterStorageKey(characterId, characterName, 'item-spare-prices');
+    const safeguardKey = getCharacterStorageKey(characterId, characterName, 'item-safeguard');
+
+    const spareCounts = localStorage.getItem(spareCountsKey);
+    const sparePrices = localStorage.getItem(sparePricesKey);
+    const safeguardSettings = localStorage.getItem(safeguardKey);
+
+    return {
+      spareCounts: spareCounts ? JSON.parse(spareCounts) : {},
+      sparePrices: sparePrices ? JSON.parse(sparePrices) : {},
+      safeguardSettings: safeguardSettings ? JSON.parse(safeguardSettings) : {}
+    };
+  } catch (error) {
+    console.error('Failed to load character spare data:', error);
+    return {
+      spareCounts: {},
+      sparePrices: {},
+      safeguardSettings: {}
+    };
+  }
+}

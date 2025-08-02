@@ -11,6 +11,7 @@ import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
+import { StarForceOptimizer } from "@/components/StarForceOptimizer";
 import { 
   trackEquipmentAdded, 
   trackStarForceCalculation, 
@@ -208,6 +209,25 @@ export function EnhancedEquipmentManager({
     handleCloseEquipmentForm();
   };
 
+  const handleUpdateSafeguard = (equipmentId: string, safeguard: boolean) => {
+    // Find the equipment and update its safeguard setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const updatedEquipment = { ...targetEquipment, safeguard };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = isAdditionalEquipment(targetEquipment);
+      
+      if (isAdditional && onSaveAdditionalEquipment) {
+        onSaveAdditionalEquipment(updatedEquipment);
+      } else if (onSaveEquipment) {
+        onSaveEquipment(updatedEquipment);
+      }
+    }
+  };
+
   const getStarforceStatus = (equipment: Equipment) => {
     if (!equipment.starforceable) return "non-starforceable";
     if (equipment.currentStarForce >= equipment.targetStarForce) return "completed";
@@ -233,19 +253,61 @@ export function EnhancedEquipmentManager({
       <Card>
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory">
-                <Package className="w-4 h-4" />
-                Equipment Setup
+            <TabsList className="grid w-full grid-cols-3 border border-border/50">
+              <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-blue-300 data-[state=active]:bg-blue-50/50">
+                {/* Animated highlight background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-indigo-400/40 to-blue-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/15 to-transparent animate-pulse" />
+                
+                {/* Tab content */}
+                <div className="relative flex items-center gap-2">
+                  <Package className="w-4 h-4 animate-pulse text-blue-600" />
+                  <span className="text-blue-700 font-medium">Equipment Setup</span>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="calculator" className="flex items-center gap-2 font-maplestory">
-                <Calculator className="w-4 h-4" />
-                StarForce Calculator
-                {pendingEquipment.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-400 font-maplestory">
-                    {pendingEquipment.length}
-                  </Badge>
-                )}
+              <TabsTrigger value="calculator" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-green-300 data-[state=active]:bg-green-50/50">
+                {/* Animated highlight background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400/30 via-emerald-400/40 to-green-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/15 to-transparent animate-pulse" />
+                
+                {/* Tab content */}
+                <div className="relative flex items-center gap-2">
+                  <Calculator className="w-4 h-4 animate-pulse text-green-600" />
+                  <span className="text-green-700 font-medium">StarForce Calculator</span>
+                  {pendingEquipment.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-400 font-maplestory">
+                      {pendingEquipment.length}
+                    </Badge>
+                  )}
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="optimizer" className="flex items-center gap-2 font-maplestory relative overflow-hidden group data-[state=active]:border-orange-300 data-[state=active]:bg-gray-900/20">
+                {/* Animated highlight background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-800/40 via-gray-700/50 to-gray-800/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent animate-pulse" />
+                
+                {/* Tab content */}
+                <div className="relative flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 animate-pulse text-orange-600" />
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-orange-700 font-medium">Smart Planner</span>
+                    {/* "NEW" indicator positioned to the side */}
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full animate-bounce">
+                      NEW
+                    </span>
+                  </span>
+                  {pendingEquipment.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-600 border-orange-500/30 font-maplestory">
+                      BETA
+                    </Badge>
+                  )}
+                </div>
               </TabsTrigger>
             </TabsList>
 
@@ -558,6 +620,7 @@ export function EnhancedEquipmentManager({
                   additionalEquipment={additionalEquipment}
                   onUpdateStarforce={onUpdateStarforce}
                   onUpdateActualCost={onUpdateActualCost}
+                  onUpdateSafeguard={handleUpdateSafeguard}
                 />
               ) : (
                 <Card>
@@ -588,6 +651,16 @@ export function EnhancedEquipmentManager({
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Smart Planner Tab */}
+            <TabsContent value="optimizer" className="mt-6">
+              <StarForceOptimizer
+                equipment={equipment}
+                additionalEquipment={additionalEquipment}
+                characterId={characterId}
+                characterName={characterName}
+              />
             </TabsContent>
           </Tabs>
         </CardContent>

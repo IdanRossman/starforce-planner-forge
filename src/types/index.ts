@@ -26,6 +26,7 @@ export interface Equipment {
   transferredStars?: number; // Number of stars transferred to this equipment (minimum current stars)
   isTransferSource?: boolean; // Flag indicating this equipment will be destroyed after transfer
   transferTargetId?: string; // ID of the target equipment for transfer source
+  safeguard?: boolean; // Whether safeguard is enabled for this equipment
 }
 
 export interface EquipmentWithCharacter extends Equipment {
@@ -117,4 +118,105 @@ export interface GameAssistantProps {
   isStarforceable?: boolean;
   onClose?: () => void;
   debugMode?: boolean; // Controls whether tip persists for debugging
+}
+
+// StarForce Optimization Types
+export interface StarforceOptimizationRequestDto {
+  items: Array<{
+    itemLevel: number;
+    fromStar: number;
+    toStar: number;
+    safeguardEnabled?: boolean;
+    spareCount?: number;
+    spareCost?: number;
+    itemName?: string;
+  }>;
+  availableMeso: number;
+  isInteractive?: boolean;
+  events?: {
+    thirtyOff?: boolean;
+    fiveTenFifteen?: boolean;
+    starCatching?: boolean;
+    mvpDiscount?: boolean;
+  };
+}
+
+export interface StarforceOptimizationResponseDto {
+  budget: {
+    available: number;
+    used: number;
+    remaining: number;
+  };
+  starsGained: {
+    total: number;
+    byItem: Array<{
+      itemName: string;
+      originalTarget: number;
+      starsGained: number;
+      finalStar: number;
+      stepsCompleted: number;
+      totalCost: number;
+    }>;
+  };
+  actionPlan: Array<{
+    step: number;
+    action: string;
+    fromStar: number;
+    toStar: number;
+    expectedCost: number;
+    expectedBooms: number;
+    riskLevel: string;
+    efficiency: number;
+    cumulativeCost: number;
+    remainingBudget: number;
+    specialNote?: string;
+  }>;
+  achievableTargets: Array<{
+    itemIndex: number;
+    itemName: string;
+    originalTarget: number;
+    achievableTarget: number;
+    starsGained: number;
+    starsShortfall: number;
+  }>;
+  originalTargets: Array<{
+    itemName: string;
+    fromStar: number;
+    requestedTarget: number;
+    achievableTarget: number;
+    starsShortfall: number;
+  }>;
+  analysis: {
+    starsMetrics: {
+      requested: number;
+      achievable: number;
+      shortfall: number;
+      completionRate: number;
+    };
+    budgetMetrics: {
+      efficiency: number;
+      utilizationRate: number;
+      costPerStar: number;
+    };
+    itemsStatus: {
+      fullyAchievable: number;
+      partiallyAchievable: number;
+      notAchievable: number;
+    };
+    riskAssessment: {
+      highRiskSteps: number;
+      mediumRiskSteps: number;
+      overallRisk: string;
+    };
+    eventBenefits?: {
+      guaranteedSuccesses: number;
+      mesoSaved: number;
+      riskReduced: string;
+    };
+  };
+  recommendations: Array<{
+    type: string;
+    priority: string;
+    message: string;
+  }>;
 }

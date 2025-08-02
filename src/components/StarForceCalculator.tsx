@@ -26,6 +26,7 @@ interface StarForceCalculatorProps {
   additionalEquipment?: Equipment[];
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
+  onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
   mode?: 'standalone' | 'equipment-table';
   characterId?: string; // For per-character localStorage
   characterName?: string; // Fallback for characters without ID
@@ -363,6 +364,7 @@ export function StarForceCalculator({
   additionalEquipment = [],
   onUpdateStarforce,
   onUpdateActualCost,
+  onUpdateSafeguard,
   mode = 'standalone',
   characterId,
   characterName
@@ -1743,6 +1745,10 @@ export function StarForceCalculator({
                                 onCheckedChange={(checked) => {
                                   console.log(`Setting safeguard for ${calc.equipment.id}: ${checked}`);
                                   setItemSafeguard(prev => ({ ...prev, [calc.equipment.id]: checked }));
+                                  // Update the equipment object in the parent component
+                                  if (onUpdateSafeguard) {
+                                    onUpdateSafeguard(calc.equipment.id, checked);
+                                  }
                                 }}
                               />
                             ) : (
