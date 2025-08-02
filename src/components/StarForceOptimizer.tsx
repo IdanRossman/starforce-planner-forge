@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +29,9 @@ import {
   Calculator,
   Loader2,
   Info,
-  Trophy
+  Trophy,
+  Play,
+  Circle
 } from "lucide-react";
 
 interface StarForceOptimizerProps {
@@ -47,8 +50,10 @@ export function StarForceOptimizer({
   onUpdateProgress
 }: StarForceOptimizerProps) {
   const [availableMeso, setAvailableMeso] = useState<string>("");
+  const [mesoUnit, setMesoUnit] = useState<string>("B"); // B for billion, M for million, K for thousand
   const [isLoading, setIsLoading] = useState(false);
   const [optimization, setOptimization] = useState<StarforceOptimizationResponseDto | null>(null);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [events, setEvents] = useState({
     fiveTenFifteen: false,
     thirtyOff: false,
@@ -100,11 +105,28 @@ export function StarForceOptimizer({
     return match ? match[1] : action;
   };
 
+  // Helper function to convert input to meso amount
+  const convertToMeso = (amount: string, unit: string): number => {
+    const numAmount = parseFloat(amount) || 0;
+    switch (unit) {
+      case "B": return numAmount * 1000000000; // Billion
+      case "M": return numAmount * 1000000; // Million
+      case "K": return numAmount * 1000; // Thousand
+      default: return numAmount; // Raw number
+    }
+  };
+
+  // Helper function to validate meso input
+  const isValidMesoAmount = (amount: string): boolean => {
+    const numAmount = parseFloat(amount);
+    return !isNaN(numAmount) && numAmount > 0;
+  };
+
   const handleOptimize = async () => {
-    if (!availableMeso || !isValidMesoInput(availableMeso)) {
+    if (!availableMeso || !isValidMesoAmount(availableMeso)) {
       toast({
         title: "Invalid Input",
-        description: "Please enter a valid meso amount (e.g., 5B, 500M, 1.5B).",
+        description: "Please enter a valid meso amount.",
         variant: "destructive",
       });
       return;
@@ -122,7 +144,7 @@ export function StarForceOptimizer({
     setIsLoading(true);
     
     try {
-      const parsedMesoAmount = parseMesoInput(availableMeso);
+      const parsedMesoAmount = convertToMeso(availableMeso, mesoUnit);
       
       // Load calculator data for spare counts only (safeguard comes from Equipment objects)
       const savedData = loadCharacterSpareData(characterId, characterName);
@@ -149,6 +171,9 @@ export function StarForceOptimizer({
 
       const response = await apiService.optimizeStarforce(request);
       setOptimization(response);
+      
+      // Reset completed steps when new optimization is generated
+      setCompletedSteps(new Set());
       
       toast({
         title: "Optimization Complete",
@@ -184,6 +209,19 @@ export function StarForceOptimizer({
     }
   };
 
+  // Handle step completion toggle
+  const toggleStepCompletion = (stepNumber: number) => {
+    setCompletedSteps(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(stepNumber)) {
+        newSet.delete(stepNumber);
+      } else {
+        newSet.add(stepNumber);
+      }
+      return newSet;
+    });
+  };
+
   if (pendingEquipment.length === 0) {
     return (
       <div className="p-8">
@@ -211,30 +249,15 @@ export function StarForceOptimizer({
 
   return (
     <div className="p-8 space-y-8">
-        {/* Hero Header */}
-        <div className="text-center py-8">
-          <div className="relative inline-block">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-2xl opacity-20 animate-pulse" />
-            <h1 className="relative text-4xl font-bold font-maplestory bg-gradient-to-r from-blue-600 via-purple-600 to-amber-500 bg-clip-text text-transparent">
-              ⚡ Smart StarForce Optimizer ⚡
-            </h1>
-          </div>
-          <p className="text-lg text-muted-foreground mt-2 font-maplestory">
-            AI-powered optimization for maximum efficiency
-          </p>
-        </div>
-
         {/* Configuration Section */}
         <Card className="bg-card border shadow-sm">
           <CardHeader className="border-b">
             <CardTitle className="flex items-center gap-3 font-maplestory text-xl">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
-                <Calculator className="w-6 h-6 text-white" />
-              </div>
+              <Calculator className="w-6 h-6 text-orange-500" />
               Optimization Settings
               <div className="ml-auto">
-                <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-maplestory">
-                  Smart AI
+                <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-maplestory">
+                  Advanced
                 </Badge>
               </div>
             </CardTitle>
@@ -250,29 +273,45 @@ export function StarForceOptimizer({
                 Required to start optimization
               </p>
             </div>
-            <div className="relative max-w-sm w-full">
-              <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-              <Input
-                id="meso-budget"
-                type="text"
-                placeholder="5B, 500M, 1.5B..."
-                value={availableMeso}
-                onChange={(e) => setAvailableMeso(e.target.value)}
-                className="pl-9 font-maplestory text-center border-2 border-blue-200 focus:border-blue-400 shadow-md"
-              />
+            <div className="flex max-w-sm w-full gap-2">
+              {/* Amount Input */}
+              <div className="relative flex-1">
+                <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="meso-budget"
+                  type="number"
+                  placeholder="5, 500, 1.5..."
+                  value={availableMeso}
+                  onChange={(e) => setAvailableMeso(e.target.value)}
+                  className="pl-9 font-maplestory text-center border-2 border-blue-200 focus:border-blue-400 shadow-md"
+                  min="0"
+                  step="0.1"
+                />
+              </div>
+              {/* Unit Selector */}
+              <Select value={mesoUnit} onValueChange={setMesoUnit}>
+                <SelectTrigger className="w-20 font-maplestory border-2 border-blue-200 focus:border-blue-400 shadow-md">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="B" className="font-maplestory">B</SelectItem>
+                  <SelectItem value="M" className="font-maplestory">M</SelectItem>
+                  <SelectItem value="K" className="font-maplestory">K</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="text-xs text-muted-foreground font-maplestory text-center">
-              {availableMeso && isValidMesoInput(availableMeso) ? (
+              {availableMeso && isValidMesoAmount(availableMeso) ? (
                 <span className="text-green-600 font-medium">
-                  Budget: {formatMeso(parseMesoInput(availableMeso))} ({parseMesoInput(availableMeso).toLocaleString()} meso)
+                  Budget: {formatMeso(convertToMeso(availableMeso, mesoUnit))} ({convertToMeso(availableMeso, mesoUnit).toLocaleString()} meso)
                 </span>
               ) : availableMeso ? (
                 <span className="text-red-600 font-medium">
-                  Invalid format. Use: 5B, 500M, 1.5B, or 5000000000
+                  Please enter a valid number
                 </span>
               ) : (
                 <span>
-                  Enter amount with units: 5B (billion), 500M (million), 1.5B, etc.
+                  Enter your available meso budget and select the unit
                 </span>
               )}
             </div>
@@ -357,7 +396,7 @@ export function StarForceOptimizer({
               onClick={handleOptimize}
               disabled={isLoading || !availableMeso}
               size="lg"
-              className="relative overflow-hidden group bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 border-0 shadow-xl font-maplestory text-lg px-8 py-4 transition-all duration-300"
+              className="relative overflow-hidden group bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 hover:from-orange-700 hover:via-amber-700 hover:to-orange-700 border-0 shadow-xl font-maplestory text-lg px-8 py-4 transition-all duration-300"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center gap-3">
@@ -392,7 +431,7 @@ export function StarForceOptimizer({
                 <div className="ml-auto">
                   <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-maplestory">
                     <Trophy className="w-3 h-3 mr-1" />
-                    Smart Analysis
+                    Analysis
                   </Badge>
                 </div>
               </CardTitle>
@@ -400,8 +439,8 @@ export function StarForceOptimizer({
             <CardContent className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="text-center relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-                  <div className="relative p-6 rounded-xl border border-green-200/50 bg-gradient-to-br from-green-50 to-emerald-50">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-200 to-emerald-200 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative p-6 rounded-xl border border-green-300/70 bg-gradient-to-br from-green-100 to-emerald-100">
                     <div className="text-3xl font-bold text-green-600 font-maplestory mb-2">
                       {formatMeso(optimization.budget.available)}
                     </div>
@@ -412,8 +451,8 @@ export function StarForceOptimizer({
                   </div>
                 </div>
                 <div className="text-center relative group">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-                  <div className="relative p-6 rounded-xl border border-blue-200/50 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative p-6 rounded-xl border border-blue-300/70 bg-gradient-to-br from-blue-100 to-indigo-100">
                     <div className="text-3xl font-bold text-blue-600 font-maplestory mb-2">
                       {formatMeso(optimization.budget.used)}
                     </div>
@@ -425,12 +464,12 @@ export function StarForceOptimizer({
                 </div>
                 <div className="text-center relative group">
                   <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300 ${
-                    optimization.budget.remaining < 0 ? 'bg-gradient-to-r from-red-100 to-rose-100' : 'bg-gradient-to-r from-orange-100 to-amber-100'
+                    optimization.budget.remaining < 0 ? 'bg-gradient-to-r from-red-200 to-rose-200' : 'bg-gradient-to-r from-orange-200 to-amber-200'
                   }`} />
                   <div className={`relative p-6 rounded-xl border bg-gradient-to-br ${
                     optimization.budget.remaining < 0 
-                      ? 'border-red-200/50 from-red-50 to-rose-50' 
-                      : 'border-orange-200/50 from-orange-50 to-amber-50'
+                      ? 'border-red-300/70 from-red-100 to-rose-100' 
+                      : 'border-orange-300/70 from-orange-100 to-amber-100'
                   }`}>
                     <div className={`text-3xl font-bold font-maplestory mb-2 ${
                       optimization.budget.remaining < 0 ? 'text-red-600' : 'text-orange-600'
@@ -498,7 +537,7 @@ export function StarForceOptimizer({
                   )}
                 </div>
                 {optimization.budget.remaining < 0 && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl text-sm text-red-700 font-maplestory">
+                  <div className="mt-4 p-4 bg-gradient-to-r from-red-100 to-rose-100 border border-red-300 rounded-xl text-sm text-red-700 font-maplestory">
                     <div className="flex items-center gap-2">
                       <AlertTriangle className="w-4 h-4" />
                       <span className="font-medium">Budget Exceeded</span>
@@ -527,14 +566,6 @@ export function StarForceOptimizer({
                   </Badge>
                 </div>
               </CardTitle>
-              {optimization.actionPlan.some(step => step.remainingBudget < 0) && (
-                <div className="text-sm text-muted-foreground font-maplestory mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                  <div className="flex items-center gap-2">
-                    <Info className="w-4 h-4 text-amber-600" />
-                    Shows complete roadmap to all targets. Steps with red indicators exceed your current budget.
-                  </div>
-                </div>
-              )}
             </CardHeader>
             <CardContent className="p-8">
               {(() => {
@@ -545,7 +576,7 @@ export function StarForceOptimizer({
                   <div>
                     {/* Budget Summary - only show if there are over-budget steps */}
                     {overBudgetSteps.length > 0 && (
-                      <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                      <div className="mb-6 p-4 bg-gradient-to-r from-amber-100 to-orange-100 border border-amber-300 rounded-xl">
                         <div className="flex items-center gap-3 text-amber-800 font-maplestory">
                           <div className="p-2 bg-amber-500 rounded-lg">
                             <AlertTriangle className="w-4 h-4 text-white" />
@@ -573,12 +604,15 @@ export function StarForceOptimizer({
                         const equipment = findEquipmentByAction(step.action);
                         const isOverBudget = step.remainingBudget < 0;
                         const isLastStep = index === optimization.actionPlan.length - 1;
+                        const isCompleted = completedSteps.has(step.step);
                         
                         return (
                           <div key={index} className="relative">
                             {/* Timeline Node */}
                             <div className={`absolute left-6 w-5 h-5 rounded-full border-4 border-white shadow-lg z-10 ${
-                              isOverBudget 
+                              isCompleted
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-500'
+                                : isOverBudget 
                                 ? 'bg-gradient-to-r from-red-500 to-rose-500' 
                                 : 'bg-gradient-to-r from-blue-500 to-purple-500'
                             }`}>
@@ -587,18 +621,26 @@ export function StarForceOptimizer({
                             
                             {/* Step Card */}
                             <div className={`ml-16 p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
-                              isOverBudget 
+                              isCompleted
+                                ? 'border-green-200 bg-card hover:border-green-300 opacity-75'
+                                : isOverBudget 
                                 ? 'border-red-200 bg-card hover:border-red-300' 
                                 : 'border-blue-200 bg-card hover:border-blue-300'
                             }`}>
                               <div className="flex items-center gap-6">
                                 {/* Step Number */}
                                 <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-maplestory shadow-md ${
-                                  isOverBudget 
+                                  isCompleted
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
+                                    : isOverBudget 
                                     ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' 
                                     : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
                                 }`}>
-                                  {step.step}
+                                  {isCompleted ? (
+                                    <CheckCircle2 className="w-5 h-5" />
+                                  ) : (
+                                    step.step
+                                  )}
                                 </div>
                                 
                                 {/* Equipment Image - Enlarged Centerpiece */}
@@ -618,47 +660,94 @@ export function StarForceOptimizer({
                                 
                                 {/* Step Details */}
                                 <div className="flex-1 min-w-0">
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                    <div className="flex items-center gap-2 font-maplestory">
-                                      <Star className="w-3 h-3 text-amber-500" />
-                                      <span>{step.fromStar}★ → {step.toStar}★</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 font-maplestory">
-                                      <DollarSign className="w-3 h-3 text-green-500" />
-                                      <span>{formatMeso(step.expectedCost)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 font-maplestory">
-                                      <AlertTriangle className="w-3 h-3 text-orange-500" />
-                                      <span>{step.expectedBooms.toFixed(1)} booms</span>
-                                    </div>
-                                    <div className={`flex items-center gap-2 font-maplestory ${
-                                      step.remainingBudget < 0 ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                                  {/* Step Action Description */}
+                                  <div className="mb-3 pb-2 border-b border-gray-100">
+                                    <p className={`text-sm font-medium font-maplestory ${
+                                      isCompleted ? 'text-muted-foreground line-through' : 'text-foreground'
                                     }`}>
-                                      {step.remainingBudget < 0 ? (
-                                        <AlertTriangle className="w-3 h-3" />
-                                      ) : (
-                                        <CheckCircle2 className="w-3 h-3" />
-                                      )}
-                                      <span>
-                                        {step.remainingBudget < 0 ? 'Over: ' : 'Left: '}
-                                        {formatMeso(Math.abs(step.remainingBudget))}
+                                      {step.action}
+                                    </p>
+                                  </div>
+                                  
+                                  {/* Enhanced Data Grid with Labels */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                                    <div className="flex flex-col space-y-1">
+                                      <div className="flex items-center gap-2 font-maplestory">
+                                        <Star className="w-3 h-3 text-amber-500" />
+                                        <span className="font-medium">{step.fromStar}★ → {step.toStar}★</span>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground pl-5">StarForce Progress</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <div className="flex items-center gap-2 font-maplestory">
+                                        <DollarSign className="w-3 h-3 text-green-500" />
+                                        <span className="font-medium">{formatMeso(step.expectedCost)}</span>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground pl-5">Expected Cost</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <div className="flex items-center gap-2 font-maplestory">
+                                        <AlertTriangle className="w-3 h-3 text-orange-500" />
+                                        <span className="font-medium">{step.expectedBooms.toFixed(1)} booms</span>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground pl-5">Equipment Destruction</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <div className={`flex items-center gap-2 font-maplestory ${
+                                        step.remainingBudget < 0 ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                                      }`}>
+                                        {step.remainingBudget < 0 ? (
+                                          <AlertTriangle className="w-3 h-3" />
+                                        ) : (
+                                          <CheckCircle2 className="w-3 h-3" />
+                                        )}
+                                        <span className="font-medium">
+                                          {step.remainingBudget < 0 ? 'Over: ' : 'Left: '}
+                                          {formatMeso(Math.abs(step.remainingBudget))}
+                                        </span>
+                                      </div>
+                                      <span className={`text-xs pl-5 ${
+                                        step.remainingBudget < 0 ? 'text-red-500' : 'text-muted-foreground'
+                                      }`}>
+                                        {step.remainingBudget < 0 ? 'Budget Deficit' : 'Remaining Budget'}
                                       </span>
                                     </div>
                                   </div>
                                   
-                                  {step.specialNote && (
-                                    <div className="mt-2 text-xs text-blue-600 font-maplestory italic">
-                                      ⚡ {step.specialNote}
+                                  {step.specialNote && !isOverBudget && (
+                                    <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                                      <div className="text-xs text-blue-600 font-maplestory italic flex items-center gap-1">
+                                        <Zap className="w-3 h-3" />
+                                        <span className="font-medium">Special Note:</span>
+                                        {step.specialNote}
+                                      </div>
                                     </div>
                                   )}
                                 </div>
                                 
-                                {/* Arrow Indicator */}
-                                {!isLastStep && (
-                                  <div className="flex-shrink-0 text-muted-foreground">
-                                    <ArrowRight className="w-6 h-6" />
-                                  </div>
-                                )}
+                                {/* Completion Checkbox */}
+                                <div className="flex-shrink-0">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => toggleStepCompletion(step.step)}
+                                    className={`w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                                      isCompleted
+                                        ? 'border-green-500 text-green-600 hover:bg-green-50'
+                                        : 'border-gray-300 hover:border-green-400 hover:bg-green-50 text-gray-500'
+                                    }`}
+                                    title={isCompleted ? 'Mark as incomplete' : 'Mark as completed'}
+                                  >
+                                    {isCompleted ? (
+                                      <CheckCircle2 className="w-5 h-5" />
+                                    ) : (
+                                      <CheckCircle2 className="w-4 h-4" />
+                                    )}
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>

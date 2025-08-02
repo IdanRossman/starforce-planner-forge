@@ -272,7 +272,7 @@ export function EnhancedEquipmentManager({
                 Smart Planner
                 {pendingEquipment.length > 0 && (
                   <Badge variant="secondary" className="ml-1 bg-blue-500/20 text-blue-400 font-maplestory">
-                    AI
+                    BETA
                   </Badge>
                 )}
               </TabsTrigger>
