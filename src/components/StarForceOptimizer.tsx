@@ -57,8 +57,7 @@ export function StarForceOptimizer({
   const [events, setEvents] = useState({
     fiveTenFifteen: false,
     thirtyOff: false,
-    starCatching: false,
-    mvpDiscount: false
+    starCatching: false
   });
   
   const { toast } = useToast();
@@ -155,8 +154,7 @@ export function StarForceOptimizer({
         events: {
           fiveTenFifteen: events.fiveTenFifteen,
           thirtyOff: events.thirtyOff,
-          starCatching: events.starCatching,
-          mvpDiscount: events.mvpDiscount
+          starCatching: events.starCatching
         },
         items: pendingEquipment.map(eq => ({
           itemLevel: eq.level,
@@ -321,7 +319,7 @@ export function StarForceOptimizer({
           <div className="space-y-4">
             <div>
               <h4 className="text-sm font-medium mb-3 text-foreground font-maplestory">StarForce Events</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-2">
                   <Switch
                     id="fiveTenFifteen"
@@ -367,22 +365,6 @@ export function StarForceOptimizer({
                   />
                   <Label htmlFor="starCatching" className="text-sm font-maplestory">
                     Star Catching (+5% Success Rate)
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="mvpDiscount"
-                    checked={events.mvpDiscount}
-                    onCheckedChange={(checked) => 
-                      setEvents(prev => ({ 
-                        ...prev, 
-                        mvpDiscount: checked
-                      }))
-                    }
-                  />
-                  <Label htmlFor="mvpDiscount" className="text-sm font-maplestory">
-                    MVP Discount (Member Benefits)
                   </Label>
                 </div>
               </div>
