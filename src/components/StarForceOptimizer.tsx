@@ -186,113 +186,170 @@ export function StarForceOptimizer({
 
   if (pendingEquipment.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Star className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-xl mb-2 font-maplestory">No StarForce Goals</h3>
-          <p className="text-muted-foreground mb-4 font-maplestory">
-            All your equipment is already at target StarForce levels!
-          </p>
-          <Button variant="outline" className="font-maplestory">
-            <Target className="w-4 h-4 mr-2" />
-            Set StarForce Goals
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="p-8">
+        <Card className="bg-card border shadow-sm">
+          <CardContent className="p-12 text-center">
+            <Star className="w-20 h-20 mx-auto mb-6 text-blue-500" />
+            <h3 className="font-bold text-2xl mb-3 font-maplestory text-blue-600">
+              Perfect StarForce Status! ⭐
+            </h3>
+            <p className="text-muted-foreground mb-6 font-maplestory text-lg">
+              All your equipment is already at target StarForce levels!
+            </p>
+            <Button 
+              variant="outline" 
+              className="font-maplestory"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Set New StarForce Goals
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Configuration Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-maplestory">
-            <Calculator className="w-5 h-5 text-primary" />
-            Optimization Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Budget Input */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="meso-budget" className="font-maplestory">Available Meso Budget</Label>
-              <div className="relative">
-                <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="meso-budget"
-                  type="text"
-                  placeholder="5B, 500M, 1.5B..."
-                  value={availableMeso}
-                  onChange={(e) => setAvailableMeso(e.target.value)}
-                  className="pl-9 font-maplestory"
-                />
-              </div>
-              <div className="text-xs text-muted-foreground font-maplestory">
-                {availableMeso && isValidMesoInput(availableMeso) ? (
-                  <span className="text-green-600">
-                    Budget: {formatMeso(parseMesoInput(availableMeso))} ({parseMesoInput(availableMeso).toLocaleString()} meso)
-                  </span>
-                ) : availableMeso ? (
-                  <span className="text-red-600">
-                    Invalid format. Use: 5B, 500M, 1.5B, or 5000000000
-                  </span>
-                ) : (
-                  <span>
-                    Enter amount with units: 5B (billion), 500M (million), 1.5B, etc.
-                  </span>
-                )}
-              </div>
-            </div>
+    <div className="p-8 space-y-8">
+        {/* Hero Header */}
+        <div className="text-center py-8">
+          <div className="relative inline-block">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 blur-2xl opacity-20 animate-pulse" />
+            <h1 className="relative text-4xl font-bold font-maplestory bg-gradient-to-r from-blue-600 via-purple-600 to-amber-500 bg-clip-text text-transparent">
+              ⚡ Smart StarForce Optimizer ⚡
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground mt-2 font-maplestory">
+            AI-powered optimization for maximum efficiency
+          </p>
+        </div>
 
-            {/* Event Settings */}
-            <div className="space-y-3">
-              <Label className="font-maplestory">Active Events</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex items-center gap-3">
-                  <Switch 
-                    id="event-5-10-15"
-                    checked={events.fiveTenFifteen}
-                    onCheckedChange={(checked) => setEvents(prev => ({...prev, fiveTenFifteen: checked}))}
-                  />
-                  <Label htmlFor="event-5-10-15" className="font-maplestory">5/10/15 Event</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch 
-                    id="event-30-off"
-                    checked={events.thirtyOff}
-                    onCheckedChange={(checked) => setEvents(prev => ({...prev, thirtyOff: checked}))}
-                  />
-                  <Label htmlFor="event-30-off" className="font-maplestory">30% Off</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch 
-                    id="event-star-catching"
-                    checked={events.starCatching}
-                    onCheckedChange={(checked) => setEvents(prev => ({...prev, starCatching: checked}))}
-                  />
-                  <Label htmlFor="event-star-catching" className="font-maplestory">Star Catching</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch 
-                    id="event-mvp"
-                    checked={events.mvpDiscount}
-                    onCheckedChange={(checked) => setEvents(prev => ({...prev, mvpDiscount: checked}))}
-                  />
-                  <Label htmlFor="event-mvp" className="font-maplestory">MVP Discount</Label>
-                </div>
+        {/* Configuration Section */}
+        <Card className="bg-card border shadow-sm">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-3 font-maplestory text-xl">
+              <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+                <Calculator className="w-6 h-6 text-white" />
               </div>
+              Optimization Settings
+              <div className="ml-auto">
+                <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white font-maplestory">
+                  Smart AI
+                </Badge>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-8 space-y-8">
+          {/* Budget Input - Centered and Highlighted */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="text-center space-y-2">
+              <Label htmlFor="meso-budget" className="font-maplestory text-lg font-bold text-foreground">
+                💰 Available Meso Budget
+              </Label>
+              <p className="text-sm text-muted-foreground font-maplestory">
+                Required to start optimization
+              </p>
+            </div>
+            <div className="relative max-w-sm w-full">
+              <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="meso-budget"
+                type="text"
+                placeholder="5B, 500M, 1.5B..."
+                value={availableMeso}
+                onChange={(e) => setAvailableMeso(e.target.value)}
+                className="pl-9 font-maplestory text-center border-2 border-blue-200 focus:border-blue-400 shadow-md"
+              />
+            </div>
+            <div className="text-xs text-muted-foreground font-maplestory text-center">
+              {availableMeso && isValidMesoInput(availableMeso) ? (
+                <span className="text-green-600 font-medium">
+                  Budget: {formatMeso(parseMesoInput(availableMeso))} ({parseMesoInput(availableMeso).toLocaleString()} meso)
+                </span>
+              ) : availableMeso ? (
+                <span className="text-red-600 font-medium">
+                  Invalid format. Use: 5B, 500M, 1.5B, or 5000000000
+                </span>
+              ) : (
+                <span>
+                  Enter amount with units: 5B (billion), 500M (million), 1.5B, etc.
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Smart Planner Info */}
-          <Alert className="border-blue-200 bg-blue-50">
-            <Info className="w-4 h-4 text-blue-600" />
-            <AlertDescription className="text-blue-800 font-maplestory">
-              <strong>Simplified Planning:</strong> This planner automatically uses your settings from the StarForce Calculator tab. 
-              Just set your budget and events, then get your complete roadmap with clear budget indicators!
-            </AlertDescription>
-          </Alert>
+          {/* Event Settings */}
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-3 text-foreground font-maplestory">StarForce Events</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="fiveTenFifteen"
+                    checked={events.fiveTenFifteen}
+                    onCheckedChange={(checked) => 
+                      setEvents(prev => ({ 
+                        ...prev, 
+                        fiveTenFifteen: checked
+                      }))
+                    }
+                  />
+                  <Label htmlFor="fiveTenFifteen" className="text-sm font-maplestory">
+                    5/10/15 Event (100% success at ★5, ★10, ★15)
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="thirtyPercentOff"
+                    checked={events.thirtyOff}
+                    onCheckedChange={(checked) => 
+                      setEvents(prev => ({ 
+                        ...prev, 
+                        thirtyOff: checked
+                      }))
+                    }
+                  />
+                  <Label htmlFor="thirtyPercentOff" className="text-sm font-maplestory">
+                    30% Off Event (30% cost reduction)
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="starCatching"
+                    checked={events.starCatching}
+                    onCheckedChange={(checked) => 
+                      setEvents(prev => ({ 
+                        ...prev, 
+                        starCatching: checked
+                      }))
+                    }
+                  />
+                  <Label htmlFor="starCatching" className="text-sm font-maplestory">
+                    Star Catching (+5% Success Rate)
+                  </Label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="mvpDiscount"
+                    checked={events.mvpDiscount}
+                    onCheckedChange={(checked) => 
+                      setEvents(prev => ({ 
+                        ...prev, 
+                        mvpDiscount: checked
+                      }))
+                    }
+                  />
+                  <Label htmlFor="mvpDiscount" className="text-sm font-maplestory">
+                    MVP Discount (Member Benefits)
+                  </Label>
+                </div>
+              </div>
+            </div>
+            <Separator />
+          </div>
 
           {/* Optimize Button */}
           <div className="flex justify-center pt-4">
@@ -300,14 +357,22 @@ export function StarForceOptimizer({
               onClick={handleOptimize}
               disabled={isLoading || !availableMeso}
               size="lg"
-              className="flex items-center gap-2 font-maplestory"
+              className="relative overflow-hidden group bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-700 border-0 shadow-xl font-maplestory text-lg px-8 py-4 transition-all duration-300"
             >
-              {isLoading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <Sparkles className="w-5 h-5" />
+              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative flex items-center gap-3">
+                {isLoading ? (
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                ) : (
+                  <Sparkles className="w-6 h-6 group-hover:rotate-12 transition-transform duration-300" />
+                )}
+                {isLoading ? 'Optimizing Your StarForce Plan...' : 'Optimize StarForce Plan'}
+              </div>
+              {!isLoading && (
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-20 transition-opacity duration-300">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent animate-pulse" />
+                </div>
               )}
-              {isLoading ? 'Optimizing...' : 'Optimize StarForce Plan'}
             </Button>
           </div>
         </CardContent>
@@ -315,77 +380,132 @@ export function StarForceOptimizer({
 
       {/* Results Section */}
       {optimization && (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Budget Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-maplestory">
-                <DollarSign className="w-5 h-5 text-green-600" />
+          <Card className="bg-card border shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b border-white/20">
+              <CardTitle className="flex items-center gap-3 font-maplestory text-xl">
+                <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                  <DollarSign className="w-6 h-6 text-white" />
+                </div>
                 Budget Analysis
+                <div className="ml-auto">
+                  <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white font-maplestory">
+                    <Trophy className="w-3 h-3 mr-1" />
+                    Smart Analysis
+                  </Badge>
+                </div>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600 font-maplestory">
-                    {formatMeso(optimization.budget.available)}
+            <CardContent className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="text-center relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-100 to-emerald-100 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative p-6 rounded-xl border border-green-200/50 bg-gradient-to-br from-green-50 to-emerald-50">
+                    <div className="text-3xl font-bold text-green-600 font-maplestory mb-2">
+                      {formatMeso(optimization.budget.available)}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-maplestory flex items-center justify-center gap-1">
+                      <Shield className="w-4 h-4" />
+                      Available Budget
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Available</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600 font-maplestory">
-                    {formatMeso(optimization.budget.used)}
+                <div className="text-center relative group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative p-6 rounded-xl border border-blue-200/50 bg-gradient-to-br from-blue-50 to-indigo-50">
+                    <div className="text-3xl font-bold text-blue-600 font-maplestory mb-2">
+                      {formatMeso(optimization.budget.used)}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-maplestory flex items-center justify-center gap-1">
+                      <Target className="w-4 h-4" />
+                      Amount Used
+                    </div>
                   </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Used</div>
                 </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold font-maplestory ${optimization.budget.remaining < 0 ? 'text-red-600' : 'text-orange-600'}`}>
-                    {optimization.budget.remaining < 0 ? '-' : ''}{formatMeso(Math.abs(optimization.budget.remaining))}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">
-                    {optimization.budget.remaining < 0 ? 'Over Budget' : 'Remaining'}
+                <div className="text-center relative group">
+                  <div className={`absolute inset-0 rounded-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300 ${
+                    optimization.budget.remaining < 0 ? 'bg-gradient-to-r from-red-100 to-rose-100' : 'bg-gradient-to-r from-orange-100 to-amber-100'
+                  }`} />
+                  <div className={`relative p-6 rounded-xl border bg-gradient-to-br ${
+                    optimization.budget.remaining < 0 
+                      ? 'border-red-200/50 from-red-50 to-rose-50' 
+                      : 'border-orange-200/50 from-orange-50 to-amber-50'
+                  }`}>
+                    <div className={`text-3xl font-bold font-maplestory mb-2 ${
+                      optimization.budget.remaining < 0 ? 'text-red-600' : 'text-orange-600'
+                    }`}>
+                      {optimization.budget.remaining < 0 ? '-' : ''}{formatMeso(Math.abs(optimization.budget.remaining))}
+                    </div>
+                    <div className="text-sm text-muted-foreground font-maplestory flex items-center justify-center gap-1">
+                      {optimization.budget.remaining < 0 ? (
+                        <>
+                          <AlertTriangle className="w-4 h-4" />
+                          Over Budget
+                        </>
+                      ) : (
+                        <>
+                          <Star className="w-4 h-4" />
+                          Remaining
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
               
-              {/* Budget Progress Visualization */}
-              <div className="mt-6">
-                <div className="mb-2">
+              {/* Enhanced Budget Progress Visualization */}
+              <div className="mt-8">
+                <div className="mb-4">
                   <div className="flex justify-between text-sm font-maplestory">
-                    <span>Budget Utilization</span>
-                    <span>
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Budget Utilization
+                    </span>
+                    <span className="flex items-center gap-2">
                       {((optimization.budget.used / optimization.budget.available) * 100).toFixed(1)}%
                       {optimization.budget.remaining < 0 && (
-                        <span className="text-red-600 ml-2">
+                        <span className="text-red-600 ml-2 flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3" />
                           ({formatMeso(Math.abs(optimization.budget.remaining))} over)
                         </span>
                       )}
                     </span>
                   </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="relative w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
                   <div 
-                    className={`h-3 rounded-full transition-all duration-300 ${
+                    className={`h-4 rounded-full transition-all duration-1000 ease-out relative overflow-hidden ${
                       optimization.budget.remaining < 0 
                         ? 'bg-gradient-to-r from-blue-500 via-yellow-500 to-red-500' 
-                        : 'bg-gradient-to-r from-blue-500 to-green-500'
+                        : 'bg-gradient-to-r from-blue-500 via-purple-500 to-green-500'
                     }`}
                     style={{ 
                       width: `${Math.min(100, (optimization.budget.used / optimization.budget.available) * 100)}%` 
                     }}
-                  />
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/30 to-transparent animate-pulse" />
+                  </div>
                   {optimization.budget.remaining < 0 && (
                     <div 
-                      className="h-3 bg-red-500 opacity-60 rounded-r-full -mt-3 ml-auto"
+                      className="h-4 bg-red-500 opacity-60 rounded-r-full -mt-4 ml-auto relative overflow-hidden"
                       style={{ 
                         width: `${Math.min(50, ((Math.abs(optimization.budget.remaining)) / optimization.budget.available) * 100)}%` 
                       }}
-                    />
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20 animate-pulse" />
+                    </div>
                   )}
                 </div>
                 {optimization.budget.remaining < 0 && (
-                  <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-sm text-red-700 font-maplestory">
-                    ⚠️ Budget exceeded. Consider increasing budget or reducing targets for within-budget completion.
+                  <div className="mt-4 p-4 bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-xl text-sm text-red-700 font-maplestory">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" />
+                      <span className="font-medium">Budget Exceeded</span>
+                    </div>
+                    <div className="mt-1">
+                      Consider increasing budget or reducing targets for within-budget completion.
+                    </div>
                   </div>
                 )}
               </div>
@@ -393,19 +513,30 @@ export function StarForceOptimizer({
           </Card>
 
           {/* Action Plan */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-maplestory">
-                <Clock className="w-5 h-5 text-blue-600" />
+          <Card className="bg-card border shadow-sm">
+            <CardHeader className="bg-gradient-to-r from-indigo-500/10 to-blue-500/10 border-b border-white/20">
+              <CardTitle className="flex items-center gap-3 font-maplestory text-xl">
+                <div className="p-2 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-lg">
+                  <Clock className="w-6 h-6 text-white" />
+                </div>
                 Complete Step-by-Step Roadmap
+                <div className="ml-auto">
+                  <Badge className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white font-maplestory">
+                    <Star className="w-3 h-3 mr-1" />
+                    Timeline
+                  </Badge>
+                </div>
               </CardTitle>
               {optimization.actionPlan.some(step => step.remainingBudget < 0) && (
-                <div className="text-sm text-muted-foreground font-maplestory">
-                  Shows complete roadmap to all targets. Steps with red indicators exceed your current budget.
+                <div className="text-sm text-muted-foreground font-maplestory mt-2 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 text-amber-600" />
+                    Shows complete roadmap to all targets. Steps with red indicators exceed your current budget.
+                  </div>
                 </div>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-8">
               {(() => {
                 const withinBudgetSteps = optimization.actionPlan.filter(step => step.remainingBudget >= 0);
                 const overBudgetSteps = optimization.actionPlan.filter(step => step.remainingBudget < 0);
@@ -414,75 +545,122 @@ export function StarForceOptimizer({
                   <div>
                     {/* Budget Summary - only show if there are over-budget steps */}
                     {overBudgetSteps.length > 0 && (
-                      <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-amber-800 font-maplestory">
-                          <AlertTriangle className="w-4 h-4" />
-                          <span className="font-medium">Budget Overview</span>
+                      <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl">
+                        <div className="flex items-center gap-3 text-amber-800 font-maplestory">
+                          <div className="p-2 bg-amber-500 rounded-lg">
+                            <AlertTriangle className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="font-medium text-lg">Budget Overview</span>
                         </div>
-                        <div className="text-sm text-amber-700 mt-1 font-maplestory">
-                          {withinBudgetSteps.length} steps within budget, {overBudgetSteps.length} steps over budget.
-                          Over-budget steps require additional {formatMeso(Math.abs(Math.min(...overBudgetSteps.map(s => s.remainingBudget))))} funding.
+                        <div className="text-sm text-amber-700 mt-3 font-maplestory pl-12">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            {withinBudgetSteps.length} steps within budget
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <AlertTriangle className="w-4 h-4 text-red-600" />
+                            {overBudgetSteps.length} steps over budget - require additional {formatMeso(Math.abs(Math.min(...overBudgetSteps.map(s => s.remainingBudget))))} funding
+                          </div>
                         </div>
                       </div>
                     )}
               
-                    <div className="space-y-3">
+                    <div className="space-y-4 relative">
+                      {/* Timeline Line */}
+                      <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 via-purple-200 to-indigo-200" />
+                      
                       {optimization.actionPlan.map((step, index) => {
                         const equipment = findEquipmentByAction(step.action);
                         const isOverBudget = step.remainingBudget < 0;
-                        const borderClass = isOverBudget ? 'border-red-200 bg-red-50/50' : 'border-border bg-background';
+                        const isLastStep = index === optimization.actionPlan.length - 1;
                         
                         return (
-                          <div key={index} className={`flex items-center gap-4 p-4 border rounded-lg ${borderClass}`}>
-                            <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold font-maplestory ${
-                              isOverBudget ? 'bg-red-100 text-red-700 border-2 border-red-300' : 'bg-primary text-primary-foreground'
+                          <div key={index} className="relative">
+                            {/* Timeline Node */}
+                            <div className={`absolute left-6 w-5 h-5 rounded-full border-4 border-white shadow-lg z-10 ${
+                              isOverBudget 
+                                ? 'bg-gradient-to-r from-red-500 to-rose-500' 
+                                : 'bg-gradient-to-r from-blue-500 to-purple-500'
                             }`}>
-                              {step.step}
+                              <div className="absolute inset-1 rounded-full bg-white opacity-30" />
                             </div>
                             
-                            {equipment && (
-                              <div className="flex-shrink-0">
-                                <EquipmentImage 
-                                  src={equipment.image}
-                                  alt={equipment.name || equipment.slot}
-                                  size="sm"
-                                  className="w-8 h-8" 
-                                />
-                              </div>
-                            )}
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium font-maplestory">{step.action}</span>
-                                <Badge className={`text-xs ${getRiskColor(step.riskLevel)} font-maplestory`}>
-                                  {step.riskLevel} Risk
-                                </Badge>
-                                {step.specialNote && (
-                                  <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 font-maplestory">
-                                    <Zap className="w-3 h-3 mr-1" />
-                                    Event
-                                  </Badge>
+                            {/* Step Card */}
+                            <div className={`ml-16 p-6 rounded-xl border-2 transition-all duration-300 hover:shadow-lg ${
+                              isOverBudget 
+                                ? 'border-red-200 bg-card hover:border-red-300' 
+                                : 'border-blue-200 bg-card hover:border-blue-300'
+                            }`}>
+                              <div className="flex items-center gap-6">
+                                {/* Step Number */}
+                                <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-maplestory shadow-md ${
+                                  isOverBudget 
+                                    ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' 
+                                    : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                                }`}>
+                                  {step.step}
+                                </div>
+                                
+                                {/* Equipment Image - Enlarged Centerpiece */}
+                                {equipment && (
+                                  <div className="flex-shrink-0 w-20 h-20 flex items-center justify-center rounded-lg overflow-hidden">
+                                    <img 
+                                      src={equipment.image}
+                                      alt={equipment.name || equipment.slot}
+                                      className="w-16 h-16 object-contain object-center rounded-lg shadow-lg hover:scale-110 transition-transform duration-300"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                
+                                {/* Step Details */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                    <div className="flex items-center gap-2 font-maplestory">
+                                      <Star className="w-3 h-3 text-amber-500" />
+                                      <span>{step.fromStar}★ → {step.toStar}★</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 font-maplestory">
+                                      <DollarSign className="w-3 h-3 text-green-500" />
+                                      <span>{formatMeso(step.expectedCost)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 font-maplestory">
+                                      <AlertTriangle className="w-3 h-3 text-orange-500" />
+                                      <span>{step.expectedBooms.toFixed(1)} booms</span>
+                                    </div>
+                                    <div className={`flex items-center gap-2 font-maplestory ${
+                                      step.remainingBudget < 0 ? 'text-red-600 font-medium' : 'text-muted-foreground'
+                                    }`}>
+                                      {step.remainingBudget < 0 ? (
+                                        <AlertTriangle className="w-3 h-3" />
+                                      ) : (
+                                        <CheckCircle2 className="w-3 h-3" />
+                                      )}
+                                      <span>
+                                        {step.remainingBudget < 0 ? 'Over: ' : 'Left: '}
+                                        {formatMeso(Math.abs(step.remainingBudget))}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  {step.specialNote && (
+                                    <div className="mt-2 text-xs text-blue-600 font-maplestory italic">
+                                      ⚡ {step.specialNote}
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Arrow Indicator */}
+                                {!isLastStep && (
+                                  <div className="flex-shrink-0 text-muted-foreground">
+                                    <ArrowRight className="w-6 h-6" />
+                                  </div>
                                 )}
                               </div>
-                              
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-muted-foreground">
-                                <span className="font-maplestory">{step.fromStar}★ → {step.toStar}★</span>
-                                <span className="font-maplestory">Cost: {formatMeso(step.expectedCost)}</span>
-                                <span className="font-maplestory">Booms: {step.expectedBooms.toFixed(2)}</span>
-                                <span className={`font-maplestory ${step.remainingBudget < 0 ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
-                                  {step.remainingBudget < 0 ? 'Over Budget: ' : 'Remaining: '}
-                                  {formatMeso(Math.abs(step.remainingBudget))}
-                                </span>
-                              </div>
-                              
-                              {step.specialNote && (
-                                <div className={`mt-2 text-sm font-medium font-maplestory ${getSpecialNoteStyle(step.specialNote)}`}>
-                                  {step.specialNote}
-                                </div>
-                              )}
                             </div>
-                            
-                            <ArrowRight className="w-4 h-4 text-muted-foreground" />
                           </div>
                         );
                       })}
@@ -492,71 +670,6 @@ export function StarForceOptimizer({
               })()}
             </CardContent>
           </Card>
-
-          {/* Recommendations */}
-          {optimization.recommendations.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-maplestory">
-                  <Award className="w-5 h-5 text-purple-600" />
-                  Recommendations
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {optimization.recommendations.map((rec, index) => (
-                    <Alert key={index}>
-                      <div className="flex items-start gap-3">
-                        {getRecommendationIcon(rec.type)}
-                        <div>
-                          <AlertDescription className="font-maplestory">
-                            {rec.message}
-                          </AlertDescription>
-                          <Badge variant="outline" className="text-xs mt-1 font-maplestory">
-                            {rec.priority} priority
-                          </Badge>
-                        </div>
-                      </div>
-                    </Alert>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Event Benefits */}
-          {optimization.analysis.eventBenefits && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 font-maplestory">
-                  <Zap className="w-5 h-5 text-yellow-600" />
-                  Event Benefits
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600 font-maplestory">
-                      {optimization.analysis.eventBenefits.guaranteedSuccesses}
-                    </div>
-                    <div className="text-sm text-muted-foreground font-maplestory">Guaranteed Successes</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 font-maplestory">
-                      {formatMeso(optimization.analysis.eventBenefits.mesoSaved)}
-                    </div>
-                    <div className="text-sm text-muted-foreground font-maplestory">Meso Saved</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground font-maplestory">Risk Reduction</div>
-                    <div className="text-sm font-medium text-green-600 font-maplestory">
-                      {optimization.analysis.eventBenefits.riskReduced}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
     </div>
