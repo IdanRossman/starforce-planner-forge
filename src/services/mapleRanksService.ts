@@ -6,13 +6,14 @@ interface MapleRanksCharacter {
 }
 
 export const fetchCharacterFromMapleRanks = async (characterName: string): Promise<MapleRanksCharacter | null> => {
-  const targetUrl = `https://mapleranks.com/u/${encodeURIComponent(characterName)}`;
+  const naUrl = `https://mapleranks.com/u/${encodeURIComponent(characterName)}`;
+  const euUrl = `https://mapleranks.com/u/eu/${encodeURIComponent(characterName)}`;
   
-  // Use corsproxy.io as primary method since we know it works
+  // Try NA server first with corsproxy.io
   try {
-    console.log('MapleRanks: Using corsproxy.io for:', characterName);
+    console.log('MapleRanks: Using corsproxy.io for NA server:', characterName);
     
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(naUrl)}`;
     console.log('MapleRanks: Fetching from:', proxyUrl);
     
     const response = await fetch(proxyUrl, {
@@ -23,35 +24,74 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       signal: AbortSignal.timeout(10000) // 10 second timeout
     });
     
-    console.log('MapleRanks: Response status:', response.status, response.statusText);
+    console.log('MapleRanks: NA Response status:', response.status, response.statusText);
     
     if (response.ok) {
       const html = await response.text();
-      console.log('MapleRanks: Got HTML content, length:', html?.length || 'No content');
+      console.log('MapleRanks: Got NA HTML content, length:', html?.length || 'No content');
       
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed character data');
+          console.log('MapleRanks: Successfully parsed character data from NA server');
           return result;
         } else {
-          console.warn('MapleRanks: Got HTML but parsing failed');
+          console.warn('MapleRanks: Got HTML but parsing failed for NA server');
         }
       } else {
-        console.warn('MapleRanks: Insufficient HTML content received');
+        console.warn('MapleRanks: Insufficient HTML content received from NA server');
       }
     } else {
-      console.warn('MapleRanks: Proxy request failed with status:', response.status);
+      console.warn('MapleRanks: NA proxy request failed with status:', response.status);
     }
   } catch (error) {
-    console.error('MapleRanks: Proxy request error:', error);
+    console.error('MapleRanks: NA proxy request error:', error);
   }
   
-  // If corsproxy.io fails, try direct access as fallback
+  // Try EU server with corsproxy.io as fallback
   try {
-    console.log('MapleRanks: Trying direct URL as fallback:', targetUrl);
+    console.log('MapleRanks: Using corsproxy.io for EU server:', characterName);
     
-    const response = await fetch(targetUrl, {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(euUrl)}`;
+    console.log('MapleRanks: Fetching from EU:', proxyUrl);
+    
+    const response = await fetch(proxyUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+      signal: AbortSignal.timeout(10000) // 10 second timeout
+    });
+    
+    console.log('MapleRanks: EU Response status:', response.status, response.statusText);
+    
+    if (response.ok) {
+      const html = await response.text();
+      console.log('MapleRanks: Got EU HTML content, length:', html?.length || 'No content');
+      
+      if (html && html.length > 100) {
+        const result = parseMapleRanksHTML(html);
+        if (result) {
+          console.log('MapleRanks: Successfully parsed character data from EU server');
+          return result;
+        } else {
+          console.warn('MapleRanks: Got HTML but parsing failed for EU server');
+        }
+      } else {
+        console.warn('MapleRanks: Insufficient HTML content received from EU server');
+      }
+    } else {
+      console.warn('MapleRanks: EU proxy request failed with status:', response.status);
+    }
+  } catch (error) {
+    console.error('MapleRanks: EU proxy request error:', error);
+  }
+  
+  // If both proxy attempts fail, try direct access as final fallback (try NA first, then EU)
+  try {
+    console.log('MapleRanks: Trying direct NA URL as fallback:', naUrl);
+    
+    const response = await fetch(naUrl, {
       method: 'GET',
       headers: {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -66,13 +106,41 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed data via direct access');
+          console.log('MapleRanks: Successfully parsed data via direct NA access');
           return result;
         }
       }
     }
   } catch (error) {
-    console.log('MapleRanks: Direct access failed (expected):', error.message);
+    console.log('MapleRanks: Direct NA access failed (expected):', error.message);
+  }
+  
+  // Try direct EU access as final fallback
+  try {
+    console.log('MapleRanks: Trying direct EU URL as final fallback:', euUrl);
+    
+    const response = await fetch(euUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      },
+      mode: 'cors',
+      signal: AbortSignal.timeout(8000)
+    });
+    
+    if (response.ok) {
+      const html = await response.text();
+      if (html && html.length > 100) {
+        const result = parseMapleRanksHTML(html);
+        if (result) {
+          console.log('MapleRanks: Successfully parsed data via direct EU access');
+          return result;
+        }
+      }
+    }
+  } catch (error) {
+    console.log('MapleRanks: Direct EU access failed (expected):', error.message);
   }
   
   console.error('MapleRanks: All methods failed');
