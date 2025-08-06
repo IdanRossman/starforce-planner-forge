@@ -630,8 +630,8 @@ export function EquipmentForm({
         opacity={opacity}
         transform={transform}
         position="center"
-        minWidth="600px"
-        className="max-w-3xl"
+        minWidth="800px"
+        className="max-w-4xl max-h-[90vh]"
         onClose={() => onOpenChange(false)}
         character={{
           name: form.getValues('set') || equipment?.name || 'Equipment',
@@ -644,8 +644,8 @@ export function EquipmentForm({
         }
         bottomLeftActions={undefined}
       >
-        <div className="space-y-4 p-4">
-          <div className="text-center">
+        <div className="space-y-4 p-6 max-h-[calc(90vh-200px)] overflow-y-auto w-full">
+          <div className="text-center mb-6">
             <h2 className="text-xl font-bold font-maplestory text-black mb-2">
               {isEditing ? 'Edit Equipment' : 'Add Equipment'}
             </h2>
@@ -657,7 +657,7 @@ export function EquipmentForm({
             </p>
           </div>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full">
               {/* Equipment Slot Selection */}
               <FormFieldWrapper
                 name="slot"
@@ -675,7 +675,7 @@ export function EquipmentForm({
                     }}
                     placeholder="Select equipment slot"
                     categories={EQUIPMENT_SLOT_CATEGORIES}
-                    className="bg-white border-gray-300 font-maplestory"
+                    className="bg-white border-gray-300 font-maplestory w-full"
                     disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
                   />
                 )}
@@ -720,7 +720,7 @@ export function EquipmentForm({
                   
                   if (equipmentLoading) {
                     return (
-                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md">
+                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
                         Loading equipment...
                       </div>
                     );
@@ -728,7 +728,7 @@ export function EquipmentForm({
                   
                   if (availableEquipment.length === 0) {
                     return (
-                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md">
+                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
                         No equipment found for this slot
                       </div>
                     );
@@ -780,7 +780,7 @@ export function EquipmentForm({
                       }}
                       placeholder="Select equipment"
                       categories={equipmentCategories}
-                      className="bg-white border-gray-300 font-maplestory"
+                      className="bg-white border-gray-300 font-maplestory w-full"
                     />
                   );
                 }}
@@ -804,7 +804,7 @@ export function EquipmentForm({
                     }}
                     placeholder="Select potential tier (optional)"
                     categories={POTENTIAL_TIER_CATEGORIES}
-                    className="bg-white border-gray-300 font-maplestory"
+                    className="bg-white border-gray-300 font-maplestory w-full"
                   />
                 )}
               </FormFieldWrapper>
