@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatMeso, parseMesoInput, isValidMesoInput, loadCharacterSpareData } from "@/lib/utils";
@@ -31,7 +32,10 @@ import {
   Info,
   Trophy,
   Play,
-  Circle
+  Circle,
+  Sword,
+  Activity,
+  TrendingUp as TrendingUpIcon
 } from "lucide-react";
 
 interface StarForceOptimizerProps {
@@ -163,7 +167,9 @@ export function StarForceOptimizer({
           itemName: eq.name || `${eq.slot} (Level ${eq.level})`,
           safeguardEnabled: eq.safeguard ?? false, // Read directly from Equipment object
           spareCount: savedData.spareCounts[eq.id] ?? 0,
-          spareCost: 500000000 // Default 500M per spare
+          spareCost: 500000000, // Default 500M per spare
+          itemType: eq.itemType || eq.slot, // Fallback to slot if itemType is missing
+          base_attack: eq.base_attack || 0, // Fallback to 0 if base_attack is missing
         }))
       };
 
@@ -652,7 +658,7 @@ export function StarForceOptimizer({
                                   </div>
                                   
                                   {/* Enhanced Data Grid with Labels */}
-                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3 text-sm">
                                     <div className="flex flex-col space-y-1">
                                       <div className="flex items-center gap-2 font-maplestory">
                                         <Star className="w-3 h-3 text-amber-500" />
@@ -675,6 +681,41 @@ export function StarForceOptimizer({
                                         <span className="font-medium">{step.expectedBooms.toFixed(1)} booms</span>
                                       </div>
                                       <span className="text-xs text-muted-foreground pl-5">Equipment Destruction</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <div className="flex items-center gap-2 font-maplestory">
+                                        <Activity className="w-3 h-3 text-purple-500" />
+                                        <span className="font-medium">+{step.statGains.jobStat}</span>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground pl-5">Main Stat</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <div className="flex items-center gap-2 font-maplestory">
+                                        <Sword className="w-3 h-3 text-red-500" />
+                                        <span className="font-medium">+{step.statGains.attack}</span>
+                                      </div>
+                                      <span className="text-xs text-muted-foreground pl-5">MAttk/Attk</span>
+                                    </div>
+                                    
+                                    <div className="flex flex-col space-y-1">
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-2 font-maplestory cursor-help">
+                                              <TrendingUpIcon className="w-3 h-3 text-purple-600" />
+                                              <span className="font-medium">+{step.statGains.totalValue}</span>
+                                            </div>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p className="text-sm">
+                                              Each stat point is 1 point and each attack point is 5 points
+                                            </p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                      <span className="text-xs text-muted-foreground pl-5">Total Value</span>
                                     </div>
                                     
                                     <div className="flex flex-col space-y-1">

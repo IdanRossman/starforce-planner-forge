@@ -27,6 +27,8 @@ export interface Equipment {
   isTransferSource?: boolean; // Flag indicating this equipment will be destroyed after transfer
   transferTargetId?: string; // ID of the target equipment for transfer source
   safeguard?: boolean; // Whether safeguard is enabled for this equipment
+  itemType?: string; // Specific equipment type from database (weapon, secondary, gloves, etc.)
+  base_attack?: number; // Base attack for weapons to calculate 2% visible ATT gains
 }
 
 export interface EquipmentWithCharacter extends Equipment {
@@ -130,6 +132,8 @@ export interface StarforceOptimizationRequestDto {
     spareCount?: number;
     spareCost?: number;
     itemName?: string;
+    itemType?: string; // e.g., 'weapon', 'secondary', 'gloves', 'helm', 'top', 'bottom', etc.
+    base_attack?: number; // Required for weapons to calculate 2% visible ATT gains
   }>;
   availableMeso: number;
   isInteractive?: boolean;
@@ -170,6 +174,17 @@ export interface StarforceOptimizationResponseDto {
     cumulativeCost: number;
     remainingBudget: number;
     specialNote?: string;
+    statGains: {
+      jobStat: number;
+      visibleAtt: number;
+      attack: number;
+      magicAtt: number;
+      weaponAtt: number;
+      hp: number;
+      mp: number;
+      def: number;
+      totalValue: number;
+    };
   }>;
   achievableTargets: Array<{
     itemIndex: number;
