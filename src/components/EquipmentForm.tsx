@@ -598,6 +598,9 @@ export function EquipmentForm({
         type: data.type as EquipmentType,
         tier: data.tier as EquipmentTier | null | undefined,
         image: equipmentImage,
+        // Preserve itemType and base_attack from selected equipment or existing equipment, with fallbacks
+        itemType: selectedEquipment?.itemType || equipment.itemType || data.slot,
+        base_attack: selectedEquipment?.base_attack || equipment.base_attack || (data.type === 'weapon' ? 0 : undefined),
       });
     } else {
       onSave({
@@ -612,6 +615,9 @@ export function EquipmentForm({
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
         starforceable: data.starforceable,
         image: equipmentImage,
+        // Include itemType and base_attack from selected equipment with fallbacks
+        itemType: selectedEquipment?.itemType || data.slot,
+        base_attack: selectedEquipment?.base_attack || (data.type === 'weapon' ? 0 : undefined),
       });
     }
     onOpenChange(false);
@@ -733,7 +739,7 @@ export function EquipmentForm({
                       value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        // Auto-update tier and level based on equipment selection
+                          // Auto-update tier and level based on equipment selection
                         const equipData = availableEquipment.find(eq => eq.name === value);
                         if (equipData) {
                           form.setValue('tier', equipData.tier);
@@ -749,9 +755,7 @@ export function EquipmentForm({
                             form.setValue('type', 'armor');
                           } else {
                             form.setValue('type', 'accessory');
-                          }
-                          
-                          // Only auto-set StarForce values for new equipment, not when editing existing equipment
+                          }                          // Only auto-set StarForce values for new equipment, not when editing existing equipment
                           if (!isEditing) {
                             // Set starforceable based on API data for new equipment only
                             form.setValue('starforceable', equipData.starforceable);

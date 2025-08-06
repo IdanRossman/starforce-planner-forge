@@ -69,7 +69,9 @@ function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
     targetStarForce: 0,
     tier: null,
     starforceable: apiEquipment.starforceable,
-    image: apiEquipment.storage_url
+    image: apiEquipment.storage_url,
+    itemType: apiEquipment.type, // Store the specific database type
+    base_attack: apiEquipment.base_attack, // Store base attack for weapons
   };
 }
 
@@ -143,7 +145,9 @@ export async function getEquipmentBySlot(slot: EquipmentSlot): Promise<{ equipme
       targetStarForce: 0,
       tier: item.tier,
       starforceable: slot !== 'heart' && slot !== 'badge' && slot !== 'medal', // Most equipment is starforceable except these
-      image: item.image
+      image: item.image,
+      itemType: SLOT_TO_TYPE_MAP[slot], // Map slot to database type for local data
+      base_attack: undefined, // Local data doesn't have base attack info
     }));
     
     return { equipment: localEquipment, source: 'local' };
@@ -186,7 +190,9 @@ export async function getAllEquipment(): Promise<{ equipment: Equipment[]; sourc
           targetStarForce: 0,
           tier: item.tier,
           starforceable: slot !== 'heart' && slot !== 'badge' && slot !== 'medal',
-          image: item.image
+          image: item.image,
+          itemType: SLOT_TO_TYPE_MAP[slot as EquipmentSlot], // Map slot to database type for local data
+          base_attack: undefined, // Local data doesn't have base attack info
         });
       });
     });
