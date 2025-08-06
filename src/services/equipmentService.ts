@@ -32,6 +32,31 @@ const SLOT_TO_TYPE_MAP: Record<EquipmentSlot, string> = {
   medal: 'medal'
 };
 
+// Reverse mapping from API types back to internal slot names
+const TYPE_TO_SLOT_MAP: Record<string, EquipmentSlot> = {
+  'weapon': 'weapon',
+  'secondary': 'secondary',
+  'emblem': 'emblem',
+  'hat': 'hat',
+  'top': 'top',
+  'bottom': 'bottom',
+  'overall': 'overall',
+  'shoes': 'shoes',
+  'gloves': 'gloves',
+  'cape': 'cape',
+  'belt': 'belt',
+  'shoulder': 'shoulder',
+  'face': 'face',
+  'eye': 'eye',
+  'earrings': 'earring', // Map API 'earrings' back to internal 'earring'
+  'ring': 'ring1', // Default to ring1, though this might need special handling
+  'pendant': 'pendant1', // Default to pendant1, though this might need special handling
+  'pocket': 'pocket',
+  'heart': 'heart',
+  'badge': 'badge',
+  'medal': 'medal'
+};
+
 interface ApiEquipment {
   id: number;
   name: string;
@@ -50,7 +75,7 @@ interface ApiEquipment {
 const equipmentCache = new Map<string, { data: Equipment[]; timestamp: number }>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
+function transformApiEquipment(apiEquipment: ApiEquipment, targetSlot?: EquipmentSlot): Equipment {
   // Determine equipment type based on slot
   const getEquipmentType = (type: string): EquipmentType => {
     if (type === 'weapon' || type === 'secondary') return 'weapon';
@@ -58,10 +83,21 @@ function transformApiEquipment(apiEquipment: ApiEquipment): Equipment {
     return 'armor';
   };
 
+  // Convert API type back to internal slot name
+  const getInternalSlot = (apiType: string, targetSlot?: EquipmentSlot): EquipmentSlot => {
+    // If we have a target slot (from the request context), use that for generic types
+    if (targetSlot && (apiType === 'ring' || apiType === 'pendant')) {
+      return targetSlot;
+    }
+    
+    // For non-generic types, use the mapping
+    return TYPE_TO_SLOT_MAP[apiType] || apiType as EquipmentSlot;
+  };
+
   return {
     id: apiEquipment.id.toString(),
     name: apiEquipment.name, // Store the actual equipment name
-    slot: apiEquipment.type as EquipmentSlot,
+    slot: getInternalSlot(apiEquipment.type, targetSlot), // Use context-aware mapping
     type: getEquipmentType(apiEquipment.type),
     level: apiEquipment.level,
     set: apiEquipment.set, // Store the set name separately
@@ -90,7 +126,7 @@ export async function getEquipmentBySlotAndJob(slot: EquipmentSlot, job: string)
     
     const apiData = await apiService.get<ApiEquipment[]>(`/Equipment/type/${equipmentType}/job/${dbJobString}`);
     
-    const equipment = apiData.map(transformApiEquipment);
+    const equipment = apiData.map(item => transformApiEquipment(item, slot));
     
     // Cache the result
     equipmentCache.set(cacheKey, {
@@ -120,7 +156,7 @@ export async function getEquipmentBySlot(slot: EquipmentSlot): Promise<{ equipme
     const equipmentType = SLOT_TO_TYPE_MAP[slot];
     const apiData = await apiService.get<ApiEquipment[]>(`/Equipment?type=${equipmentType}`);
     
-    const equipment = apiData.map(transformApiEquipment);
+    const equipment = apiData.map(item => transformApiEquipment(item, slot));
     
     // Cache the result
     equipmentCache.set(cacheKey, {
@@ -164,7 +200,7 @@ export async function getAllEquipment(): Promise<{ equipment: Equipment[]; sourc
 
   try {
     const apiData = await apiService.get<ApiEquipment[]>('/Equipment');
-    const equipment = apiData.map(transformApiEquipment);
+    const equipment = apiData.map(item => transformApiEquipment(item)); // No target slot for "all equipment"
     
     equipmentCache.set(cacheKey, {
       data: equipment,
