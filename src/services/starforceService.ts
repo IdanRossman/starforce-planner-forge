@@ -1,10 +1,17 @@
 import { apiService } from './api';
 
+// Starforce strategy enum
+export enum StarforceStrategy {
+  LEGACY = 'legacy',
+  NEW_KMS = 'new-kms',
+}
+
 // Request DTOs (matching your backend)
 export interface BulkItemCalculationDto {
   itemLevel: number;
   fromStar: number;
   toStar: number;
+  strategy?: StarforceStrategy;
   safeguardEnabled?: boolean;
   spareCount?: number;
   spareCost?: number;
@@ -14,11 +21,13 @@ export interface BulkItemCalculationDto {
 
 export interface BulkEnhancedStarforceRequestDto {
   isInteractive: boolean;
+  strategy?: StarforceStrategy;
   events?: {
     thirtyOff?: boolean;
     fiveTenFifteen?: boolean;
     starCatching?: boolean;
     mvpDiscount?: number;
+    boomReduction?: boolean;
   };
   items: BulkItemCalculationDto[];
 }
