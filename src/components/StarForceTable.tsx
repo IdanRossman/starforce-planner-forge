@@ -9,6 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useStarforceStrategy } from "@/hooks/useStarforceStrategy";
+import { StarforceEventToggles } from "@/components/StarforceEventToggles";
+import { 
+  getDefaultEventState, 
+  createApiEventObject, 
+  type StarforceEventState 
+} from "@/lib/starforceEvents";
 import {
   Table,
   TableBody,
@@ -46,12 +53,6 @@ interface StarForceTableProps {
   title?: string;
   subtitle?: string;
   characterId?: string; // Add character ID for unique spares storage
-}
-
-interface StarForceEvents {
-  fiveTenFifteen: boolean;
-  thirtyPercentOff: boolean;
-  yohiTapEvent: boolean; // The legendary luck
 }
 
 interface CalculationRow {
@@ -121,6 +122,8 @@ const getDangerColor = (currentStars: number) => {
 };
 
 export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, onRemoveStarForceItem, onMarkAsDone, title, subtitle, characterId }: StarForceTableProps) {
+  const [strategy] = useStarforceStrategy();
+  
   // Filter equipped items that haven't reached target stars AND are starforceable
   const incompleteEquipment = useMemo(
     () => equipment.filter(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce),
@@ -133,12 +136,15 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
     [incompleteEquipment, starForceItems]
   );
   
-  // Event states
-  const [events, setEvents] = useState<StarForceEvents>({
-    fiveTenFifteen: false,
-    thirtyPercentOff: false,
-    yohiTapEvent: false, // The legendary luck starts disabled
-  });
+  // Event states - dynamic based on strategy
+  const [events, setEvents] = useState<StarforceEventState>(() => 
+    getDefaultEventState(strategy)
+  );
+  
+  // Update events when strategy changes
+  useEffect(() => {
+    setEvents(getDefaultEventState(strategy));
+  }, [strategy]);
   
   const [calculations, setCalculations] = useState<CalculationRow[]>([]);
 
@@ -218,14 +224,17 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
       prev.map(calc => {
         const { equipment, starCatching, safeguard } = calc;
         
-        // Apply event modifiers
+        // Create API event object based on current events
+        const apiEvents = createApiEventObject(strategy, events);
+        
+        // Apply event modifiers for legacy calculation
         let costMultiplier = 1;
         let successRateBonus = 0;
         
-        if (events.thirtyPercentOff) {
+        if (apiEvents.thirtyOff) {
           costMultiplier *= 0.7;
         }
-        if (events.fiveTenFifteen) {
+        if (apiEvents.fiveTenFifteen) {
           successRateBonus = 0.1;
         }
         
@@ -243,14 +252,9 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
           }
         );
         
-        // Apply Yohi's legendary luck - halves cost and spares needed!
-        let finalCost = starForceCalc.averageCost;
-        let finalBooms = starForceCalc.averageBooms;
-        
-        if (events.yohiTapEvent) {
-          finalCost = Math.round(finalCost * 0.5); // Yohi's luck halves the cost
-          finalBooms = finalBooms * 0.5; // And the boom count
-        }
+        // Calculate final cost and booms
+        const finalCost = starForceCalc.averageCost;
+        const finalBooms = starForceCalc.averageBooms;
         
         // Estimate spares needed (simplified calculation)
         const expectedSpares = Math.ceil(finalBooms * 1.2);
@@ -383,61 +387,16 @@ export function StarForceTable({ equipment, starForceItems, onAddStarForceItem, 
         </div>
         
         {/* Event Toggles */}
-        <div className="space-y-4 pt-4">
-          <div>
-            <h4 className="text-sm font-medium mb-3 text-foreground">StarForce Events</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="fiveTenFifteen"
-                  checked={events.fiveTenFifteen}
-                  onCheckedChange={(checked) => 
-                    setEvents(prev => ({ 
-                      ...prev, 
-                      fiveTenFifteen: checked
-                    }))
-                  }
-                />
-                <Label htmlFor="fiveTenFifteen" className="text-sm">
-                  5/10/15 Event (100% success at ★5, ★10, ★15)
-                </Label>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="thirtyPercentOff"
-                  checked={events.thirtyPercentOff}
-                  onCheckedChange={(checked) => 
-                    setEvents(prev => ({ 
-                      ...prev, 
-                      thirtyPercentOff: checked
-                    }))
-                  }
-                />
-                <Label htmlFor="thirtyPercentOff" className="text-sm">
-                  30% Off Event (30% cost reduction)
-                </Label>
-              </div>
-              
-              {/* Yohi Tap Event - The legendary luck */}
-              <div className="flex items-center space-x-2 p-2 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
-                <Switch
-                  id="yohiTapEvent"
-                  checked={events.yohiTapEvent}
-                  onCheckedChange={(checked) => 
-                    setEvents(prev => ({ 
-                      ...prev, 
-                      yohiTapEvent: checked
-                    }))
-                  }
-                />
-                <Label htmlFor="yohiTapEvent" className="text-sm font-medium text-yellow-400">
-                  🍀 Yohi Tap Event (Inside Joke -50% Cost)
-                </Label>
-              </div>
-            </div>
-          </div>
-          <Separator />
+        <div className="pt-4">
+          <h4 className="text-sm font-medium mb-3 text-foreground font-maplestory">StarForce Events</h4>
+          <StarforceEventToggles
+            key={strategy} // Force re-render when strategy changes
+            strategy={strategy}
+            events={events}
+            onEventsChange={setEvents}
+            compact={true}
+          />
+          <Separator className="mt-4" />
         </div>
       </CardHeader>
       

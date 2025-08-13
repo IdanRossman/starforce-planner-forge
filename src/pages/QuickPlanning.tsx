@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { QuickStarForceTable } from "@/components/QuickStarForceTable";
 import { EquipmentForm } from "@/components/EquipmentForm";
+import { StarforceSettings } from "@/components/StarforceSettings";
 import { GameAssistant } from "@/components/GameAssistant";
 import { getAllTemplates, getTemplateEquipmentForJob } from "@/services/templateService";
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
@@ -494,7 +495,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
               Automatic cost calculations update as you make changes
             </p>
           </CardHeader>
-          <CardContent className="p-4">
+          <CardContent className="p-4 space-y-4">
+            <StarforceSettings className="mb-4" />
             <QuickStarForceTable equipment={starForceItems} />
           </CardContent>
         </Card>

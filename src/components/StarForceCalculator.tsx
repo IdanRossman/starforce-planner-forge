@@ -1,6 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
 import { calculateBulkStarforce, convertToMesos, BulkEnhancedStarforceRequestDto, LuckAnalysisDto } from "@/services/starforceService";
+import { useStarforceStrategy } from "@/hooks/useStarforceStrategy";
+import { StarforceEventToggles } from "@/components/StarforceEventToggles";
+import { StarforceSettings } from "@/components/StarforceSettings";
+import { 
+  getDefaultEventState, 
+  createApiEventObject, 
+  type StarforceEventState 
+} from "@/lib/starforceEvents";
 import {
   Card,
   CardContent,
@@ -415,12 +423,12 @@ export function StarForceCalculator({
   const [costDiscount, setCostDiscount] = useState(0);
   const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
   
+  // Global starforce system configuration
+  const [globalStrategy] = useStarforceStrategy();
+  
   // Enhanced settings for equipment mode with localStorage persistence
   const [enhancedSettings, setEnhancedSettings] = useState(() => {
     const defaultSettings = {
-      discountEvent: false, // 30% off event
-      starcatchEvent: false, // 5/10/15 event
-      starCatching: true, // Star catching enabled globally
       isInteractive: false, // Interactive server toggle
       spareCount: 0, // Number of spares
       sparePrice: 0, // Price per spare in mesos
@@ -428,6 +436,16 @@ export function StarForceCalculator({
     
     return loadCharacterSettings('settings', defaultSettings);
   });
+  
+  // Dynamic event states based on strategy
+  const [events, setEvents] = useState<StarforceEventState>(() => 
+    getDefaultEventState(globalStrategy)
+  );
+
+  // Update events when strategy changes
+  useEffect(() => {
+    setEvents(getDefaultEventState(globalStrategy));
+  }, [globalStrategy]);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
@@ -564,12 +582,8 @@ export function StarForceCalculator({
         // Build API request
         const request: BulkEnhancedStarforceRequestDto = {
           isInteractive: enhancedSettings.isInteractive,
-          events: {
-            thirtyOff: enhancedSettings.discountEvent,
-            fiveTenFifteen: enhancedSettings.starcatchEvent,
-            starCatching: enhancedSettings.starCatching !== false,
-            mvpDiscount: 0 // Add to settings if needed
-          },
+          strategy: globalStrategy,
+          events: createApiEventObject(globalStrategy, events),
           items: pendingEquipment.map(eq => {
             const actualCostData = itemActualCosts[eq.id];
             const actualCostInMesos = actualCostData ? convertToMesos(actualCostData) : 0;
@@ -758,7 +772,7 @@ export function StarForceCalculator({
 
     calculateEquipmentCosts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
+  }, [pendingEquipment, enhancedSettings, events, itemSafeguard, itemSparePrices, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
 
   // Enhanced luck rating based on percentile tiers
   const getEnhancedLuckRating = (percentile: number) => {
@@ -1242,42 +1256,46 @@ export function StarForceCalculator({
               Enhancement Settings
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Event Settings */}
+          <CardContent className="space-y-6">
+            {/* Strategy Selection */}
             <div>
-              <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">Enhancement Settings</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="discount-event"
-                    checked={enhancedSettings.discountEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
-                  />
-                  <Label htmlFor="discount-event" className="text-sm cursor-pointer font-maplestory">30% Off Event</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="starcatch-event"
-                    checked={enhancedSettings.starcatchEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
-                  />
-                  <Label htmlFor="starcatch-event" className="text-sm cursor-pointer font-maplestory">5/10/15 Event</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="star-catching"
-                    checked={enhancedSettings.starCatching !== false}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starCatching: checked }))}
-                  />
-                  <Label htmlFor="star-catching" className="text-sm cursor-pointer font-maplestory">Star Catching</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="interactive-server"
-                    checked={enhancedSettings.isInteractive}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
-                  />
-                  <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory">Interactive Server</Label>
+              <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">StarForce System</h4>
+              <StarforceSettings />
+            </div>
+
+            {/* Event Configuration & Calculation Settings - Inline */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Event Settings */}
+              <div className="lg:col-span-2">
+                <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">Event Configuration</h4>
+                <StarforceEventToggles
+                  key={globalStrategy} // Force re-render when strategy changes
+                  strategy={globalStrategy}
+                  events={events}
+                  onEventsChange={setEvents}
+                  compact={true}
+                />
+              </div>
+
+              {/* Calculation Settings */}
+              <div className="lg:col-span-1">
+                <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">Calculation Settings</h4>
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <Switch
+                      id="interactive-server"
+                      checked={enhancedSettings.isInteractive}
+                      onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
+                    />
+                    <div className="flex flex-col">
+                      <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory font-medium">
+                        Interactive Server
+                      </Label>
+                      <span className="text-xs text-muted-foreground">
+                        Include spare item costs in calculations
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

@@ -13,6 +13,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { apiService } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { formatMeso, parseMesoInput, isValidMesoInput, loadCharacterSpareData } from "@/lib/utils";
+import { useStarforceStrategy } from "@/hooks/useStarforceStrategy";
+import { StarforceEventToggles } from "@/components/StarforceEventToggles";
+import { 
+  getDefaultEventState, 
+  createApiEventObject, 
+  type StarforceEventState 
+} from "@/lib/starforceEvents";
 import { EquipmentImage } from "./EquipmentImage";
 import { 
   Sparkles, 
@@ -53,16 +60,20 @@ export function StarForceOptimizer({
   characterName,
   onUpdateProgress
 }: StarForceOptimizerProps) {
+  const [strategy] = useStarforceStrategy();
   const [availableMeso, setAvailableMeso] = useState<string>("");
   const [mesoUnit, setMesoUnit] = useState<string>("B"); // B for billion, M for million, K for thousand
   const [isLoading, setIsLoading] = useState(false);
   const [optimization, setOptimization] = useState<StarforceOptimizationResponseDto | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
-  const [events, setEvents] = useState({
-    fiveTenFifteen: false,
-    thirtyOff: false,
-    starCatching: false
-  });
+  const [events, setEvents] = useState<StarforceEventState>(() => 
+    getDefaultEventState(strategy)
+  );
+  
+  // Update events when strategy changes
+  useEffect(() => {
+    setEvents(getDefaultEventState(strategy));
+  }, [strategy]);
   
   const { toast } = useToast();
 
@@ -155,11 +166,7 @@ export function StarForceOptimizer({
       const request: StarforceOptimizationRequestDto = {
         availableMeso: parsedMesoAmount,
         isInteractive: false,
-        events: {
-          fiveTenFifteen: events.fiveTenFifteen,
-          thirtyOff: events.thirtyOff,
-          starCatching: events.starCatching
-        },
+        events: createApiEventObject(strategy, events),
         items: pendingEquipment.map(eq => ({
           itemLevel: eq.level,
           fromStar: eq.currentStarForce,
@@ -323,59 +330,14 @@ export function StarForceOptimizer({
 
           {/* Event Settings */}
           <div className="space-y-4">
-            <div>
-              <h4 className="text-sm font-medium mb-3 text-foreground font-maplestory">StarForce Events</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="fiveTenFifteen"
-                    checked={events.fiveTenFifteen}
-                    onCheckedChange={(checked) => 
-                      setEvents(prev => ({ 
-                        ...prev, 
-                        fiveTenFifteen: checked
-                      }))
-                    }
-                  />
-                  <Label htmlFor="fiveTenFifteen" className="text-sm font-maplestory">
-                    5/10/15 Event (100% success at ★5, ★10, ★15)
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="thirtyPercentOff"
-                    checked={events.thirtyOff}
-                    onCheckedChange={(checked) => 
-                      setEvents(prev => ({ 
-                        ...prev, 
-                        thirtyOff: checked
-                      }))
-                    }
-                  />
-                  <Label htmlFor="thirtyPercentOff" className="text-sm font-maplestory">
-                    30% Off Event (30% cost reduction)
-                  </Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="starCatching"
-                    checked={events.starCatching}
-                    onCheckedChange={(checked) => 
-                      setEvents(prev => ({ 
-                        ...prev, 
-                        starCatching: checked
-                      }))
-                    }
-                  />
-                  <Label htmlFor="starCatching" className="text-sm font-maplestory">
-                    Star Catching (+5% Success Rate)
-                  </Label>
-                </div>
-              </div>
-            </div>
-            <Separator />
+            <h4 className="text-sm font-medium mb-3 text-foreground font-maplestory">StarForce Events</h4>
+            <StarforceEventToggles
+              key={strategy} // Force re-render when strategy changes
+              strategy={strategy}
+              events={events}
+              onEventsChange={setEvents}
+              compact={true}
+            />
           </div>
 
           {/* Optimize Button */}

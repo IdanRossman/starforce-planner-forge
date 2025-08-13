@@ -1,9 +1,9 @@
 import { apiService } from './api';
 
-// Starforce strategy enum
+// StarForce enhancement system configurations
 export enum StarforceStrategy {
-  LEGACY = 'legacy',
-  NEW_KMS = 'new-kms',
+  LEGACY = 'legacy',      // Current 25-star system
+  NEW_KMS = 'new-kms',    // New 30-star KMS system
 }
 
 // Request DTOs (matching your backend)

@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment } from "@/types";
-import { calculateStarForce } from "@/components/StarForceCalculator";
+import { calculateBulkStarforce, BulkEnhancedStarforceRequestDto } from "@/services/starforceService";
+import { useStarforceStrategy } from "@/hooks/useStarforceStrategy";
+import { getDefaultEventState, createApiEventObject, StarforceEventState } from "@/lib/starforceEvents";
+import { StarforceEventToggles } from "@/components/StarforceEventToggles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,16 +41,11 @@ interface QuickStarForceTableProps {
   equipment: Equipment[];
 }
 
-interface StarForceEvents {
-  fiveTenFifteen: boolean;
-  thirtyPercentOff: boolean;
-  starCatching: boolean;
-}
-
 interface CalculationRow {
   equipment: Equipment;
   expectedCost: number;
   isCalculated: boolean;
+  isCalculating?: boolean;
 }
 
 // Equipment slot icons mapping
@@ -107,52 +105,91 @@ const getDangerColor = (currentStars: number) => {
 };
 
 export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
-  // Event states with global star catching
-  const [events, setEvents] = useState<StarForceEvents>({
-    fiveTenFifteen: false,
-    thirtyPercentOff: false,
-    starCatching: true, // Default enabled for quick calculator
-  });
+  // Get global strategy
+  const [globalStrategy] = useStarforceStrategy();
+  
+  // Event states - dynamic based on strategy
+  const [events, setEvents] = useState<StarforceEventState>(() => 
+    getDefaultEventState(globalStrategy)
+  );
   
   const [calculations, setCalculations] = useState<CalculationRow[]>([]);
+  const [isCalculating, setIsCalculating] = useState(false);
 
-  // Update calculations when equipment or events change
+  // Update events when strategy changes
   useEffect(() => {
-    const newCalculations = equipment.map(eq => {
-      // Apply event modifiers
-      let costMultiplier = 1;
-      let successRateBonus = 0;
-      
-      if (events.thirtyPercentOff) {
-        costMultiplier *= 0.7;
-      }
-      if (events.fiveTenFifteen) {
-        successRateBonus = 0.1;
-      }
-      
-      const starForceCalc = calculateStarForce(
-        eq.level || 150,
-        eq.currentStarForce,
-        eq.targetStarForce,
-        eq.tier || "epic",
-        "Regular",
-        { 
-          costMultiplier, 
-          successRateBonus,
-          starCatching: events.starCatching,
-          safeguard: false // Simplified for quick calculator
-        }
-      );
-      
-      return {
-        equipment: eq,
-        expectedCost: starForceCalc.averageCost,
-        isCalculated: true,
-      };
-    });
+    setEvents(getDefaultEventState(globalStrategy));
+  }, [globalStrategy]);
+
+  // Update calculations when equipment, events, or strategy change
+  useEffect(() => {
+    if (equipment.length === 0) {
+      setCalculations([]);
+      return;
+    }
+
+    calculateEquipmentCosts();
+  }, [equipment, events, globalStrategy]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const calculateEquipmentCosts = async () => {
+    if (equipment.length === 0) return;
+
+    setIsCalculating(true);
     
-    setCalculations(newCalculations);
-  }, [equipment, events]);
+    // Set all items as calculating
+    const calculatingItems = equipment.map(eq => ({
+      equipment: eq,
+      expectedCost: 0,
+      isCalculated: false,
+      isCalculating: true,
+    }));
+    setCalculations(calculatingItems);
+
+    try {
+      // Build API request
+      const request: BulkEnhancedStarforceRequestDto = {
+        isInteractive: true, // Quick planner is always interactive
+        strategy: globalStrategy,
+        events: createApiEventObject(globalStrategy, events),
+        items: equipment.map(eq => ({
+          itemLevel: eq.level || 150,
+          fromStar: eq.currentStarForce || 0,
+          toStar: eq.targetStarForce || 0,
+          safeguardEnabled: false, // Simplified for quick calculator
+          spareCount: 0,
+          spareCost: 0,
+          actualCost: 0,
+          itemName: eq.name || `${eq.slot} Equipment`,
+        })),
+      };
+
+      // Call backend API
+      const { response } = await calculateBulkStarforce(request);
+      
+      // Transform response to match current format
+      const newCalculations: CalculationRow[] = response.results.map((result, index) => ({
+        equipment: equipment[index],
+        expectedCost: result.averageCost || 0,
+        isCalculated: true,
+        isCalculating: false,
+      }));
+
+      setCalculations(newCalculations);
+    } catch (error) {
+      console.error('Failed to calculate starforce costs:', error);
+      
+      // On error, show items as not calculated
+      const errorCalculations = equipment.map(eq => ({
+        equipment: eq,
+        expectedCost: 0,
+        isCalculated: false,
+        isCalculating: false,
+      }));
+      setCalculations(errorCalculations);
+    } finally {
+      setIsCalculating(false);
+    }
+  };
 
   const totalCost = calculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
 
@@ -189,49 +226,14 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
         </CardContent>
       </Card>
 
-      {/* Event Toggles - Simplified */}
-      <div className="space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
-            <Switch
-              id="starCatching"
-              checked={events.starCatching}
-              onCheckedChange={(checked) => 
-                setEvents(prev => ({ ...prev, starCatching: checked }))
-              }
-            />
-            <Label htmlFor="starCatching" className="text-sm font-medium font-maplestory">
-              Star Catching (All Equipment)
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
-            <Switch
-              id="fiveTenFifteen"
-              checked={events.fiveTenFifteen}
-              onCheckedChange={(checked) => 
-                setEvents(prev => ({ ...prev, fiveTenFifteen: checked }))
-              }
-            />
-            <Label htmlFor="fiveTenFifteen" className="text-sm font-medium font-maplestory">
-              5/10/15 Event
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
-            <Switch
-              id="thirtyPercentOff"
-              checked={events.thirtyPercentOff}
-              onCheckedChange={(checked) => 
-                setEvents(prev => ({ ...prev, thirtyPercentOff: checked }))
-              }
-            />
-            <Label htmlFor="thirtyPercentOff" className="text-sm font-medium font-maplestory">
-              30% Off Event
-            </Label>
-          </div>
-        </div>
-      </div>
+      {/* Event Toggles - Dynamic based on strategy */}
+      <StarforceEventToggles
+        key={globalStrategy} // Force re-render when strategy changes
+        strategy={globalStrategy}
+        events={events}
+        onEventsChange={setEvents}
+        compact={false}
+      />
 
       {/* Calculation Table - Simplified */}
       <div className="rounded-md border bg-card">
@@ -298,9 +300,15 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
                 </TableCell>
                 
                 <TableCell className="text-center">
-                  <span className="font-semibold text-foreground font-maplestory">
-                    {formatMesos(calc.expectedCost)}
-                  </span>
+                  {calc.isCalculating ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                    </div>
+                  ) : (
+                    <span className="font-semibold text-foreground font-maplestory">
+                      {formatMesos(calc.expectedCost)}
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
