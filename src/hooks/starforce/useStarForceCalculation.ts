@@ -6,6 +6,7 @@ import {
   BulkEnhancedStarforceRequestDto, 
   LuckAnalysisDto 
 } from '../../services/starforceService';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 // Types
 export interface EquipmentCalculation {
@@ -86,6 +87,11 @@ export interface UseStarForceCalculationOptions {
   sortField: SortField | null;
   sortDirection: SortDirection;
   initialCalculation?: StarForceCalculation;
+}
+
+export interface UseSortingReturn {
+  handleSort: (field: SortField) => void;
+  getSortIcon: (field: SortField) => JSX.Element;
 }
 
 export function useStarForceCalculation({

@@ -1,11 +1,9 @@
-// StarForce hooks for managing state and localStorage
-export { useCharacterStorage } from './useCharacterStorage';
+// Legacy StarForce hooks - to be migrated to new architecture
 export { useStarForceItemSettings } from './useStarForceItemSettings';
 export { useStarForceCalculation } from './useStarForceCalculation';
 export { useEquipmentManagement } from './useEquipmentManagement';
 
 // Re-export types
-export type { UseCharacterStorageOptions } from './useCharacterStorage';
 export type { 
   ItemSettings, 
   ItemSpares, 

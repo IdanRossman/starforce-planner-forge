@@ -6,6 +6,8 @@ export interface Character {
   equipment: Equipment[];
   starForceItems?: Equipment[]; // Character-specific StarForce calculator items
   image?: string; // Character image from MapleRanks
+  createdAt?: string; // When the character was created
+  updatedAt?: string; // When the character was last updated
 }
 
 export interface Equipment {

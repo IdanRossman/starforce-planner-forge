@@ -9,6 +9,14 @@ import {
   type SortDirection,
   type EquipmentCalculation
 } from "@/hooks/starforce";
+import { useFormatting } from "@/hooks/display/useFormatting";
+import { useTable } from "@/hooks/utils/useTable";
+import { calculateBulkStarforce } from "@/services/starforceService";
+import { 
+  useSelectedCharacter, 
+  useSelectedCharacterEquipment
+} from "@/hooks/useCharacterContext";
+import { useEquipment } from "@/hooks";
 import {
   Card,
   CardContent,
@@ -30,353 +38,53 @@ import { EquipmentImage } from "@/components/EquipmentImage";
 
 interface StarForceCalculatorProps {
   initialCalculation?: StarForceCalculation;
-  equipment?: Equipment[];
+  equipment?: Equipment[]; // Optional - will use context if not provided
   additionalEquipment?: Equipment[];
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
   mode?: 'standalone' | 'equipment-table';
-  characterId?: string; // For per-character localStorage
+  characterId?: string; // For per-character localStorage - optional if using context
   characterName?: string; // Fallback for characters without ID
 }
 
-// Based on proven working calculator logic
-// Brandon's proven cost calculation
-function makeMesoFn(divisor: number, currentStarExp = 2.7, extraMult = 1) {
-  return (currentStar: number, itemLevel: number) => 
-    100 * Math.round(extraMult * itemLevel ** 3 * ((currentStar + 1) ** currentStarExp) / divisor + 10);
-}
-
-function saviorMesoFn(currentStar: number) {
-  switch (currentStar) {
-    case 11: return makeMesoFn(22000);
-    case 12: return makeMesoFn(15000);
-    case 13: return makeMesoFn(11000);
-    case 14: return makeMesoFn(7500);
-    default: return preSaviorMesoFn(currentStar);
-  }
-}
-
-function preSaviorMesoFn(currentStar: number) {
-  if (currentStar >= 15) return makeMesoFn(20000);
-  if (currentStar >= 10) return makeMesoFn(40000);
-  return makeMesoFn(2500, 1);
-}
-
-function saviorCost(currentStar: number, itemLevel: number): number {
-  const mesoFn = saviorMesoFn(currentStar);
-  return mesoFn(currentStar, itemLevel);
-}
-
-function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
-  return saviorCost(currentStar, itemLevel);
-}
-
-function getSafeguardMultiplierIncrease(currentStar: number, server: string): number {
-  if (server === "kms" && currentStar >= 15 && currentStar <= 17) {
-    return 2;
-  }
-  if (server !== "kms" && currentStar >= 15 && currentStar <= 16) {
-    return 1;
-  }
-  return 0;
-}
-
-function attemptCost(
-  currentStar: number, 
-  itemLevel: number, 
-  boomProtect: boolean, 
-  thirtyOff: boolean, 
-  starCatch: boolean,
-  mvpDiscount: number,
-  chanceTime: boolean,
-  server: string
-): number {
-  let multiplier = 1;
-
-  // MVP discounts (for stars <= 15)
-  if (mvpDiscount > 0 && currentStar <= 15) {
-    multiplier = multiplier - mvpDiscount;
-  }
-
-  // 30% off event
-  if (thirtyOff) {
-    multiplier = multiplier - 0.3;
-  }
-
-  // Safeguard cost increase - using Brandon's exact logic
-  if (boomProtect && !chanceTime) {
-    multiplier = multiplier + getSafeguardMultiplierIncrease(currentStar, server);
-  }
-
-  const cost = getBaseCost(server, currentStar, itemLevel) * multiplier;
-  return Math.round(cost);
-}
-
-function determineOutcome(
-  currentStar: number, 
-  starCatch: boolean, 
-  boomProtect: boolean, 
-  fiveTenFifteen: boolean,
-  server: string
-): "Success" | "Maintain" | "Decrease" | "Boom" {
-  // 5/10/15 event guaranteed success
-  if (fiveTenFifteen && (currentStar === 5 || currentStar === 10 || currentStar === 15)) {
-    return "Success";
-  }
-
-  // Brandon's exact saviorRates from working calculator
-  const rates: { [key: number]: [number, number, number, number] } = {
-    0: [0.95, 0.05, 0, 0], 1: [0.9, 0.1, 0, 0], 2: [0.85, 0.15, 0, 0], 
-    3: [0.85, 0.15, 0, 0], 4: [0.8, 0.2, 0, 0], 5: [0.75, 0.25, 0, 0],
-    6: [0.7, 0.3, 0, 0], 7: [0.65, 0.35, 0, 0], 8: [0.6, 0.4, 0, 0],
-    9: [0.55, 0.45, 0, 0], 10: [0.5, 0.5, 0, 0], 11: [0.45, 0.55, 0, 0],
-    12: [0.4, 0.6, 0, 0], 13: [0.35, 0.65, 0, 0], 14: [0.3, 0.7, 0, 0],
-    15: [0.3, 0.679, 0, 0.021], 16: [0.3, 0, 0.679, 0.021], 17: [0.3, 0, 0.679, 0.021],
-    18: [0.3, 0, 0.672, 0.028], 19: [0.3, 0, 0.672, 0.028], 20: [0.3, 0.63, 0, 0.07],
-    21: [0.3, 0, 0.63, 0.07], 22: [0.03, 0, 0.776, 0.194], 23: [0.02, 0, 0.686, 0.294],
-    24: [0.01, 0, 0.594, 0.396], 25: [0.01, 0, 0.594, 0.396]
-  };
-
-  let [probSuccess, probMaintain, probDecrease, probBoom] = rates[currentStar] || [0.3, 0.4, 0, 0.3];
-
-  // Use Brandon's exact rates without any overrides
-
-  // Safeguard removes boom chance
-  if (boomProtect && currentStar >= 12 && currentStar <= 16) {
-    if (probDecrease > 0) {
-      probDecrease = probDecrease + probBoom;
-    } else {
-      probMaintain = probMaintain + probBoom;
-    }
-    probBoom = 0;
-  }
-
-  // Star catching (5% multiplicative)
-  if (starCatch) {
-    probSuccess = Math.min(1, probSuccess * 1.05);
-    const leftOver = 1 - probSuccess;
-    
-    if (probDecrease === 0) {
-      probMaintain = probMaintain * leftOver / (probMaintain + probBoom);
-      probBoom = leftOver - probMaintain;
-    } else {
-      probDecrease = probDecrease * leftOver / (probDecrease + probBoom);
-      probBoom = leftOver - probDecrease;
-    }
-  }
-
-  const outcome = Math.random();
-  if (outcome <= probSuccess) return "Success";
-  if (outcome <= probSuccess + probMaintain) return "Maintain";
-  if (outcome <= probSuccess + probMaintain + probDecrease) return "Decrease";
-  return "Boom";
-}
-
-function performExperiment(
-  currentStars: number,
-  desiredStar: number,
-  itemLevel: number,
-  boomProtect: boolean,
-  thirtyOff: boolean,
-  starCatch: boolean,
-  fiveTenFifteen: boolean,
-  mvpDiscount: number,
-  server: string
-): [number, number] {
-  let currentStar = currentStars;
-  let totalMesos = 0;
-  let totalBooms = 0;
-  let decreaseCount = 0;
-
-  while (currentStar < desiredStar) {
-    const chanceTime = decreaseCount === 2;
-    totalMesos += attemptCost(currentStar, itemLevel, boomProtect, thirtyOff, starCatch, mvpDiscount, chanceTime, server);
-
-    if (chanceTime) {
-      currentStar++;
-      decreaseCount = 0;
-    } else {
-      const outcome = determineOutcome(currentStar, starCatch, boomProtect, fiveTenFifteen, server);
-      
-      if (outcome === "Success") {
-        currentStar++;
-        decreaseCount = 0;
-      } else if (outcome === "Decrease") {
-        currentStar--;
-        decreaseCount++;
-      } else if (outcome === "Maintain") {
-        decreaseCount = 0;
-      } else if (outcome === "Boom") {
-        currentStar = 12; // Reset to 12 stars on boom
-        totalBooms++;
-        decreaseCount = 0;
-      }
-    }
-  }
-
-  return [totalMesos, totalBooms];
-}
-
-export function calculateStarForce(
-  itemLevel: number,
-  currentLevel: number,
-  targetLevel: number,
-  tier: string,
-  serverType: "Regular" | "Reboot",
-  events: {
-    costMultiplier?: number;
-    successRateBonus?: number;
-    starCatching?: boolean;
-    safeguard?: boolean;
-  } = {}
-): StarForceCalculation {
-  const {
-    costMultiplier = 1,
-    successRateBonus = 0,
-    starCatching = false,
-    safeguard = false,
-  } = events || {};
-
-  // Input validation
-  if (currentLevel >= targetLevel || itemLevel < 1 || targetLevel > 23 || currentLevel < 0) {
-    return {
-      currentLevel,
-      targetLevel,
-      averageCost: 0,
-      medianCost: 0,
-      p75Cost: 0,
-      averageBooms: 0,
-      medianBooms: 0,
-      p75Booms: 0,
-      successRate: 100,
-      boomRate: 0,
-      costPerAttempt: 0,
-      perStarStats: [],
-      recommendations: [],
-    };
-  }
-
-  const trials = 1000; // Increased for more consistent results
-  const costResults: number[] = []; // Store all cost results for median calculation
-  const boomResults: number[] = []; // Store all boom results for median calculation
-  
-  // Convert events to working calculator format
-  const thirtyOff = costMultiplier < 1;
-  const fiveTenFifteen = successRateBonus > 0;
-  const mvpDiscount = 0; // Could be extracted from costMultiplier if needed
-  const server = "gms"; // Brandon uses lowercase "gms"
-
-  // Run simulations using Brandon's exact algorithm 
-  for (let i = 0; i < trials; i++) {
-    // Each trial gets both meso and boom data from the same experiment
-    const [mesoResult, boomResult] = performExperiment(
-      currentLevel, 
-      targetLevel, 
-      itemLevel, 
-      safeguard, 
-      thirtyOff, 
-      starCatching, 
-      fiveTenFifteen, 
-      mvpDiscount, 
-      server
-    );
-    costResults.push(mesoResult);
-    boomResults.push(boomResult);
-  }
-
-  // Calculate average values
-  const avgCost = costResults.reduce((sum, cost) => sum + cost, 0) / trials;
-  const avgBooms = boomResults.reduce((sum, booms) => sum + booms, 0) / trials;
-
-  // Calculate median values
-  const sortedCosts = [...costResults].sort((a, b) => a - b);
-  const sortedBooms = [...boomResults].sort((a, b) => a - b);
-  
-  const medianCost = trials % 2 === 0
-    ? (sortedCosts[trials / 2 - 1] + sortedCosts[trials / 2]) / 2
-    : sortedCosts[Math.floor(trials / 2)];
-    
-  const medianBooms = trials % 2 === 0
-    ? (sortedBooms[trials / 2 - 1] + sortedBooms[trials / 2]) / 2
-    : sortedBooms[Math.floor(trials / 2)];
-
-  // Calculate 75th percentile values
-  const p75Index = Math.floor(trials * 0.75);
-  const p75Cost = sortedCosts[p75Index];
-  const p75Booms = sortedBooms[p75Index];
-
-  // Calculate per-star stats
-  const perStarStats: { star: number; successRate: number; boomRate: number; cost: number }[] = [];
-  for (let star = currentLevel; star < targetLevel; star++) {
-    // Get base rates
-    const rates: { [key: number]: [number, number, number, number] } = {
-      12: [40, 59.4, 0, 0.6], 13: [35, 63.7, 0, 1.3], 14: [30, 68.6, 0, 1.4],
-      15: [30, 67.9, 0, 2.1], 16: [30, 66.4, 0, 3.6], 17: [30, 63.7, 0, 6.3],
-      18: [30, 60, 0, 10], 19: [30, 50, 0, 20], 20: [30, 40, 0, 30]
-    };
-    
-    const [successRate, , , boomRate] = rates[star] || [star <= 10 ? 95 : 30, 0, 0, 0];
-    
-    perStarStats.push({
-      star,
-      successRate,
-      boomRate,
-      cost: attemptCost(star, itemLevel, safeguard, thirtyOff, starCatching, mvpDiscount, false, server)
-    });
-  }
-
-  // Calculate spares needed based on average booms
-  const sparesNeeded = Math.ceil(avgBooms); // Round up - if 0.7 booms, need 1 spare
-
-  // Generate recommendations
-  const recommendations: string[] = [];
-  
-  if (avgBooms > 0.5 && !safeguard && targetLevel >= 15) {
-    recommendations.push("Consider using Safeguard for stars 15-16 to prevent destruction.");
-  }
-  if (avgCost > 500000000 && !thirtyOff) {
-    recommendations.push("Wait for a 30% Off event to significantly reduce costs.");
-  }
-  if (sparesNeeded > 0) {
-    recommendations.push(`Expected ${avgBooms.toFixed(1)} booms - prepare ${sparesNeeded} spare item${sparesNeeded > 1 ? 's' : ''}.`);
-  }
-
-  function formatMesos(amount: number): string {
-    if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-    return amount.toString();
-  }
-
-  return {
-    currentLevel,
-    targetLevel,
-    averageCost: Math.round(avgCost), // Just enhancement costs
-    averageBooms: Math.round(avgBooms * 100) / 100,
-    medianCost: Math.round(medianCost),
-    medianBooms: Math.round(medianBooms * 100) / 100,
-    p75Cost: Math.round(p75Cost),
-    p75Booms: Math.round(p75Booms * 100) / 100,
-    successRate: Math.round((trials / trials) * 10000) / 100, // Simplified
-    boomRate: Math.round((avgBooms / 5) * 10000) / 100, // Estimated
-    costPerAttempt: Math.round(avgCost / 10), // Estimated
-    perStarStats,
-    recommendations,
-  };
-}
 
 export function StarForceCalculator({ 
   initialCalculation, 
-  equipment = [], 
+  equipment: propEquipment, // Rename to avoid confusion
   additionalEquipment = [],
-  onUpdateStarforce,
-  onUpdateActualCost,
-  onUpdateSafeguard,
+  onUpdateStarforce: propOnUpdateStarforce, // Rename to distinguish from context
+  onUpdateActualCost: propOnUpdateActualCost,
+  onUpdateSafeguard: propOnUpdateSafeguard,
   mode = 'standalone',
-  characterId,
-  characterName
+  characterId: propCharacterId, // Use prop or context
+  characterName: propCharacterName
 }: StarForceCalculatorProps) {
+  // Get character data from context
+  const selectedCharacter = useSelectedCharacter();
+  const contextEquipment = useSelectedCharacterEquipment();
+  const {
+    updateEquipment,
+  } = useEquipment();
+
+  // Determine data source: props vs context
+  const equipment = propEquipment || contextEquipment;
+  const characterId = propCharacterId || selectedCharacter?.id;
+  const characterName = propCharacterName || selectedCharacter?.name;
+  
+  // Create wrapper functions for the new hook API
+  const onUpdateStarforce = propOnUpdateStarforce || ((equipmentId: string, current: number, target: number) => {
+    updateEquipment(equipmentId, { currentStarForce: current, targetStarForce: target });
+  });
+  
+  const onUpdateActualCost = propOnUpdateActualCost || ((equipmentId: string, cost: number) => {
+    updateEquipment(equipmentId, { actualCost: cost });
+  });
+  
+  const onUpdateSafeguard = propOnUpdateSafeguard || ((equipmentId: string, useSafeguard: boolean) => {
+    updateEquipment(equipmentId, { safeguard: useSafeguard });
+  });
+
   // Use hooks for settings and item management
   const {
     itemSafeguard,
@@ -387,11 +95,39 @@ export function StarForceCalculator({
     setItemSparePrices,
     itemActualCosts,
     setItemActualCosts
-  } = useStarForceItemSettings({
-    characterId,
-    characterName,
-    mode
-  });
+  } = useStarForceItemSettings(characterId);
+
+  // Use formatting hook for display utilities
+  const {
+    formatMesos,
+    getDangerLevel,
+    getLuckColor,
+    getEnhancedLuckRating,
+    getLuckText
+  } = useFormatting();
+
+  // Use table hook for sorting and filtering
+  const {
+    sortState,
+    handleSort,
+    filterState,
+    toggleFilter,
+    isSelected,
+    toggleSelection
+  } = useTable();
+
+  // Local getSortIcon implementation (keeping the original logic)
+  const getSortIcon = (field: SortField) => {
+    if (sortState.field !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    if (sortState.direction === 'asc') {
+      return <ArrowUp className="w-4 h-4 text-primary" />;
+    } else if (sortState.direction === 'desc') {
+      return <ArrowDown className="w-4 h-4 text-primary" />;
+    }
+    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+  };
 
   // Use equipment management hook for character-level equipment operations
   const {
@@ -434,9 +170,9 @@ export function StarForceCalculator({
   // Temporary spare price editing state (doesn't trigger recalculation until blur)
   const [tempSparePrices, setTempSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
 
-  // Sorting state (manual for now)
-  const [sortField, setSortField] = useState<SortField | null>(null);
-  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  // Sorting state (from useTable hook)
+  const sortField = sortState.field as SortField | null;
+  const sortDirection = sortState.direction;
   
   // Per-item include/exclude state (manual for now)
   const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
@@ -466,71 +202,8 @@ export function StarForceCalculator({
     sortDirection
   });
 
-  // Enhanced luck rating based on percentile tiers
-  const getEnhancedLuckRating = (percentile: number) => {
-    if (percentile <= 10) return { 
-      rating: "Godlike luck 🍀", 
-      color: "text-emerald-400",
-      shareMessage: `🍀 Godlike luck! Spent less than ${percentile.toFixed(1)}% of players - absolutely legendary RNG!`
-    };
-    if (percentile <= 30) return { 
-      rating: "Very lucky ✨", 
-      color: "text-green-400",
-      shareMessage: `✨ Very lucky! Spent less than ${percentile.toFixed(1)}% of players - exceptional RNG!`
-    };
-    if (percentile <= 50) return { 
-      rating: "Above average 🍂", 
-      color: "text-green-300",
-      shareMessage: `🍂 Above average luck! Spent less than ${percentile.toFixed(1)}% of players - better than most!`
-    };
-    if (percentile <= 70) return { 
-      rating: "Unlucky 😕", 
-      color: "text-orange-400",
-      shareMessage: `😕 Unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - below average RNG.`
-    };
-    if (percentile <= 90) return { 
-      rating: "Very unlucky 😩", 
-      color: "text-red-400",
-      shareMessage: `😩 Very unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - rough RNG.`
-    };
-    return { 
-      rating: "Nightmare RNG 💀", 
-      color: "text-red-600",
-      shareMessage: `💀 Nightmare RNG! Spent more than ${(100-percentile).toFixed(1)}% of players - absolutely brutal luck!`
-    };
-  };
+  // Helper functions for luck analysis
 
-  // Aggregate statistics are handled by the useStarForceCalculation hook
-
-  // Sorting helper functions
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Cycling through: null -> asc -> desc -> null
-      if (sortDirection === null) {
-        setSortDirection('asc');
-      } else if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else {
-        setSortField(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
-    }
-    if (sortDirection === 'asc') {
-      return <ArrowUp className="w-4 h-4 text-primary" />;
-    } else if (sortDirection === 'desc') {
-      return <ArrowDown className="w-4 h-4 text-primary" />;
-    }
-    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
-  };
 
   // Include/exclude helper functions
   const toggleItemIncluded = (equipmentId: string) => {
@@ -542,60 +215,6 @@ export function StarForceCalculator({
 
   const isItemIncluded = (equipmentId: string) => {
     return itemIncluded[equipmentId] !== false; // Default to included
-  };
-
-  // Format Mesos for display
-  const formatMesos = (amount: number) => {
-    if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-    return amount.toString();
-  };
-
-  // Determine danger level for styling
-  const getDangerLevel = (level: number) => {
-    if (level >= 20) return { color: "text-red-400", bg: "bg-red-500/20" };
-    if (level >= 15) return { color: "text-orange-400", bg: "bg-orange-500/20" };
-    return { color: "text-green-400", bg: "bg-green-500/20" };
-  };
-
-  const getLuckColor = (percentage: number) => {
-    if (percentage < -10) return "text-green-400"; // Very lucky
-    if (percentage < 0) return "text-green-300"; // Lucky
-    if (percentage > 25) return "text-red-400"; // Very unlucky
-    if (percentage > 0) return "text-orange-400"; // Unlucky
-    return "text-gray-400"; // No data
-  };
-
-  // New function for percentile-based coloring
-  const getLuckColorFromPercentile = (percentile: number) => {
-    if (percentile <= 10) return "text-green-400"; // Very lucky (bottom 10%)
-    if (percentile <= 25) return "text-green-300"; // Lucky (bottom 25%)
-    if (percentile >= 90) return "text-red-400"; // Very unlucky (top 10%)
-    if (percentile >= 75) return "text-orange-400"; // Unlucky (top 25%)
-    return "text-blue-300"; // Average (25-75%)
-  };
-
-  // Function to get color based on luck rating from API
-  const getLuckColorFromRating = (luckRating: string) => {
-    switch (luckRating) {
-      case 'Very Lucky': return "text-green-400";
-      case 'Lucky': return "text-green-300";
-      case 'Average': return "text-blue-300";
-      case 'Unlucky': return "text-orange-400";
-      case 'Very Unlucky': return "text-red-400";
-      default: return "text-gray-400";
-    }
-  };
-
-  const getLuckText = (percentage: number) => {
-    if (percentage === 0) return "";
-    if (percentage < -25) return "Far below avg";
-    if (percentage < -10) return "Below avg";
-    if (percentage < 0) return "Below avg";
-    if (percentage <= 10) return "Above avg";
-    if (percentage <= 25) return "Above avg";
-    return "Far above avg";
   };
 
   // Helper function to get current spare price (temp or committed)
@@ -720,14 +339,6 @@ export function StarForceCalculator({
   };
 
   const exportData = () => {
-    // Helper function to convert raw mesos to unitized format
-    const formatMesosForExport = (amount: number): string => {
-      if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-      if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-      if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-      return amount.toString();
-    };
-
     if (mode === 'standalone' && calculation) {
       // Standalone export - CSV format with unitized values
       const csvRows = [
@@ -739,9 +350,9 @@ export function StarForceCalculator({
         ['Target Star', `★${calculation.targetLevel}`],
         [''],
         ['Cost Statistics', 'Amount (Unitized)'],
-        ['Average Cost', formatMesosForExport(calculation.averageCost)],
-        ['Median Cost', formatMesosForExport(calculation.medianCost)],
-        ['75th Percentile Cost', formatMesosForExport(calculation.p75Cost)],
+        ['Average Cost', formatMesos.display(calculation.averageCost)],
+        ['Median Cost', formatMesos.display(calculation.medianCost)],
+        ['75th Percentile Cost', formatMesos.display(calculation.p75Cost)],
         [''],
         ['Boom Statistics', 'Count'],
         ['Average Booms', calculation.averageBooms.toFixed(1)],
@@ -750,7 +361,7 @@ export function StarForceCalculator({
         [''],
         ['Per-Star Details', 'Success Rate (%)', 'Boom Rate (%)', 'Cost (Unitized)'],
         ...calculation.perStarStats.map(stat => 
-          [`★${stat.star}`, stat.successRate.toFixed(1), stat.boomRate.toFixed(1), formatMesosForExport(stat.cost)]
+          [`★${stat.star}`, stat.successRate.toFixed(1), stat.boomRate.toFixed(1), formatMesos.display(stat.cost)]
         )
       ];
 
@@ -771,12 +382,12 @@ export function StarForceCalculator({
         ['StarForce Planning Summary'],
         [''],
         ['Statistic', 'Value (Unitized)', 'Status'],
-        ['Total Expected Cost', formatMesosForExport(aggregateStats.totalExpectedCost), ''],
-        ['Total Actual Cost', formatMesosForExport(aggregateStats.totalActualCost), ''],
+        ['Total Expected Cost', formatMesos.display(aggregateStats.totalExpectedCost), ''],
+        ['Total Actual Cost', formatMesos.display(aggregateStats.totalActualCost), ''],
         ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
         ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
         ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
-        ['Total 75th Percentile Cost', formatMesosForExport(aggregateStats.totalP75Cost), ''],
+        ['Total 75th Percentile Cost', formatMesos.display(aggregateStats.totalP75Cost), ''],
         ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
         [''],
         ['Equipment Details'],
@@ -797,13 +408,13 @@ export function StarForceCalculator({
             itemSafeguard[eq.id] ? 'Yes' : 'No',
             (itemSpares[eq.id] || 0).toString(),
             ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
-            formatMesosForExport(calc.averageCost),
-            formatMesosForExport(calc.medianCost),
-            formatMesosForExport(calc.p75Cost),
+            formatMesos.display(calc.averageCost),
+            formatMesos.display(calc.medianCost),
+            formatMesos.display(calc.p75Cost),
             calc.averageBooms.toFixed(1),
             calc.medianBooms.toFixed(1),
             calc.p75Booms.toFixed(1),
-            calc.actualCost > 0 ? formatMesosForExport(calc.actualCost) : '0',
+            calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '0',
             calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
             calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
           ];
@@ -825,17 +436,51 @@ export function StarForceCalculator({
   };
 
   // Handle form submission (standalone mode)
-  const handleCalculate = (e: React.FormEvent) => {
+  const handleCalculate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const events: Events = {
-        costMultiplier: 1 - costDiscount / 100,
-        starCatching,
-        safeguard,
-        eventType: eventType as Events["eventType"] || undefined,
+      // Convert form data to API format
+      const isInteractive = server === "Interactive";
+      const events = {
+        thirtyOff: costDiscount >= 30,
+        fiveTenFifteen: eventType === "5/10/15",
+        starCatching: starCatching,
+        mvpDiscount: costDiscount > 0 && costDiscount < 30 ? costDiscount : undefined
+      };
+
+      const request = {
+        isInteractive,
+        events,
+        items: [{
+          itemLevel,
+          fromStar: currentLevel,
+          toStar: targetLevel,
+          safeguardEnabled: safeguard,
+          spareCount: 0,
+          spareCost: 0,
+          actualCost: 0,
+          itemName: `Item Level ${itemLevel}`
+        }]
       };
       
-      let result = calculateStarForce(itemLevel, currentLevel, targetLevel, "epic", "Regular", events);
+      const { response } = await calculateBulkStarforce(request);
+      
+      // Convert API response to local StarForceCalculation format
+      let result: StarForceCalculation = {
+        currentLevel,
+        targetLevel,
+        averageCost: response.results[0].averageCost,
+        medianCost: response.results[0].medianCost,
+        p75Cost: response.results[0].percentile75Cost,
+        averageBooms: response.results[0].averageSpareCount || 0,
+        medianBooms: response.results[0].medianSpareCount || 0,
+        p75Booms: response.results[0].percentile75SpareCount || 0,
+        successRate: 0, // API doesn't provide overall success rate
+        boomRate: 0, // API doesn't provide overall boom rate
+        costPerAttempt: response.results[0].averageCost / Math.max((targetLevel - currentLevel), 1),
+        perStarStats: [], // API doesn't provide per-star breakdown for single items
+        recommendations: response.results[0].luckAnalysis ? [response.results[0].luckAnalysis.description] : []
+      };
       
       // Apply Yohi's legendary luck - halves cost and spares needed!
       if (yohiTapEvent) {
@@ -956,7 +601,7 @@ export function StarForceCalculator({
                   <Calculator className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost)}</div>
+                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos.display(aggregateStats.totalExpectedCost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Average Cost</div>
                 </div>
               </div>
@@ -970,7 +615,7 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost * 0.85)}</div>
+                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos.display(aggregateStats.totalExpectedCost * 0.85)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Median Cost</div>
                 </div>
               </div>
@@ -984,7 +629,7 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos(aggregateStats.totalP75Cost)}</div>
+                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos.display(aggregateStats.totalP75Cost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">75th % Cost</div>
                 </div>
               </div>
@@ -998,7 +643,7 @@ export function StarForceCalculator({
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400 font-maplestory">{formatMesos(aggregateStats.totalActualCost)}</div>
+                  <div className="text-2xl font-bold text-blue-400 font-maplestory">{formatMesos.display(aggregateStats.totalActualCost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Actual Cost</div>
                 </div>
               </div>
@@ -1030,7 +675,7 @@ export function StarForceCalculator({
                         <span className="text-sm opacity-75">{aggregateStats.overallLuck.rating}</span>
                       </div>
                     ) : (
-                      <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col font-maplestory`}>
+                      <div className={`text-2xl font-bold ${getLuckColor.text(aggregateStats.overallLuckPercentage)} flex flex-col font-maplestory`}>
                         <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
                         {getLuckText(aggregateStats.overallLuckPercentage) && (
                           <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
@@ -1495,11 +1140,11 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-yellow-400">
-                              {formatMesos(calc.averageCost)}
+                              {formatMesos.display(calc.averageCost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.averageSpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.averageSpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.averageSpareCost)} spares)
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.averageSpareCost)}`}>
+                                (+{formatMesos.display(calc.spareCostBreakdown.averageSpareCost)} spares)
                               </span>
                             )}
                           </div>
@@ -1507,11 +1152,11 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-orange-400">
-                              {formatMesos(calc.medianCost)}
+                              {formatMesos.display(calc.medianCost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.medianSpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.medianSpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.medianSpareCost)} spares)
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.medianSpareCost)}`}>
+                                (+{formatMesos.display(calc.spareCostBreakdown.medianSpareCost)} spares)
                               </span>
                             )}
                           </div>
@@ -1519,11 +1164,11 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-red-400">
-                              {formatMesos(calc.p75Cost)}
+                              {formatMesos.display(calc.p75Cost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.p75SpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.p75SpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.p75SpareCost)} spares)
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.p75SpareCost)}`}>
+                                (+{formatMesos.display(calc.spareCostBreakdown.p75SpareCost)} spares)
                               </span>
                             )}
                           </div>
@@ -1604,7 +1249,7 @@ export function StarForceCalculator({
                           ) : (
                             <div className="flex items-center justify-center gap-1">
                               <span className="font-medium text-blue-400">
-                                {calc.actualCost > 0 ? formatMesos(calc.actualCost) : '-'}
+                                {calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '-'}
                               </span>
                               <Button
                                 size="sm"
@@ -1618,14 +1263,14 @@ export function StarForceCalculator({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className={`font-medium ${calc.luckAnalysis ? getEnhancedLuckRating(calc.luckAnalysis.percentile).color : getLuckColor(calc.luckPercentage)}`}>
+                          <div className={`font-medium ${calc.luckAnalysis ? getEnhancedLuckRating(calc.luckAnalysis.percentile).color : getLuckColor.text(calc.luckPercentage)}`}>
                             {calc.actualCost > 0 && calc.luckAnalysis ? (
                               <div 
                                 className="flex flex-col cursor-help" 
-                                title={getEnhancedLuckRating(calc.luckAnalysis.percentile).shareMessage}
+                                title={`${getEnhancedLuckRating(calc.luckAnalysis.percentile).label} - ${calc.luckAnalysis.percentile.toFixed(1)}th percentile luck`}
                               >
                                 <span>{calc.luckAnalysis.percentile.toFixed(1)}th percentile</span>
-                                <span className="text-xs opacity-75">{getEnhancedLuckRating(calc.luckAnalysis.percentile).rating}</span>
+                                <span className="text-xs opacity-75">{getEnhancedLuckRating(calc.luckAnalysis.percentile).label}</span>
                               </div>
                             ) : calc.actualCost > 0 ? (
                               <div className="flex flex-col">
@@ -1854,7 +1499,7 @@ export function StarForceCalculator({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground font-maplestory">Current Level</span>
-                  <Badge className={`${dangerLevel.bg} ${dangerLevel.color} border-current/30 font-maplestory`}>
+                  <Badge className={`${dangerLevel.bgColor} ${dangerLevel.color} border-current/30 font-maplestory`}>
                     ★{calculation.currentLevel}
                   </Badge>
                 </div>
@@ -1894,25 +1539,25 @@ export function StarForceCalculator({
                   <div>
                     <span className="text-muted-foreground font-maplestory">Per Attempt (Avg)</span>
                     <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos(calculation.costPerAttempt)} mesos
+                      {formatMesos.display(calculation.costPerAttempt)} mesos
                     </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground font-maplestory">Average Total</span>
                     <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos(calculation.averageCost)} mesos
+                      {formatMesos.display(calculation.averageCost)} mesos
                     </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground font-maplestory">Median Total</span>
                     <p className="font-semibold text-orange-400 font-maplestory">
-                      {formatMesos(calculation.medianCost)} mesos
+                      {formatMesos.display(calculation.medianCost)} mesos
                     </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground font-maplestory">75th % Total</span>
                     <p className="font-semibold text-red-400 font-maplestory">
-                      {formatMesos(calculation.p75Cost)} mesos
+                      {formatMesos.display(calculation.p75Cost)} mesos
                     </p>
                   </div>
                 </div>
@@ -1968,7 +1613,7 @@ export function StarForceCalculator({
                         <TableCell className="font-medium font-maplestory">★{stat.star}</TableCell>
                         <TableCell className="text-green-400 font-maplestory">{stat.successRate.toFixed(1)}%</TableCell>
                         <TableCell className="text-red-400 font-maplestory">{stat.boomRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-yellow-400 font-maplestory">{formatMesos(stat.cost)}</TableCell>
+                        <TableCell className="text-yellow-400 font-maplestory">{formatMesos.display(stat.cost)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
