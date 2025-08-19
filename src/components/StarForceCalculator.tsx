@@ -1,6 +1,14 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { StarForceCalculation, Events, Equipment } from "@/types";
-import { calculateBulkStarforce, convertToMesos, BulkEnhancedStarforceRequestDto, LuckAnalysisDto } from "@/services/starforceService";
+import { 
+  useStarForceCalculation,
+  useStarForceItemSettings,
+  useEquipmentManagement,
+  type GlobalSettings,
+  type SortField,
+  type SortDirection,
+  type EquipmentCalculation
+} from "@/hooks/starforce";
 import {
   Card,
   CardContent,
@@ -369,40 +377,33 @@ export function StarForceCalculator({
   characterId,
   characterName
 }: StarForceCalculatorProps) {
-  // Helper functions for per-character localStorage
-  const getCharacterStorageKey = useCallback((key: string) => {
-    if (mode === 'equipment-table') {
-      if (characterId) {
-        return `starforce-${key}-${characterId}`;
-      } else if (characterName) {
-        // Use character name as fallback for existing characters without ID
-        return `starforce-${key}-${characterName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      }
-    }
-    return `starforce-${key}`;
-  }, [characterId, characterName, mode]);
+  // Use hooks for settings and item management
+  const {
+    itemSafeguard,
+    setItemSafeguard,
+    itemSpares,
+    setItemSpares,
+    itemSparePrices,
+    setItemSparePrices,
+    itemActualCosts,
+    setItemActualCosts
+  } = useStarForceItemSettings({
+    characterId,
+    characterName,
+    mode
+  });
 
-  const loadCharacterSettings = useCallback((key: string, defaultValue: unknown) => {
-    try {
-      const storageKey = getCharacterStorageKey(key);
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error(`Failed to load ${key} from localStorage:`, error);
-    }
-    return defaultValue;
-  }, [getCharacterStorageKey]);
-
-  const saveCharacterSettings = useCallback((key: string, value: unknown) => {
-    try {
-      const storageKey = getCharacterStorageKey(key);
-      localStorage.setItem(storageKey, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Failed to save ${key} to localStorage:`, error);
-    }
-  }, [getCharacterStorageKey]);
+  // Use equipment management hook for character-level equipment operations
+  const {
+    handleQuickAdjust,
+    handleBulkStarforceUpdate,
+    handleActualCostUpdate,
+    handleSafeguardUpdate
+  } = useEquipmentManagement({
+    onUpdateStarforce,
+    onUpdateActualCost,
+    onUpdateSafeguard
+  });
   // State for input fields (standalone mode)
   const [itemLevel, setItemLevel] = useState(150);
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -415,24 +416,13 @@ export function StarForceCalculator({
   const [costDiscount, setCostDiscount] = useState(0);
   const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
   
-  // Enhanced settings for equipment mode with localStorage persistence
-  const [enhancedSettings, setEnhancedSettings] = useState(() => {
-    const defaultSettings = {
-      discountEvent: false, // 30% off event
-      starcatchEvent: false, // 5/10/15 event
-      starCatching: true, // Star catching enabled globally
-      isInteractive: false, // Interactive server toggle
-      spareCount: 0, // Number of spares
-      sparePrice: 0, // Price per spare in mesos
-    };
-    
-    return loadCharacterSettings('settings', defaultSettings);
-  });
-
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    saveCharacterSettings('settings', enhancedSettings);
-  }, [enhancedSettings, saveCharacterSettings]);
+  // Enhanced settings state (using hook pattern)
+  const [enhancedSettings, setEnhancedSettings] = useState<GlobalSettings>(() => ({
+    thirtyPercentOff: false,
+    fiveTenFifteenEvent: false,
+    starCatching: true,
+    isInteractive: false
+  }));
 
   // Equipment table editing states
   const [editingStarforce, setEditingStarforce] = useState<string | null>(null);
@@ -441,324 +431,40 @@ export function StarForceCalculator({
   const [tempActualCost, setTempActualCost] = useState<number>(0);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
-  // Per-item safeguard settings
-  const [itemSafeguard, setItemSafeguard] = useState<{ [equipmentId: string]: boolean }>(() => {
-    return loadCharacterSettings('item-safeguard', {}) as { [equipmentId: string]: boolean };
-  });
-  
-  // Per-item spare count
-  const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>(() => {
-    return loadCharacterSettings('item-spares', {}) as { [equipmentId: string]: number };
-  });
-  
-  // Per-item spare prices (for Interactive server)
-  const [itemSparePrices, setItemSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
-    return loadCharacterSettings('item-spare-prices', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
-  });
-  
   // Temporary spare price editing state (doesn't trigger recalculation until blur)
   const [tempSparePrices, setTempSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+
+  // Sorting state (manual for now)
+  const [sortField, setSortField] = useState<SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   
-  // Per-item actual costs with units
-  const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
-    return loadCharacterSettings('item-actual-costs', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
-  });
-  
-  // Column sorting state
-  type SortField = 'name' | 'currentStarForce' | 'targetStarForce' | 'averageCost' | 'medianCost' | 'p75Cost' | 'averageBooms' | 'medianBooms' | 'p75Booms' | 'actualCost' | 'luckPercentage';
-  type SortDirection = 'asc' | 'desc' | null;
-  
-  const [sortField, setSortField] = useState<SortField | null>(() => {
-    return loadCharacterSettings('sort-field', null) as SortField | null;
-  });
-  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-    return loadCharacterSettings('sort-direction', null) as SortDirection;
-  });
-  
-  // Per-item include/exclude state (default to included)
-  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>(() => {
-    return loadCharacterSettings('item-included', {}) as { [equipmentId: string]: boolean };
-  });
-  
-  // Save per-item settings to localStorage
-  useEffect(() => {
-    saveCharacterSettings('item-safeguard', itemSafeguard);
-  }, [itemSafeguard, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-spares', itemSpares);
-  }, [itemSpares, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-spare-prices', itemSparePrices);
-  }, [itemSparePrices, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-actual-costs', itemActualCosts);
-  }, [itemActualCosts, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('sort-field', sortField);
-  }, [sortField, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('sort-direction', sortDirection);
-  }, [sortDirection, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-included', itemIncluded);
-  }, [itemIncluded, saveCharacterSettings]);
+  // Per-item include/exclude state (manual for now)
+  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
   
   const [calculation, setCalculation] = useState<StarForceCalculation | null>(
     initialCalculation || null
   );
 
-  // State for handling async calculations
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationError, setCalculationError] = useState<string | null>(null);
-  const [recalculationTrigger, setRecalculationTrigger] = useState(0); // Trigger for manual recalculation
-  
-  // State for equipment calculations
-  interface EquipmentCalculation {
-    equipment: Equipment;
-    calculation: StarForceCalculation;
-    expectedCost: number;
-    actualCost: number;
-    luckPercentage: number;
-    luckAnalysis?: LuckAnalysisDto;
-    spareCostBreakdown: {
-      enhancementCost: number;
-      averageSpareCost: number;
-      medianSpareCost: number;
-      p75SpareCost: number;
-    };
-    spareStatus: string;
-    spareClassName: string;
-    spareTitle: string;
-  }
-  
-  const [equipmentCalculations, setEquipmentCalculations] = useState<EquipmentCalculation[]>([]);
-
-  // Combine all equipment for table mode - memoized to prevent recalculation on hover
-  const pendingEquipment = useMemo(() => {
-    const allEquipment = [...equipment, ...additionalEquipment];
-    return allEquipment.filter(eq => 
-      eq.starforceable && (eq.currentStarForce || 0) < (eq.targetStarForce || 0)
-    );
-  }, [equipment, additionalEquipment]);
-
-  // Calculate costs and statistics for equipment mode using backend API
-  useEffect(() => {
-    async function calculateEquipmentCosts() {
-      if (mode === 'standalone' || !pendingEquipment.length) {
-        setEquipmentCalculations([]);
-        setIsCalculating(false);
-        setCalculationError(null);
-        return;
-      }
-
-      setIsCalculating(true);
-      setCalculationError(null);
-
-      try {
-        // Build API request
-        const request: BulkEnhancedStarforceRequestDto = {
-          isInteractive: enhancedSettings.isInteractive,
-          events: {
-            thirtyOff: enhancedSettings.discountEvent,
-            fiveTenFifteen: enhancedSettings.starcatchEvent,
-            starCatching: enhancedSettings.starCatching !== false,
-            mvpDiscount: 0 // Add to settings if needed
-          },
-          items: pendingEquipment.map(eq => {
-            const actualCostData = itemActualCosts[eq.id];
-            const actualCostInMesos = actualCostData ? convertToMesos(actualCostData) : 0;
-
-            const spareCostData = itemSparePrices[eq.id];
-            const spareCostInMesos = spareCostData ? convertToMesos(spareCostData) : 0;
-
-            return {
-              itemLevel: eq.level,
-              fromStar: eq.currentStarForce || 0,
-              toStar: eq.targetStarForce || 0,
-              safeguardEnabled: itemSafeguard[eq.id] || false,
-              spareCount: itemSpares[eq.id] || 0,
-              spareCost: spareCostInMesos,
-              actualCost: actualCostInMesos,
-              itemName: eq.name
-            };
-          })
-        };
-
-        // Call backend API
-        const { response } = await calculateBulkStarforce(request);
-        
-        // Transform response to match current format
-        const calculations: EquipmentCalculation[] = response.results.map((result, index) => {
-          const equipment = pendingEquipment[index];
-          
-          // Calculate luck percentage from API response
-          const luckPercentage = result.luckAnalysis 
-            ? result.luckAnalysis.percentile <= 50 
-              ? -(50 - result.luckAnalysis.percentile) * 2  // Lucky: negative percentage
-              : (result.luckAnalysis.percentile - 50) * 2   // Unlucky: positive percentage
-            : 0;
-
-          // Get actual cost from our local state
-          const actualCostData = itemActualCosts[equipment.id];
-          const actualCost = actualCostData ? convertToMesos(actualCostData) : (equipment.actualCost || 0);
-
-          // Calculate spare cost breakdown
-          const enhancementCost = result.averageCost;
-          const averageSpareCost = (result.averageSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-          const medianSpareCost = (result.medianSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-          const p75SpareCost = (result.percentile75SpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-
-          const calculation: StarForceCalculation = {
-            currentLevel: result.fromStar,
-            targetLevel: result.toStar,
-            averageCost: result.averageCost,
-            medianCost: result.medianCost,
-            p75Cost: result.percentile75Cost,
-            averageBooms: result.averageSpareCount || 0,
-            medianBooms: result.medianSpareCount || 0,
-            p75Booms: result.percentile75SpareCount || 0,
-            successRate: 0, // Not provided by API
-            boomRate: 0, // Not provided by API
-            costPerAttempt: 0, // Not provided by API
-            perStarStats: [], // Not provided by API
-            recommendations: [] // Not provided by API
-          };
-
-          return {
-            equipment,
-            calculation,
-            expectedCost: result.averageCost, // Use pure average cost, not totalInvestment
-            actualCost,
-            luckPercentage,
-            luckAnalysis: result.luckAnalysis, // Store the full luck analysis
-            spareCostBreakdown: {
-              enhancementCost,
-              averageSpareCost,
-              medianSpareCost,
-              p75SpareCost
-            },
-            // Pre-calculate spare status and related UI data
-            spareStatus: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const boomChance = result.averageSpareCount || 0;
-              
-              if (boomChance === 0) return "none-needed";
-              if (spares === 0) return "none-available";
-              if (spares < Math.ceil(boomChance)) return "insufficient";
-              if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
-              return "adequate";
-            })(),
-            spareClassName: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const boomChance = result.averageSpareCount || 0;
-              
-              if (boomChance === 0) return "";
-              if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
-              if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
-              if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
-              return "border-green-500 bg-green-950/30 text-green-200";
-            })(),
-            spareTitle: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const expectedBooms = result.averageSpareCount || 0;
-              
-              if (expectedBooms === 0) return "No booms expected";
-              if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
-              if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
-              if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
-              return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
-            })()
-          };
-        });
-
-        // Apply sorting if specified
-        if (sortField && sortDirection) {
-          calculations.sort((a, b) => {
-            let aValue: string | number;
-            let bValue: string | number;
-
-            switch (sortField) {
-              case 'name':
-                aValue = (a.equipment.name || '').toLowerCase();
-                bValue = (b.equipment.name || '').toLowerCase();
-                break;
-              case 'currentStarForce':
-                aValue = a.equipment.currentStarForce || 0;
-                bValue = b.equipment.currentStarForce || 0;
-                break;
-              case 'targetStarForce':
-                aValue = a.equipment.targetStarForce || 0;
-                bValue = b.equipment.targetStarForce || 0;
-                break;
-              case 'averageCost':
-                aValue = a.expectedCost;
-                bValue = b.expectedCost;
-                break;
-              case 'medianCost':
-                aValue = a.calculation.medianCost;
-                bValue = b.calculation.medianCost;
-                break;
-              case 'p75Cost':
-                aValue = a.calculation.p75Cost;
-                bValue = b.calculation.p75Cost;
-                break;
-              case 'averageBooms':
-                aValue = a.calculation.averageBooms;
-                bValue = b.calculation.averageBooms;
-                break;
-              case 'medianBooms':
-                aValue = a.calculation.medianBooms;
-                bValue = b.calculation.medianBooms;
-                break;
-              case 'p75Booms':
-                aValue = a.calculation.p75Booms;
-                bValue = b.calculation.p75Booms;
-                break;
-              case 'actualCost':
-                aValue = a.actualCost;
-                bValue = b.actualCost;
-                break;
-              case 'luckPercentage':
-                aValue = a.luckPercentage;
-                bValue = b.luckPercentage;
-                break;
-              default:
-                return 0;
-            }
-
-            if (typeof aValue === 'string') {
-              return sortDirection === 'asc' 
-                ? aValue.localeCompare(bValue as string)
-                : (bValue as string).localeCompare(aValue);
-            } else {
-              return sortDirection === 'asc' 
-                ? (aValue as number) - (bValue as number)
-                : (bValue as number) - (aValue as number);
-            }
-          });
-        }
-
-        setEquipmentCalculations(calculations);
-      } catch (error) {
-        console.error('Failed to calculate equipment costs:', error);
-        setCalculationError(error instanceof Error ? error.message : 'Failed to calculate costs');
-        
-        // Fallback to local calculation - for now we'll just set empty array
-        setEquipmentCalculations([]);
-      } finally {
-        setIsCalculating(false);
-      }
-    }
-
-    calculateEquipmentCosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
+  // Use the calculation hook for equipment mode
+  const {
+    equipmentCalculations,
+    isCalculating,
+    calculationError,
+    aggregateStats,
+    triggerRecalculation
+  } = useStarForceCalculation({
+    mode,
+    equipment,
+    additionalEquipment,
+    globalSettings: enhancedSettings,
+    itemSafeguard,
+    itemSpares,
+    itemSparePrices,
+    itemActualCosts,
+    itemIncluded,
+    sortField,
+    sortDirection
+  });
 
   // Enhanced luck rating based on percentile tiers
   const getEnhancedLuckRating = (percentile: number) => {
@@ -794,67 +500,7 @@ export function StarForceCalculator({
     };
   };
 
-  // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
-  const aggregateStats = useMemo(() => {
-    // Only include equipment that is marked as included (default to included if not set)
-    const includedCalculations = equipmentCalculations.filter(calc => 
-      itemIncluded[calc.equipment.id] !== false // Include by default
-    );
-
-    const totalExpectedCost = includedCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
-    const totalActualCost = includedCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
-    const totalExpectedBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
-    const totalMedianBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.medianBooms, 0);
-    const totalP75Cost = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
-    const totalP75Booms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
-    
-    const overallLuckPercentage = totalExpectedCost > 0 && totalActualCost > 0
-      ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
-      : 0;
-
-    // Calculate enhanced overall luck using weighted average
-    const itemsWithLuck = includedCalculations.filter(calc => 
-      calc.actualCost > 0 && calc.luckAnalysis
-    );
-    
-    let overallLuck = null;
-    if (itemsWithLuck.length > 0) {
-      // Weight by actual cost spent (bigger investments matter more)
-      const totalActualCostWithLuck = itemsWithLuck.reduce((sum, calc) => sum + calc.actualCost, 0);
-      
-      const weightedPercentile = itemsWithLuck.reduce((sum, calc) => {
-        const weight = calc.actualCost / totalActualCostWithLuck;
-        return sum + (calc.luckAnalysis!.percentile * weight);
-      }, 0);
-      
-      const enhancedRating = getEnhancedLuckRating(weightedPercentile);
-      
-      overallLuck = {
-        percentile: weightedPercentile,
-        rating: enhancedRating.rating,
-        color: enhancedRating.color,
-        shareMessage: enhancedRating.shareMessage,
-        description: `Overall spending luck across ${itemsWithLuck.length} items (cost-weighted average)`
-      };
-    }
-
-    // Check if any actual costs have been entered
-    const hasActualCosts = totalActualCost > 0;
-
-    return {
-      totalExpectedCost,
-      totalActualCost,
-      totalExpectedBooms,
-      totalMedianBooms,
-      totalP75Cost,
-      totalP75Booms,
-      overallLuckPercentage,
-      overallLuck, // Add enhanced luck analysis
-      hasActualCosts,
-      includedCount: includedCalculations.length,
-      totalCount: equipmentCalculations.length
-    };
-  }, [equipmentCalculations, itemIncluded]);
+  // Aggregate statistics are handled by the useStarForceCalculation hook
 
   // Sorting helper functions
   const handleSort = (field: SortField) => {
@@ -971,7 +617,7 @@ export function StarForceCalculator({
   };
 
   // Helper function to check if safeguard is applicable for an item
-  const isSafeguardEligible = useCallback((equipment: Equipment) => {
+  const isSafeguardEligible = useCallback((equipment: Equipment | EquipmentCalculation) => {
     if (!equipment.starforceable) return false;
     const current = equipment.currentStarForce || 0;
     const target = equipment.targetStarForce || 0;
@@ -979,23 +625,8 @@ export function StarForceCalculator({
     return target > 15;
   }, []);
 
-  // Equipment table handlers
-  const handleQuickAdjust = (equipment: Equipment, type: 'current' | 'target', delta: number) => {
-    if (!onUpdateStarforce) return;
-    
-    const current = equipment.currentStarForce || 0;
-    const target = equipment.targetStarForce || 0;
-    
-    if (type === 'current') {
-      const newCurrent = Math.max(0, Math.min(25, current + delta));
-      onUpdateStarforce(equipment.id, newCurrent, target);
-    } else {
-      const newTarget = Math.max(0, Math.min(25, target + delta));
-      onUpdateStarforce(equipment.id, current, newTarget);
-    }
-  };
-
-  const handleStartEdit = (equipment: Equipment) => {
+  // Equipment table handlers - remaining handlers that don't need equipment management hook
+  const handleStartEdit = (equipment: Equipment | EquipmentCalculation) => {
     setEditingStarforce(equipment.id);
     setTempValues({
       current: equipment.currentStarForce || 0,
@@ -1003,7 +634,7 @@ export function StarForceCalculator({
     });
   };
 
-  const handleSaveEdit = (equipment: Equipment) => {
+  const handleSaveEdit = (equipment: Equipment | EquipmentCalculation) => {
     if (onUpdateStarforce) {
       onUpdateStarforce(equipment.id, tempValues.current, tempValues.target);
     }
@@ -1016,15 +647,15 @@ export function StarForceCalculator({
   };
 
   // Auto-determine unit based on table data
-  const getAutoUnit = (equipment: Equipment): 'M' | 'B' => {
+  const getAutoUnit = (equipment: Equipment | EquipmentCalculation): 'M' | 'B' => {
     // Check current calculation values for this equipment
-    const calc = equipmentCalculations.find(c => c.equipment.id === equipment.id);
+    const calc = equipmentCalculations.find(c => c.id === equipment.id);
     if (calc) {
       // If most values are >= 1B, suggest B, otherwise M
       const values = [
-        calc.expectedCost,
-        calc.calculation.medianCost,
-        calc.calculation.p75Cost
+        calc.averageCost,
+        calc.medianCost,
+        calc.p75Cost
       ];
       const billionValues = values.filter(v => v >= 1000000000).length;
       return billionValues >= 2 ? 'B' : 'M'; // If 2+ values are in billions, use B
@@ -1040,13 +671,13 @@ export function StarForceCalculator({
     return 'M'; // Default to millions
   };
 
-  const handleStartActualCostEdit = (equipment: Equipment) => {
+  const handleStartActualCostEdit = (equipment: Equipment | EquipmentCalculation) => {
     setEditingActualCost(equipment.id);
     // Initialize with current value or convert from legacy actualCost
     const currentCost = itemActualCosts[equipment.id];
     if (currentCost) {
       setTempActualCost(currentCost.value);
-    } else if (equipment.actualCost && equipment.actualCost > 0) {
+    } else if ('actualCost' in equipment && equipment.actualCost && equipment.actualCost > 0) {
       // Convert legacy actualCost to M/B format
       const value = equipment.actualCost >= 1000000000 ? equipment.actualCost / 1000000000 : equipment.actualCost / 1000000;
       const unit = equipment.actualCost >= 1000000000 ? 'B' : 'M';
@@ -1063,7 +694,7 @@ export function StarForceCalculator({
     }
   };
 
-  const handleSaveActualCost = (equipment: Equipment) => {
+  const handleSaveActualCost = (equipment: Equipment | EquipmentCalculation) => {
     const unit = itemActualCosts[equipment.id]?.unit || 'M';
     const rawValue = unit === 'B' ? tempActualCost * 1000000000 : tempActualCost * 1000000;
     
@@ -1078,7 +709,7 @@ export function StarForceCalculator({
     }));
     
     // Trigger recalculation manually
-    setRecalculationTrigger(prev => prev + 1);
+    triggerRecalculation();
     
     setEditingActualCost(null);
   };
@@ -1154,7 +785,7 @@ export function StarForceCalculator({
          'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
          'Actual Cost', 'Luck %', 'Luck Status'],
         ...equipmentCalculations.map(calc => {
-          const eq = calc.equipment;
+          const eq = calc; // Now it's flattened
           const sparePriceInfo = itemSparePrices[eq.id];
           const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
 
@@ -1166,12 +797,12 @@ export function StarForceCalculator({
             itemSafeguard[eq.id] ? 'Yes' : 'No',
             (itemSpares[eq.id] || 0).toString(),
             ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
-            formatMesosForExport(calc.expectedCost),
-            formatMesosForExport(calc.calculation.medianCost),
-            formatMesosForExport(calc.calculation.p75Cost),
-            calc.calculation.averageBooms.toFixed(1),
-            calc.calculation.medianBooms.toFixed(1),
-            calc.calculation.p75Booms.toFixed(1),
+            formatMesosForExport(calc.averageCost),
+            formatMesosForExport(calc.medianCost),
+            formatMesosForExport(calc.p75Cost),
+            calc.averageBooms.toFixed(1),
+            calc.medianBooms.toFixed(1),
+            calc.p75Booms.toFixed(1),
             calc.actualCost > 0 ? formatMesosForExport(calc.actualCost) : '0',
             calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
             calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
@@ -1250,16 +881,16 @@ export function StarForceCalculator({
                 <div className="flex items-center gap-3">
                   <Switch
                     id="discount-event"
-                    checked={enhancedSettings.discountEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
+                    checked={enhancedSettings.thirtyPercentOff}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, thirtyPercentOff: checked }))}
                   />
                   <Label htmlFor="discount-event" className="text-sm cursor-pointer font-maplestory">30% Off Event</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
                     id="starcatch-event"
-                    checked={enhancedSettings.starcatchEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
+                    checked={enhancedSettings.fiveTenFifteenEvent}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, fiveTenFifteenEvent: checked }))}
                   />
                   <Label htmlFor="starcatch-event" className="text-sm cursor-pointer font-maplestory">5/10/15 Event</Label>
                 </div>
@@ -1446,9 +1077,8 @@ export function StarForceCalculator({
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    setCalculationError(null);
-                    // Trigger recalculation by updating a dependency
-                    setIsCalculating(true);
+                    // Trigger recalculation
+                    triggerRecalculation();
                   }}
                   className="font-maplestory"
                 >
@@ -1608,11 +1238,11 @@ export function StarForceCalculator({
                   </TableHeader>
                   <TableBody>
                     {equipmentCalculations.map((calc) => {
-                      const included = isItemIncluded(calc.equipment.id);
+                      const included = isItemIncluded(calc.id);
                       return (
                         <TableRow 
-                          key={calc.equipment.id}
-                          onMouseEnter={() => setHoveredRow(calc.equipment.id)}
+                          key={calc.id}
+                          onMouseEnter={() => setHoveredRow(calc.id)}
                           onMouseLeave={() => setHoveredRow(null)}
                           className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
                         >
@@ -1620,8 +1250,8 @@ export function StarForceCalculator({
                             <div className="flex items-center justify-center">
                               <div className="relative flex-shrink-0">
                                 <EquipmentImage
-                                  src={calc.equipment.image}
-                                  alt={calc.equipment.name}
+                                  src={calc.image}
+                                  alt={calc.name}
                                   size="md"
                                   maxRetries={2}
                                   showFallback={true}
@@ -1635,7 +1265,7 @@ export function StarForceCalculator({
                             </div>
                           </TableCell>
                         <TableCell className="text-center">
-                          {editingStarforce === calc.equipment.id ? (
+                          {editingStarforce === calc.id ? (
                             <Input
                               type="number"
                               min="0"
@@ -1647,14 +1277,14 @@ export function StarForceCalculator({
                           ) : (
                             <div className="flex items-center justify-center gap-1">
                               <Star className="w-3 h-3 text-yellow-500" />
-                              <span className="font-medium">{calc.equipment.currentStarForce || 0}</span>
+                              <span className="font-medium">{calc.currentStarForce || 0}</span>
                               {/* Quick Adjust Buttons - Current SF */}
-                              {hoveredRow === calc.equipment.id && (
+                              {hoveredRow === calc.id && (
                                 <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'current', 1)}
+                                    onClick={() => handleQuickAdjust(calc, 'current', 1)}
                                     className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
                                   >
                                     <ChevronUp className="w-2 h-2 text-green-600" />
@@ -1662,7 +1292,7 @@ export function StarForceCalculator({
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'current', -1)}
+                                    onClick={() => handleQuickAdjust(calc, 'current', -1)}
                                     className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                                   >
                                     <ChevronDown className="w-2 h-2 text-red-600" />
@@ -1673,7 +1303,7 @@ export function StarForceCalculator({
                           )}
                         </TableCell>
                         <TableCell className="text-center">
-                          {editingStarforce === calc.equipment.id ? (
+                          {editingStarforce === calc.id ? (
                             <div className="flex items-center gap-1">
                               <Input
                                 type="number"
@@ -1686,7 +1316,7 @@ export function StarForceCalculator({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleSaveEdit(calc.equipment)}
+                                onClick={() => handleSaveEdit(calc)}
                                 className="h-8 w-8 p-0"
                               >
                                 <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -1703,14 +1333,14 @@ export function StarForceCalculator({
                           ) : (
                             <div className="flex items-center justify-center gap-1">
                               <Target className="w-3 h-3 text-primary" />
-                              <span className="font-medium">{calc.equipment.targetStarForce || 0}</span>
+                              <span className="font-medium">{calc.targetStarForce || 0}</span>
                               {/* Quick Adjust Buttons - Target SF */}
-                              {hoveredRow === calc.equipment.id && (
+                              {hoveredRow === calc.id && (
                                 <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'target', 1)}
+                                    onClick={() => handleQuickAdjust(calc, 'target', 1)}
                                     className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
                                   >
                                     <ChevronUp className="w-2 h-2 text-green-600" />
@@ -1718,7 +1348,7 @@ export function StarForceCalculator({
                                   <Button
                                     size="sm"
                                     variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'target', -1)}
+                                    onClick={() => handleQuickAdjust(calc, 'target', -1)}
                                     className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                                   >
                                     <ChevronDown className="w-2 h-2 text-red-600" />
@@ -1728,7 +1358,7 @@ export function StarForceCalculator({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleStartEdit(calc.equipment)}
+                                onClick={() => handleStartEdit(calc)}
                                 className="h-6 w-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <Edit className="w-3 h-3" />
@@ -1739,15 +1369,15 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           {/* Safeguard Toggle */}
                           <div className="flex items-center justify-center">
-                            {isSafeguardEligible(calc.equipment) ? (
+                            {isSafeguardEligible(calc) ? (
                               <Switch
-                                checked={itemSafeguard[calc.equipment.id] || false}
+                                checked={itemSafeguard[calc.id] || false}
                                 onCheckedChange={(checked) => {
-                                  console.log(`Setting safeguard for ${calc.equipment.id}: ${checked}`);
-                                  setItemSafeguard(prev => ({ ...prev, [calc.equipment.id]: checked }));
+                                  console.log(`Setting safeguard for ${calc.id}: ${checked}`);
+                                  setItemSafeguard(prev => ({ ...prev, [calc.id]: checked }));
                                   // Update the equipment object in the parent component
                                   if (onUpdateSafeguard) {
-                                    onUpdateSafeguard(calc.equipment.id, checked);
+                                    onUpdateSafeguard(calc.id, checked);
                                   }
                                 }}
                               />
@@ -1766,10 +1396,10 @@ export function StarForceCalculator({
                                 type="number"
                                 min="0"
                                 max="99"
-                                value={itemSpares[calc.equipment.id] || 0}
+                                value={itemSpares[calc.id] || 0}
                                 onChange={(e) => {
                                   const spares = parseInt(e.target.value) || 0;
-                                  setItemSpares(prev => ({ ...prev, [calc.equipment.id]: spares }));
+                                  setItemSpares(prev => ({ ...prev, [calc.id]: spares }));
                                 }}
                                 className={`w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${calc.spareClassName}`}
                                 placeholder="0"
@@ -1777,14 +1407,14 @@ export function StarForceCalculator({
                               />
                             </div>
                             {/* Quick Adjust Buttons - Spares */}
-                            {hoveredRow === calc.equipment.id && (
+                            {hoveredRow === calc.id && (
                               <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
-                                    const current = itemSpares[calc.equipment.id] || 0;
-                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.min(99, current + 1) }));
+                                    const current = itemSpares[calc.id] || 0;
+                                    setItemSpares(prev => ({ ...prev, [calc.id]: Math.min(99, current + 1) }));
                                   }}
                                   className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
                                 >
@@ -1794,8 +1424,8 @@ export function StarForceCalculator({
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => {
-                                    const current = itemSpares[calc.equipment.id] || 0;
-                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.max(0, current - 1) }));
+                                    const current = itemSpares[calc.id] || 0;
+                                    setItemSpares(prev => ({ ...prev, [calc.id]: Math.max(0, current - 1) }));
                                   }}
                                   className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
                                 >
@@ -1812,21 +1442,21 @@ export function StarForceCalculator({
                               <Input
                                 type="number"
                                 min="0"
-                                value={getCurrentSparePrice(calc.equipment.id).value}
+                                value={getCurrentSparePrice(calc.id).value}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value) || 0;
                                   setTempSparePrices(prev => ({ 
                                     ...prev, 
-                                    [calc.equipment.id]: { 
+                                    [calc.id]: { 
                                       value, 
-                                      unit: getCurrentSparePrice(calc.equipment.id).unit
+                                      unit: getCurrentSparePrice(calc.id).unit
                                     } 
                                   }));
                                 }}
-                                onBlur={() => commitSparePriceChange(calc.equipment.id)}
+                                onBlur={() => commitSparePriceChange(calc.id)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
-                                    commitSparePriceChange(calc.equipment.id);
+                                    commitSparePriceChange(calc.id);
                                     e.currentTarget.blur();
                                   }
                                 }}
@@ -1834,19 +1464,19 @@ export function StarForceCalculator({
                                 placeholder="0"
                               />
                               <Select
-                                value={getCurrentSparePrice(calc.equipment.id).unit}
+                                value={getCurrentSparePrice(calc.id).unit}
                                 onValueChange={(unit: 'M' | 'B') => {
-                                  const currentPrice = getCurrentSparePrice(calc.equipment.id);
+                                  const currentPrice = getCurrentSparePrice(calc.id);
                                   const newPrice = { ...currentPrice, unit };
                                   setTempSparePrices(prev => ({ 
                                     ...prev, 
-                                    [calc.equipment.id]: newPrice
+                                    [calc.id]: newPrice
                                   }));
                                   // For unit changes, commit immediately since it's a deliberate choice
-                                  setItemSparePrices(prev => ({ ...prev, [calc.equipment.id]: newPrice }));
+                                  setItemSparePrices(prev => ({ ...prev, [calc.id]: newPrice }));
                                   setTempSparePrices(prev => {
                                     const newState = { ...prev };
-                                    delete newState[calc.equipment.id];
+                                    delete newState[calc.id];
                                     return newState;
                                   });
                                 }}
@@ -1865,7 +1495,7 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-yellow-400">
-                              {formatMesos(calc.expectedCost)}
+                              {formatMesos(calc.averageCost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.averageSpareCost > 0 && (
                               <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.averageSpareCost)}`}>
@@ -1877,10 +1507,10 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-orange-400">
-                              {formatMesos(calc.calculation.medianCost)}
+                              {formatMesos(calc.medianCost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.medianSpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.medianSpareCost)}`}>
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.medianSpareCost)}`}>
                                 (+{formatMesos(calc.spareCostBreakdown.medianSpareCost)} spares)
                               </span>
                             )}
@@ -1889,10 +1519,10 @@ export function StarForceCalculator({
                         <TableCell className="text-center">
                           <div className="flex flex-col items-center">
                             <span className="font-medium text-red-400">
-                              {formatMesos(calc.calculation.p75Cost)}
+                              {formatMesos(calc.p75Cost)}
                             </span>
                             {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.p75SpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.p75SpareCost)}`}>
+                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.p75SpareCost)}`}>
                                 (+{formatMesos(calc.spareCostBreakdown.p75SpareCost)} spares)
                               </span>
                             )}
@@ -1902,7 +1532,7 @@ export function StarForceCalculator({
                           <div className="flex items-center justify-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-red-500" />
                             <span className="font-medium text-red-400">
-                              {calc.calculation.averageBooms.toFixed(1)}
+                              {calc.averageBooms.toFixed(1)}
                             </span>
                           </div>
                         </TableCell>
@@ -1910,7 +1540,7 @@ export function StarForceCalculator({
                           <div className="flex items-center justify-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-orange-500" />
                             <span className="font-medium text-orange-400">
-                              {calc.calculation.medianBooms.toFixed(1)}
+                              {calc.medianBooms.toFixed(1)}
                             </span>
                           </div>
                         </TableCell>
@@ -1918,12 +1548,12 @@ export function StarForceCalculator({
                           <div className="flex items-center justify-center gap-1">
                             <AlertTriangle className="w-3 h-3 text-red-600" />
                             <span className="font-medium text-red-600">
-                              {calc.calculation.p75Booms.toFixed(1)}
+                              {calc.p75Booms.toFixed(1)}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          {editingActualCost === calc.equipment.id ? (
+                          {editingActualCost === calc.id ? (
                             <div className="flex items-center gap-1">
                               <Input
                                 type="number"
@@ -1935,12 +1565,12 @@ export function StarForceCalculator({
                                 step="0.1"
                               />
                               <Select
-                                value={itemActualCosts[calc.equipment.id]?.unit || 'M'}
+                                value={itemActualCosts[calc.id]?.unit || 'M'}
                                 onValueChange={(unit: 'M' | 'B') => {
                                   setItemActualCosts(prev => ({ 
                                     ...prev, 
-                                    [calc.equipment.id]: { 
-                                      value: prev[calc.equipment.id]?.value || 0, 
+                                    [calc.id]: { 
+                                      value: prev[calc.id]?.value || 0, 
                                       unit 
                                     } 
                                   }));
@@ -1957,7 +1587,7 @@ export function StarForceCalculator({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleSaveActualCost(calc.equipment)}
+                                onClick={() => handleSaveActualCost(calc)}
                                 className="h-8 w-8 p-0"
                               >
                                 <CheckCircle2 className="w-4 h-4 text-green-500" />
@@ -1979,7 +1609,7 @@ export function StarForceCalculator({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => handleStartActualCostEdit(calc.equipment)}
+                                onClick={() => handleStartActualCostEdit(calc)}
                                 className="h-6 w-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
                               >
                                 <Edit className="w-3 h-3" />
@@ -2013,7 +1643,7 @@ export function StarForceCalculator({
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => toggleItemIncluded(calc.equipment.id)}
+                              onClick={() => toggleItemIncluded(calc.id)}
                               className={`h-7 w-7 p-0 ${
                                 included 
                                   ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' 
@@ -2028,7 +1658,7 @@ export function StarForceCalculator({
                               variant="outline"
                               onClick={() => {
                                 if (onUpdateStarforce) {
-                                  onUpdateStarforce(calc.equipment.id, calc.equipment.targetStarForce || 0, calc.equipment.targetStarForce || 0);
+                                  onUpdateStarforce(calc.id, calc.targetStarForce || 0, calc.targetStarForce || 0);
                                 }
                               }}
                               className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
@@ -2041,7 +1671,7 @@ export function StarForceCalculator({
                               variant="outline"
                               onClick={() => {
                                 if (onUpdateStarforce) {
-                                  onUpdateStarforce(calc.equipment.id, 0, 0);
+                                  onUpdateStarforce(calc.id, 0, 0);
                                 }
                               }}
                               className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
