@@ -11,7 +11,7 @@ interface EquipmentTableHeaderProps {
   sortField: SortField | null;
   sortDirection: SortDirection;
   onSort: (field: string) => void;
-  getSortIcon: (field: SortField) => React.ElementType;
+  getSortIcon: (field: SortField) => JSX.Element;
 }
 
 export const EquipmentTableHeader: React.FC<EquipmentTableHeaderProps> = ({
@@ -29,7 +29,7 @@ export const EquipmentTableHeader: React.FC<EquipmentTableHeaderProps> = ({
     >
       <span className="flex items-center gap-1">
         {children}
-        {React.createElement(getSortIcon(field), { className: "w-3 h-3" })}
+        {getSortIcon(field)}
       </span>
     </Button>
   );

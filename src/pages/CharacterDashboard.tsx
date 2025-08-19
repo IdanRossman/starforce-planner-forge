@@ -51,6 +51,7 @@ export default function CharacterDashboard() {
     updateActualCost: updateEquipmentActualCost, 
     transferStarForce: transferEquipment,
     updateEquipment: saveEquipment,
+    addEquipment,
     removeEquipment: clearEquipmentSlot
   } = useEquipment();
   
@@ -430,12 +431,24 @@ export default function CharacterDashboard() {
   };
 
   const handleSaveEquipment = (equipment: Equipment) => {
-    saveEquipment(equipment.id, equipment);
+    // Check if this is new equipment (no existing equipment with this ID) or existing equipment
+    const existingEquipment = selectedCharacter?.equipment.find(eq => eq.id === equipment.id);
     
-    toast({
-      title: "Equipment Saved",
-      description: `${equipment.name} has been updated.`,
-    });
+    if (existingEquipment) {
+      // Update existing equipment
+      saveEquipment(equipment.id, equipment);
+      toast({
+        title: "Equipment Updated",
+        description: `${equipment.name} has been updated.`,
+      });
+    } else {
+      // Add new equipment
+      addEquipment(equipment);
+      toast({
+        title: "Equipment Added",
+        description: `${equipment.name} has been added.`,
+      });
+    }
   };
 
   const handleAddEquipment = (slot: EquipmentSlot) => {

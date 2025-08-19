@@ -14,7 +14,7 @@ interface EquipmentTableContentProps {
   sortField: SortField | null;
   sortDirection: SortDirection;
   onSort: (field: string) => void;
-  getSortIcon: (field: SortField) => React.ElementType;
+  getSortIcon: (field: SortField) => JSX.Element;
   hoveredRow: string | null;
   setHoveredRow: (id: string | null) => void;
   isItemIncluded: (id: string) => boolean;
