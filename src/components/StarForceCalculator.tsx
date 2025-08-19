@@ -1,17 +1,15 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { StarForceCalculation, Events, Equipment } from "@/types";
+import { useState, useCallback } from "react";
+import { Equipment } from "@/types";
 import { 
   useStarForceCalculation,
   useStarForceItemSettings,
   useEquipmentManagement,
   type GlobalSettings,
   type SortField,
-  type SortDirection,
   type EquipmentCalculation
 } from "@/hooks/starforce";
 import { useFormatting } from "@/hooks/display/useFormatting";
 import { useTable } from "@/hooks/utils/useTable";
-import { calculateBulkStarforce } from "@/services/starforceService";
 import { 
   useSelectedCharacter, 
   useSelectedCharacterEquipment
@@ -23,40 +21,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentImage } from "@/components/EquipmentImage";
 
 interface StarForceCalculatorProps {
-  initialCalculation?: StarForceCalculation;
   equipment?: Equipment[]; // Optional - will use context if not provided
   additionalEquipment?: Equipment[];
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
-  mode?: 'standalone' | 'equipment-table';
   characterId?: string; // For per-character localStorage - optional if using context
   characterName?: string; // Fallback for characters without ID
 }
 
 
 export function StarForceCalculator({ 
-  initialCalculation, 
   equipment: propEquipment, // Rename to avoid confusion
   additionalEquipment = [],
   onUpdateStarforce: propOnUpdateStarforce, // Rename to distinguish from context
   onUpdateActualCost: propOnUpdateActualCost,
   onUpdateSafeguard: propOnUpdateSafeguard,
-  mode = 'standalone',
   characterId: propCharacterId, // Use prop or context
   characterName: propCharacterName
 }: StarForceCalculatorProps) {
@@ -140,19 +130,8 @@ export function StarForceCalculator({
     onUpdateActualCost,
     onUpdateSafeguard
   });
-  // State for input fields (standalone mode)
-  const [itemLevel, setItemLevel] = useState(150);
-  const [currentLevel, setCurrentLevel] = useState(0);
-  const [targetLevel, setTargetLevel] = useState(17);
-  const [server, setServer] = useState("Interactive");
-  const [itemType, setItemType] = useState("regular");
-  const [safeguard, setSafeguard] = useState(false);
-  const [starCatching, setStarCatching] = useState(true);
-  const [eventType, setEventType] = useState<string>("");
-  const [costDiscount, setCostDiscount] = useState(0);
-  const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
-  
-  // Enhanced settings state (using hook pattern)
+
+  // Enhanced settings state
   const [enhancedSettings, setEnhancedSettings] = useState<GlobalSettings>(() => ({
     thirtyPercentOff: false,
     fiveTenFifteenEvent: false,
@@ -176,10 +155,6 @@ export function StarForceCalculator({
   
   // Per-item include/exclude state (manual for now)
   const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
-  
-  const [calculation, setCalculation] = useState<StarForceCalculation | null>(
-    initialCalculation || null
-  );
 
   // Use the calculation hook for equipment mode
   const {
@@ -189,7 +164,6 @@ export function StarForceCalculator({
     aggregateStats,
     triggerRecalculation
   } = useStarForceCalculation({
-    mode,
     equipment,
     additionalEquipment,
     globalSettings: enhancedSettings,
@@ -339,177 +313,68 @@ export function StarForceCalculator({
   };
 
   const exportData = () => {
-    if (mode === 'standalone' && calculation) {
-      // Standalone export - CSV format with unitized values
-      const csvRows = [
-        ['StarForce Calculator Export'],
-        [''],
-        ['Setting', 'Value'],
-        ['Item Level', itemLevel.toString()],
-        ['Current Star', `★${calculation.currentLevel}`],
-        ['Target Star', `★${calculation.targetLevel}`],
-        [''],
-        ['Cost Statistics', 'Amount (Unitized)'],
-        ['Average Cost', formatMesos.display(calculation.averageCost)],
-        ['Median Cost', formatMesos.display(calculation.medianCost)],
-        ['75th Percentile Cost', formatMesos.display(calculation.p75Cost)],
-        [''],
-        ['Boom Statistics', 'Count'],
-        ['Average Booms', calculation.averageBooms.toFixed(1)],
-        ['Median Booms', calculation.medianBooms.toFixed(1)],
-        ['75th Percentile Booms', calculation.p75Booms.toFixed(1)],
-        [''],
-        ['Per-Star Details', 'Success Rate (%)', 'Boom Rate (%)', 'Cost (Unitized)'],
-        ...calculation.perStarStats.map(stat => 
-          [`★${stat.star}`, stat.successRate.toFixed(1), stat.boomRate.toFixed(1), formatMesos.display(stat.cost)]
-        )
-      ];
+    // Equipment table export - CSV format with unitized values
+    const summaryRows = [
+      ['StarForce Planning Summary'],
+      [''],
+      ['Statistic', 'Value (Unitized)', 'Status'],
+      ['Total Expected Cost', formatMesos.display(aggregateStats.totalExpectedCost), ''],
+      ['Total Actual Cost', formatMesos.display(aggregateStats.totalActualCost), ''],
+      ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
+      ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
+      ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
+      ['Total 75th Percentile Cost', formatMesos.display(aggregateStats.totalP75Cost), ''],
+      ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
+      [''],
+      ['Equipment Details'],
+      ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Spares', 
+       ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
+       'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
+       'Actual Cost', 'Luck %', 'Luck Status'],
+      ...equipmentCalculations.map(calc => {
+        const eq = calc; // Now it's flattened
+        const sparePriceInfo = itemSparePrices[eq.id];
+        const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
 
-      const csvContent = csvRows.map(row => 
-        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
+        return [
+          eq.name || 'Unknown',
+          eq.slot || '',
+          `★${eq.currentStarForce || 0}`,
+          `★${eq.targetStarForce || 0}`,
+          itemSafeguard[eq.id] ? 'Yes' : 'No',
+          (itemSpares[eq.id] || 0).toString(),
+          ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
+          formatMesos.display(calc.averageCost),
+          formatMesos.display(calc.medianCost),
+          formatMesos.display(calc.p75Cost),
+          calc.averageBooms.toFixed(1),
+          calc.medianBooms.toFixed(1),
+          calc.p75Booms.toFixed(1),
+          calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '0',
+          calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
+          calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
+        ];
+      })
+    ];
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'starforce-calculation.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    } else if (mode === 'equipment-table') {
-      // Equipment table export - CSV format with unitized values
-      const summaryRows = [
-        ['StarForce Planning Summary'],
-        [''],
-        ['Statistic', 'Value (Unitized)', 'Status'],
-        ['Total Expected Cost', formatMesos.display(aggregateStats.totalExpectedCost), ''],
-        ['Total Actual Cost', formatMesos.display(aggregateStats.totalActualCost), ''],
-        ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
-        ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
-        ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
-        ['Total 75th Percentile Cost', formatMesos.display(aggregateStats.totalP75Cost), ''],
-        ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
-        [''],
-        ['Equipment Details'],
-        ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Spares', 
-         ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
-         'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
-         'Actual Cost', 'Luck %', 'Luck Status'],
-        ...equipmentCalculations.map(calc => {
-          const eq = calc; // Now it's flattened
-          const sparePriceInfo = itemSparePrices[eq.id];
-          const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
+    const csvContent = summaryRows.map(row => 
+      row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
 
-          return [
-            eq.name || 'Unknown',
-            eq.slot || '',
-            `★${eq.currentStarForce || 0}`,
-            `★${eq.targetStarForce || 0}`,
-            itemSafeguard[eq.id] ? 'Yes' : 'No',
-            (itemSpares[eq.id] || 0).toString(),
-            ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
-            formatMesos.display(calc.averageCost),
-            formatMesos.display(calc.medianCost),
-            formatMesos.display(calc.p75Cost),
-            calc.averageBooms.toFixed(1),
-            calc.medianBooms.toFixed(1),
-            calc.p75Booms.toFixed(1),
-            calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '0',
-            calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
-            calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
-          ];
-        })
-      ];
-
-      const csvContent = summaryRows.map(row => 
-        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'starforce-plan.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'starforce-plan.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  // Handle form submission (standalone mode)
-  const handleCalculate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      // Convert form data to API format
-      const isInteractive = server === "Interactive";
-      const events = {
-        thirtyOff: costDiscount >= 30,
-        fiveTenFifteen: eventType === "5/10/15",
-        starCatching: starCatching,
-        mvpDiscount: costDiscount > 0 && costDiscount < 30 ? costDiscount : undefined
-      };
+  // Render progress bar for current equipment (if any)
+  const dangerLevel = getDangerLevel(0); // Default danger level
 
-      const request = {
-        isInteractive,
-        events,
-        items: [{
-          itemLevel,
-          fromStar: currentLevel,
-          toStar: targetLevel,
-          safeguardEnabled: safeguard,
-          spareCount: 0,
-          spareCost: 0,
-          actualCost: 0,
-          itemName: `Item Level ${itemLevel}`
-        }]
-      };
-      
-      const { response } = await calculateBulkStarforce(request);
-      
-      // Convert API response to local StarForceCalculation format
-      let result: StarForceCalculation = {
-        currentLevel,
-        targetLevel,
-        averageCost: response.results[0].averageCost,
-        medianCost: response.results[0].medianCost,
-        p75Cost: response.results[0].percentile75Cost,
-        averageBooms: response.results[0].averageSpareCount || 0,
-        medianBooms: response.results[0].medianSpareCount || 0,
-        p75Booms: response.results[0].percentile75SpareCount || 0,
-        successRate: 0, // API doesn't provide overall success rate
-        boomRate: 0, // API doesn't provide overall boom rate
-        costPerAttempt: response.results[0].averageCost / Math.max((targetLevel - currentLevel), 1),
-        perStarStats: [], // API doesn't provide per-star breakdown for single items
-        recommendations: response.results[0].luckAnalysis ? [response.results[0].luckAnalysis.description] : []
-      };
-      
-      // Apply Yohi's legendary luck - halves cost and spares needed!
-      if (yohiTapEvent) {
-        result = {
-          ...result,
-          averageCost: Math.round(result.averageCost * 0.5), // Yohi's luck halves the cost
-          averageBooms: result.averageBooms * 0.5, // And the boom count
-          costPerAttempt: Math.round(result.costPerAttempt * 0.5), // Per attempt cost too
-          recommendations: [
-            "🍀 Yohi Tap Event is active - all costs and spares have been halved due to supernatural luck!",
-            ...result.recommendations
-          ]
-        };
-      }
-      
-      setCalculation(result);
-    } catch (error) {
-      console.error("Calculation error:", error);
-    }
-  };
-
-  // Render progress bar
-  const progress = calculation ? (calculation.currentLevel / 23) * 100 : 0;
-  const dangerLevel = calculation ? getDangerLevel(calculation.currentLevel) : getDangerLevel(currentLevel);
-
-  // Equipment Table Mode
-  if (mode === 'equipment-table') {
-    return (
-      <div className="space-y-6">
+  return (
+    <div className="space-y-6">
         {/* Settings Panel */}
         <Card>
           <CardHeader>
@@ -1337,316 +1202,4 @@ export function StarForceCalculator({
         </Card>
       </div>
     );
-  }
-
-  // Standalone Mode (original calculator)
-  return (
-    <Card className="bg-gradient-to-br from-card to-card/80">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-lg font-maplestory">
-            <Calculator className="w-5 h-5 text-primary" />
-            Advanced StarForce Calculator
-          </div>
-          {calculation && (
-            <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-              <Download className="w-4 h-4" />
-              Export
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Input Form */}
-        <form onSubmit={handleCalculate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Item Level</label>
-              <Input
-                type="number"
-                value={itemLevel}
-                onChange={(e) => setItemLevel(Number(e.target.value))}
-                min={1}
-                max={300}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Item Type</label>
-              <Select value={itemType} onValueChange={setItemType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="regular">Regular</SelectItem>
-                  <SelectItem value="superior">Superior (Tyrant)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Current Star</label>
-              <Input
-                type="number"
-                value={currentLevel}
-                onChange={(e) => setCurrentLevel(Number(e.target.value))}
-                min={0}
-                max={23}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Target Star</label>
-              <Input
-                type="number"
-                value={targetLevel}
-                onChange={(e) => setTargetLevel(Number(e.target.value))}
-                min={1}
-                max={23}
-                className="mt-1"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Server</label>
-              <Select value={server} onValueChange={setServer}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GMS">GMS (Global)</SelectItem>
-                  <SelectItem value="KMS">KMS (Korea)</SelectItem>
-                  <SelectItem value="MSEA">MSEA (SEA)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Event Type</label>
-              <Select value={eventType} onValueChange={setEventType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="No Event" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No Event</SelectItem>
-                  <SelectItem value="5/10/15">5/10/15 Event</SelectItem>
-                  <SelectItem value="30% Off">30% Off Event</SelectItem>
-                  <SelectItem value="No Boom">No Boom Event</SelectItem>
-                  <SelectItem value="Shining Star">Shining Star</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={safeguard} onCheckedChange={(checked) => setSafeguard(checked === true)} />
-              <label className="text-sm text-muted-foreground font-maplestory">Safeguard (15-16★)</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={starCatching} onCheckedChange={(checked) => setStarCatching(checked === true)} />
-              <label className="text-sm text-muted-foreground font-maplestory">Star Catching (+5%)</label>
-            </div>
-          </div>
-          
-          {/* Yohi Tap Event - The legendary luck */}
-          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
-            <Checkbox 
-              checked={yohiTapEvent} 
-              onCheckedChange={(checked) => setYohiTapEvent(checked === true)} 
-            />
-            <div className="flex-1">
-              <label className="text-sm font-medium text-yellow-400 font-maplestory">
-                🍀 Yohi Tap Event (Legendary Luck)
-              </label>
-              <p className="text-xs text-muted-foreground font-maplestory">
-                Activates Yohi's supernatural luck - halves all costs and spares needed!
-              </p>
-            </div>
-          </div>
-          
-          <div>
-            <label className="text-sm text-muted-foreground font-maplestory">Cost Discount (%)</label>
-            <Input
-              type="number"
-              value={costDiscount}
-              onChange={(e) => setCostDiscount(Number(e.target.value))}
-              min={0}
-              max={50}
-              step={5}
-              className="mt-1"
-            />
-          </div>
-          <Button type="submit" className="w-full font-maplestory">
-            Calculate Enhancement Cost
-          </Button>
-        </form>
-
-        {/* Results */}
-        {calculation && (
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 font-maplestory">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="details">Star Details</TabsTrigger>
-              <TabsTrigger value="recommendations">Tips</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              {/* Current Progress */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground font-maplestory">Current Level</span>
-                  <Badge className={`${dangerLevel.bgColor} ${dangerLevel.color} border-current/30 font-maplestory`}>
-                    ★{calculation.currentLevel}
-                  </Badge>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-maplestory">
-                  <span>★0</span>
-                  <span>★23 (Max)</span>
-                </div>
-              </div>
-
-              {/* Target and Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
-                    <Target className="w-4 h-4" />
-                    Target Level
-                  </div>
-                  <div className="text-2xl font-bold text-primary font-maplestory">
-                    ★{calculation.targetLevel}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
-                    <TrendingUp className="w-4 h-4" />
-                    Success Rate
-                  </div>
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">
-                    {calculation.successRate}%
-                  </div>
-                </div>
-              </div>
-
-              {/* Cost Breakdown */}
-              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-semibold text-foreground font-maplestory">Cost Analysis</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Per Attempt (Avg)</span>
-                    <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos.display(calculation.costPerAttempt)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Average Total</span>
-                    <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos.display(calculation.averageCost)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Median Total</span>
-                    <p className="font-semibold text-orange-400 font-maplestory">
-                      {formatMesos.display(calculation.medianCost)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">75th % Total</span>
-                    <p className="font-semibold text-red-400 font-maplestory">
-                      {formatMesos.display(calculation.p75Cost)} mesos
-                    </p>
-                  </div>
-                </div>
-                {calculation.boomRate > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">Average Booms: </span>
-                        <span className="font-semibold text-red-400 font-maplestory">
-                          {calculation.averageBooms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-orange-400" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">Median Booms: </span>
-                        <span className="font-semibold text-orange-400 font-maplestory">
-                          {calculation.medianBooms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-red-600/10 border border-red-600/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">75th % Booms: </span>
-                        <span className="font-semibold text-red-600 font-maplestory">
-                          {calculation.p75Booms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="details" className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-foreground font-maplestory">Per-Star Analysis</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-maplestory">Star</TableHead>
-                      <TableHead className="font-maplestory">Success Rate</TableHead>
-                      <TableHead className="font-maplestory">Boom Rate</TableHead>
-                      <TableHead className="font-maplestory">Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {calculation.perStarStats.map((stat) => (
-                      <TableRow key={stat.star}>
-                        <TableCell className="font-medium font-maplestory">★{stat.star}</TableCell>
-                        <TableCell className="text-green-400 font-maplestory">{stat.successRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-red-400 font-maplestory">{stat.boomRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-yellow-400 font-maplestory">{formatMesos.display(stat.cost)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="recommendations" className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-foreground flex items-center gap-2 font-maplestory">
-                  <Info className="w-4 h-4" />
-                  Enhancement Tips
-                </h4>
-                {calculation.recommendations.length > 0 ? (
-                  <div className="space-y-2">
-                    {calculation.recommendations.map((rec, index) => (
-                      <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded text-sm font-maplestory">
-                        {rec}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm font-maplestory">
-                    Your enhancement strategy looks good! Proceed with caution and good luck!
-                  </p>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-export default StarForceCalculator;
+}

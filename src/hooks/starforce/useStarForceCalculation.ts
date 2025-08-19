@@ -75,7 +75,6 @@ export interface ItemPrices {
 }
 
 export interface UseStarForceCalculationOptions {
-  mode?: 'standalone' | 'equipment-table';
   equipment?: Equipment[];
   additionalEquipment?: Equipment[];
   globalSettings: GlobalSettings;
@@ -95,7 +94,6 @@ export interface UseSortingReturn {
 }
 
 export function useStarForceCalculation({
-  mode = 'standalone',
   equipment = [],
   additionalEquipment = [],
   globalSettings,
@@ -163,7 +161,7 @@ export function useStarForceCalculation({
   // Main calculation effect
   useEffect(() => {
     async function calculateEquipmentCosts() {
-      if (mode === 'standalone' || !pendingEquipment.length) {
+      if (!pendingEquipment.length) {
         setEquipmentCalculations([]);
         setIsCalculating(false);
         setCalculationError(null);
@@ -383,7 +381,6 @@ export function useStarForceCalculation({
     itemSparePrices,
     itemActualCosts,
     itemSpares,
-    mode,
     sortField,
     sortDirection,
     recalculationTrigger

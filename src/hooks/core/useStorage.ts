@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 export interface StorageOptions {
   characterId?: string;
   characterName?: string;
-  mode?: 'standalone' | 'equipment-table';
   namespace?: string;
 }
 
@@ -14,15 +13,15 @@ export interface StorageOptions {
  * LocalStorage Data Structure:
  * ===========================
  * 
- * Global Settings (standalone mode):
- * - starforce-global-settings: GlobalSettings
- * - starforce-item-settings: Record<equipmentId, ItemSettings>
- * - starforce-item-spares: Record<equipmentId, number>
- * - starforce-item-spare-prices: Record<equipmentId, number>
- * - starforce-item-actual-costs: Record<equipmentId, number>
- * - starforce-item-starcatching: Record<equipmentId, boolean>
+ * Character-specific Settings:
+ * - starforce-global-settings-{characterId}: GlobalSettings
+ * - starforce-item-settings-{characterId}: Record<equipmentId, ItemSettings>
+ * - starforce-item-spares-{characterId}: Record<equipmentId, number>
+ * - starforce-item-spare-prices-{characterId}: Record<equipmentId, number>
+ * - starforce-item-actual-costs-{characterId}: Record<equipmentId, number>
+ * - starforce-item-starcatching-{characterId}: Record<equipmentId, boolean>
  * 
- * Character-specific Settings (equipment-table mode):
+ * Character-specific Settings:
  * - starforce-global-settings-{characterId}: GlobalSettings
  * - starforce-item-settings-{characterId}: Record<equipmentId, ItemSettings>
  * - starforce-item-spares-{characterId}: Record<equipmentId, number>
@@ -41,22 +40,20 @@ export interface StorageOptions {
  * - Equipment: { id, name, slot, level, starforceable, currentStarForce, targetStarForce, actualCost, safeguard, ... }
  */
 export function useStorage(options: StorageOptions = {}) {
-  const { characterId, characterName, mode, namespace = 'starforce' } = options;
+  const { characterId, characterName, namespace = 'starforce' } = options;
 
   const getStorageKey = useCallback((key: string) => {
     let storageKey = `${namespace}-${key}`;
     
-    if (mode === 'equipment-table') {
-      if (characterId) {
-        storageKey += `-${characterId}`;
-      } else if (characterName) {
-        // Use character name as fallback for existing characters without ID
-        storageKey += `-${characterName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      }
+    if (characterId) {
+      storageKey += `-${characterId}`;
+    } else if (characterName) {
+      // Use character name as fallback for existing characters without ID
+      storageKey += `-${characterName.replace(/[^a-zA-Z0-9]/g, '_')}`;
     }
     
     return storageKey;
-  }, [characterId, characterName, mode, namespace]);
+  }, [characterId, characterName, namespace]);
 
   const loadData = useCallback(<T>(key: string, defaultValue: T): T => {
     try {

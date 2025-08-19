@@ -613,7 +613,6 @@ export function EnhancedEquipmentManager({
             <TabsContent value="calculator" className="mt-6">
               {pendingEquipment.length > 0 ? (
                 <StarForceCalculator
-                  mode="equipment-table"
                   characterId={characterId}
                   characterName={characterName}
                   equipment={equipment}
