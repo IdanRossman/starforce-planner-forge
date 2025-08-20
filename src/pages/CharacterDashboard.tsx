@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Character, Equipment, EquipmentSlot, EquipmentType } from "@/types";
-import { mockCharacters } from "@/data/mockData";
 import { CharacterWizard } from "@/components/CharacterWizard";
-import { CharacterCard } from "@/components/CharacterCard";
 import { CharacterForm } from "@/components/CharacterForm";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
 import { GameAssistant } from "@/components/GameAssistant";
@@ -13,11 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { saveToLocalStorage, loadFromLocalStorage } from "@/lib/utils";
 import { trackCharacterCreation, trackCharacterDeletion } from "@/lib/analytics";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 import { findEquipmentByName } from "@/data/equipmentDatabase";
 import { useToast } from "@/hooks/use-toast";
+import { useCharacterContext } from "@/hooks/useCharacterContext";
+import { useEquipment, useCharacter } from "@/hooks";
 import { 
   Users, 
   Plus, 
@@ -37,8 +36,26 @@ import {
 } from "lucide-react";
 
 export default function CharacterDashboard() {
-  const [characters, setCharacters] = useState<Character[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  // Use Character Context and Operations
+  const { selectedCharacter, characters } = useCharacterContext();
+  const { 
+    createCharacter,
+    updateCharacter,
+    updateCharacterFromMapleRanks,
+    deleteCharacter,
+    selectCharacter,
+    getCharacterSummary
+  } = useCharacter();
+  const { 
+    updateStarForce: updateEquipmentStarForce, 
+    updateActualCost: updateEquipmentActualCost, 
+    transferStarForce: transferEquipment,
+    updateEquipment: saveEquipment,
+    addEquipment,
+    removeEquipment: clearEquipmentSlot
+  } = useEquipment();
+  
+  // Local state for UI components only
   const [wizardOpen, setWizardOpen] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
@@ -240,7 +257,10 @@ export default function CharacterDashboard() {
 
     try {
       const importedCharacters = importCharacters(importText.trim());
-      setCharacters(prev => [...prev, ...importedCharacters]);
+      // Add all imported characters using operations
+      importedCharacters.forEach(character => {
+        createCharacter(character);
+      });
       setImportDialogOpen(false);
       setImportText("");
       toast({
@@ -296,39 +316,29 @@ export default function CharacterDashboard() {
     if (characters.length === 0) return;
     
     setIsUpdating(true);
-    let updatedCount = 0;
     
     try {
-      const updatedCharacters = await Promise.all(
-        characters.map(async (character) => {
-          try {
-            const mapleRanksData = await fetchCharacterFromMapleRanks(character.name);
-            if (mapleRanksData) {
-              updatedCount++;
-              return {
-                ...character,
-                level: mapleRanksData.level,
-                class: mapleRanksData.class,
-                image: mapleRanksData.image
-              };
-            }
-            return character;
-          } catch (error) {
-            console.warn(`Failed to update character ${character.name}:`, error);
-            return character;
+      let updated = 0;
+      
+      // Update each character individually using our new hook
+      for (const character of characters) {
+        try {
+          const result = await updateCharacterFromMapleRanks(character.id);
+          if (result) {
+            updated++;
           }
-        })
-      );
-
-      if (updatedCount > 0) {
-        setCharacters(updatedCharacters);
-        saveToLocalStorage(updatedCharacters);
+        } catch (error) {
+          console.error(`Failed to update character ${character.name}:`, error);
+        }
+      }
+      
+      if (updated > 0) {
         const now = new Date().toISOString();
         localStorage.setItem("lastCharacterUpdate", now);
         setLastUpdateTime(now);
         toast({
           title: "Characters Updated",
-          description: `Updated ${updatedCount} character${updatedCount !== 1 ? 's' : ''} from MapleRanks`,
+          description: `Updated ${updated} character${updated !== 1 ? 's' : ''} from MapleRanks`,
         });
       }
     } catch (error) {
@@ -341,18 +351,10 @@ export default function CharacterDashboard() {
     } finally {
       setIsUpdating(false);
     }
-  }, [characters, toast]);
+  }, [characters, updateCharacterFromMapleRanks, toast]);
 
-  // Initialize data on component mount
+  // Initialize last update timestamp on component mount
   useEffect(() => {
-    const stored = loadFromLocalStorage();
-    if (stored && stored.characters.length > 0) {
-      setCharacters(stored.characters);
-    } else {
-      // Only show mock data if no stored data exists
-      setCharacters(mockCharacters);
-    }
-
     // Load last update timestamp
     const lastUpdate = localStorage.getItem("lastCharacterUpdate");
     if (lastUpdate) {
@@ -360,17 +362,12 @@ export default function CharacterDashboard() {
     }
   }, []);
 
-  // Auto-save to localStorage when characters change
-  useEffect(() => {
-    saveToLocalStorage(characters, []);
-  }, [characters]);
-
-  // Auto-select first character when characters load
+  // Auto-select first character when characters load and none is selected
   useEffect(() => {
     if (characters.length > 0 && !selectedCharacter) {
-      setSelectedCharacter(characters[0]);
+      selectCharacter(characters[0].id);
     }
-  }, [characters, selectedCharacter]);
+  }, [characters, selectedCharacter, selectCharacter]);
 
   // Check for daily updates when characters are loaded
   useEffect(() => {
@@ -381,21 +378,8 @@ export default function CharacterDashboard() {
 
   const handleCreateCharacter = (newCharacter: Omit<Character, 'id'>) => {
     if (editingCharacter) {
-      // Update existing character
-      const updatedCharacters = characters.map(char => 
-        char.id === editingCharacter.id 
-          ? { ...char, ...newCharacter }
-          : char
-      );
-      setCharacters(updatedCharacters);
-      
-      // Update selected character if it was the one being edited
-      if (selectedCharacter?.id === editingCharacter.id) {
-        const updatedSelectedCharacter = updatedCharacters.find(char => char.id === editingCharacter.id);
-        if (updatedSelectedCharacter) {
-          setSelectedCharacter(updatedSelectedCharacter);
-        }
-      }
+      // Update existing character using character operations
+      updateCharacter(editingCharacter.id, { ...editingCharacter, ...newCharacter });
       
       toast({
         title: "Character Updated",
@@ -403,21 +387,14 @@ export default function CharacterDashboard() {
       });
     } else {
       // Create new character
-      const character: Character = {
-        ...newCharacter,
-        id: crypto.randomUUID(),
-        starForceItems: [],
-      };
-      
-      setCharacters(prev => [...prev, character]);
-      setSelectedCharacter(character);
+      createCharacter(newCharacter);
       
       // Track character creation
-      trackCharacterCreation(character.class, character.name);
+      trackCharacterCreation(newCharacter.class, newCharacter.name);
       
       toast({
         title: "Character Created",
-        description: `${character.name} has been added to your roster!`,
+        description: `${newCharacter.name} has been added to your roster!`,
       });
     }
     
@@ -426,7 +403,7 @@ export default function CharacterDashboard() {
   };
 
   const handleSelectCharacter = (character: Character) => {
-    setSelectedCharacter(character);
+    selectCharacter(character.id);
   };
 
   const handleEditCharacter = (character: Character) => {
@@ -437,19 +414,15 @@ export default function CharacterDashboard() {
   const handleDeleteCharacter = (id: string) => {
     const characterToDelete = characters.find(char => char.id === id);
     if (characterToDelete) {
+      deleteCharacter(id);
       // Track character deletion
       trackCharacterDeletion(characterToDelete.class);
+      
+      toast({
+        title: "Character Deleted",
+        description: "Character has been removed from your roster.",
+      });
     }
-    
-    setCharacters(prev => prev.filter(char => char.id !== id));
-    if (selectedCharacter?.id === id) {
-      setSelectedCharacter(null);
-    }
-    
-    toast({
-      title: "Character Deleted",
-      description: "Character has been removed from your roster.",
-    });
   };
 
   const handleEditEquipment = (equipment: Equipment) => {
@@ -458,196 +431,50 @@ export default function CharacterDashboard() {
   };
 
   const handleSaveEquipment = (equipment: Equipment) => {
-    if (!selectedCharacter) return;
-
-    const existingIndex = selectedCharacter.equipment.findIndex(eq => eq.id === equipment.id);
+    // Check if this is new equipment (no existing equipment with this ID) or existing equipment
+    const existingEquipment = selectedCharacter?.equipment.find(eq => eq.id === equipment.id);
     
-    const updatedCharacters = characters.map(char => {
-      if (char.id === selectedCharacter.id) {
-        let updatedEquipment;
-        
-        if (existingIndex >= 0) {
-          // Update existing equipment
-          updatedEquipment = char.equipment.map(eq => 
-            eq.id === equipment.id ? equipment : eq
-          );
-        } else {
-          // Add new equipment
-          updatedEquipment = [...char.equipment, equipment];
-        }
-        
-        return { ...char, equipment: updatedEquipment };
-      }
-      return char;
-    });
-
-    setCharacters(updatedCharacters);
-    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
-    if (updatedCharacter) {
-      setSelectedCharacter(updatedCharacter);
+    if (existingEquipment) {
+      // Update existing equipment
+      saveEquipment(equipment.id, equipment);
+      toast({
+        title: "Equipment Updated",
+        description: `${equipment.name} has been updated.`,
+      });
+    } else {
+      // Add new equipment
+      addEquipment(equipment);
+      toast({
+        title: "Equipment Added",
+        description: `${equipment.name} has been added.`,
+      });
     }
-
-    toast({
-      title: "Equipment Saved",
-      description: `${equipment.name} has been ${existingIndex >= 0 ? 'updated' : 'added'}.`,
-    });
   };
 
   const handleAddEquipment = (slot: EquipmentSlot) => {
-    // TODO: Implement equipment adding
+    // TODO: Implement equipment adding UI
     console.log('Add equipment to slot:', slot);
   };
 
   const handleClearEquipment = (slot: EquipmentSlot) => {
-    if (!selectedCharacter) return;
-
-    const updatedCharacters = characters.map(char => {
-      if (char.id === selectedCharacter.id) {
-        const filteredEquipment = char.equipment.filter(eq => eq.slot !== slot);
-        return { ...char, equipment: filteredEquipment };
-      }
-      return char;
-    });
-
-    setCharacters(updatedCharacters);
-    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
-    if (updatedCharacter) {
-      setSelectedCharacter(updatedCharacter);
-    }
+    clearEquipmentSlot(slot);
   };
 
   const handleUpdateStarforce = (equipmentId: string, current: number, target: number) => {
-    if (!selectedCharacter) return;
-
-    const updatedCharacters = characters.map(char => {
-      if (char.id === selectedCharacter.id) {
-        const updatedEquipment = char.equipment.map(eq => 
-          eq.id === equipmentId 
-            ? { ...eq, currentStarForce: current, targetStarForce: target }
-            : eq
-        );
-        return { ...char, equipment: updatedEquipment };
-      }
-      return char;
-    });
-
-    setCharacters(updatedCharacters);
-    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
-    if (updatedCharacter) {
-      setSelectedCharacter(updatedCharacter);
-    }
+    updateEquipmentStarForce(equipmentId, current, target);
   };
 
   const handleUpdateActualCost = (equipmentId: string, actualCost: number) => {
-    if (!selectedCharacter) return;
-
-    const updatedCharacters = characters.map(char => {
-      if (char.id === selectedCharacter.id) {
-        const updatedEquipment = char.equipment.map(eq => 
-          eq.id === equipmentId 
-            ? { ...eq, actualCost }
-            : eq
-        );
-        const updatedStarForceItems = (char.starForceItems || []).map(eq => 
-          eq.id === equipmentId 
-            ? { ...eq, actualCost }
-            : eq
-        );
-        return { ...char, equipment: updatedEquipment, starForceItems: updatedStarForceItems };
-      }
-      return char;
-    });
-
-    setCharacters(updatedCharacters);
-    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
-    if (updatedCharacter) {
-      setSelectedCharacter(updatedCharacter);
-    }
+    updateEquipmentActualCost(equipmentId, actualCost);
   };
 
   const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
-    if (!selectedCharacter) return;
-
-    const updatedCharacters = characters.map(char => {
-      if (char.id === selectedCharacter.id) {
-        const baseEquipment = [...char.equipment];
-        
-        // Update source equipment - mark it for destruction but keep for cost calculation
-        const sourceIndex = baseEquipment.findIndex(eq => eq.id === sourceEquipment.id);
-        let updatedEquipment = baseEquipment;
-        
-        if (sourceIndex >= 0) {
-          // Source equipment exists - update it
-          updatedEquipment = baseEquipment.map((eq, index) => 
-            index === sourceIndex ? {
-              ...sourceEquipment,
-              // Keep source equipment visible for cost calculation until transfer stars are reached
-              isTransferSource: true, // New flag to indicate this will be destroyed after reaching target stars
-              transferTargetId: targetEquipment.id
-            } : eq
-          );
-        } else {
-          // Source equipment doesn't exist (new equipment from form) - add it
-          const sourceForTable = {
-            ...sourceEquipment,
-            isTransferSource: true,
-            transferTargetId: targetEquipment.id
-          };
-          updatedEquipment = [...baseEquipment, sourceForTable];
-        }
-        
-        // Add or update target equipment with transfer information
-        const existingTargetIndex = updatedEquipment.findIndex(eq => eq.id === targetEquipment.id);
-        
-        const targetWithTransferInfo = {
-          ...targetEquipment,
-          transferredFrom: sourceEquipment.id,
-          transferredStars: targetEquipment.currentStarForce
-        };
-        
-        if (existingTargetIndex >= 0) {
-          // Update existing target equipment
-          updatedEquipment = updatedEquipment.map((eq, index) => 
-            index === existingTargetIndex ? targetWithTransferInfo : eq
-          );
-        } else {
-          // Add new target equipment
-          updatedEquipment = [...updatedEquipment, targetWithTransferInfo];
-        }
-        
-        return { ...char, equipment: updatedEquipment };
-      }
-      return char;
-    });
-
-    setCharacters(updatedCharacters);
-    const updatedCharacter = updatedCharacters.find(char => char.id === selectedCharacter.id);
-    if (updatedCharacter) {
-      setSelectedCharacter(updatedCharacter);
-    }
-
+    transferEquipment(sourceEquipment, targetEquipment);
+    
     toast({
       title: "Transfer Planned",
       description: `Transfer planned: ${sourceEquipment.name} (${sourceEquipment.currentStarForce}→${sourceEquipment.targetStarForce}★) will transfer ${targetEquipment.currentStarForce}★ to ${targetEquipment.name}. Both items show costs for planning.`,
     });
-  };
-
-  // Calculate character stats
-  const getCharacterStats = (character: Character) => {
-    const totalEquipment = character.equipment.length;
-    const starforceableEquipment = character.equipment.filter(eq => eq.starforceable);
-    const pendingStarforce = starforceableEquipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
-    const additionalItems = character.starForceItems?.length || 0;
-    
-    return {
-      totalEquipment,
-      starforceableEquipment: starforceableEquipment.length,
-      pendingStarforce: pendingStarforce.length,
-      additionalItems,
-      completionRate: starforceableEquipment.length > 0 
-        ? Math.round(((starforceableEquipment.length - pendingStarforce.length) / starforceableEquipment.length) * 100)
-        : 0
-    };
   };
 
   return (
@@ -817,7 +644,7 @@ export default function CharacterDashboard() {
                       </SelectTrigger>
                       <SelectContent>
                         {characters.map((character) => {
-                          const stats = getCharacterStats(character);
+                          const stats = getCharacterSummary(character.id);
                           return (
                             <SelectItem key={character.id} value={character.id}>
                               <div className="flex items-center gap-4 py-2">
@@ -840,7 +667,7 @@ export default function CharacterDashboard() {
                                     </Badge>
                                   </div>
                                   <div className="text-xs text-muted-foreground font-maplestory">
-                                    Lv.{character.level} • {stats.totalEquipment} items • {stats.pendingStarforce} pending
+                                    Lv.{character.level} • {stats?.totalEquipment || 0} items • {(stats?.starforceItems || 0) - (stats?.completedItems || 0)} pending
                                   </div>
                                 </div>
                               </div>
@@ -886,27 +713,29 @@ export default function CharacterDashboard() {
                         
                         <div className="grid grid-cols-3 gap-4">
                           {(() => {
-                            const stats = getCharacterStats(selectedCharacter);
+                            const stats = getCharacterSummary(selectedCharacter.id);
                             return (
                               <>
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Target className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium font-maplestory">{stats.totalEquipment}</span>
+                                    <span className="text-sm font-medium font-maplestory">{stats?.totalEquipment || 0}</span>
                                   </div>
                                   <div className="text-xs text-muted-foreground font-maplestory">Equipment</div>
                                 </div>
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Calculator className="w-4 h-4 text-orange-500" />
-                                    <span className="text-sm font-medium text-orange-500 font-maplestory">{stats.pendingStarforce}</span>
+                                    <span className="text-sm font-medium text-orange-500 font-maplestory">{(stats?.starforceItems || 0) - (stats?.completedItems || 0)}</span>
                                   </div>
                                   <div className="text-xs text-muted-foreground font-maplestory">Pending</div>
                                 </div>
                                 <div className="text-center">
                                   <div className="flex items-center justify-center gap-1 mb-1">
                                     <Sparkles className="w-4 h-4 text-green-500" />
-                                    <span className="text-sm font-medium text-green-500 font-maplestory">{stats.completionRate}%</span>
+                                    <span className="text-sm font-medium text-green-500 font-maplestory">
+                                      {stats?.starforceItems ? Math.round((stats.completedItems / stats.starforceItems) * 100) : 0}%
+                                    </span>
                                   </div>
                                   <div className="text-xs text-muted-foreground font-maplestory">Progress</div>
                                 </div>

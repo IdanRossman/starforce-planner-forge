@@ -1,438 +1,144 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
-import { StarForceCalculation, Events, Equipment } from "@/types";
-import { calculateBulkStarforce, convertToMesos, BulkEnhancedStarforceRequestDto, LuckAnalysisDto } from "@/services/starforceService";
+import { useState, useCallback } from "react";
+import { Equipment } from "@/types";
+import { 
+  useStarForceCalculation,
+  useStarForceItemSettings,
+  useEquipmentManagement,
+  type GlobalSettings,
+  type SortField,
+  type EquipmentCalculation
+} from "@/hooks/starforce";
+import { useFormatting } from "@/hooks/display/useFormatting";
+import { useTable } from "@/hooks/utils/useTable";
+import { 
+  useSelectedCharacter, 
+  useSelectedCharacterEquipment
+} from "@/hooks/useCharacterContext";
+import { useEquipment } from "@/hooks";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Info, Download, DollarSign, Sparkles, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Heart, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EquipmentImage } from "@/components/EquipmentImage";
+import { EquipmentTableContent } from "./StarForceCalculator/EquipmentTableContent";
 
 interface StarForceCalculatorProps {
-  initialCalculation?: StarForceCalculation;
-  equipment?: Equipment[];
+  equipment?: Equipment[]; // Optional - will use context if not provided
   additionalEquipment?: Equipment[];
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
-  mode?: 'standalone' | 'equipment-table';
-  characterId?: string; // For per-character localStorage
+  characterId?: string; // For per-character localStorage - optional if using context
   characterName?: string; // Fallback for characters without ID
 }
 
-// Based on proven working calculator logic
-// Brandon's proven cost calculation
-function makeMesoFn(divisor: number, currentStarExp = 2.7, extraMult = 1) {
-  return (currentStar: number, itemLevel: number) => 
-    100 * Math.round(extraMult * itemLevel ** 3 * ((currentStar + 1) ** currentStarExp) / divisor + 10);
-}
-
-function saviorMesoFn(currentStar: number) {
-  switch (currentStar) {
-    case 11: return makeMesoFn(22000);
-    case 12: return makeMesoFn(15000);
-    case 13: return makeMesoFn(11000);
-    case 14: return makeMesoFn(7500);
-    default: return preSaviorMesoFn(currentStar);
-  }
-}
-
-function preSaviorMesoFn(currentStar: number) {
-  if (currentStar >= 15) return makeMesoFn(20000);
-  if (currentStar >= 10) return makeMesoFn(40000);
-  return makeMesoFn(2500, 1);
-}
-
-function saviorCost(currentStar: number, itemLevel: number): number {
-  const mesoFn = saviorMesoFn(currentStar);
-  return mesoFn(currentStar, itemLevel);
-}
-
-function getBaseCost(server: string, currentStar: number, itemLevel: number): number {
-  return saviorCost(currentStar, itemLevel);
-}
-
-function getSafeguardMultiplierIncrease(currentStar: number, server: string): number {
-  if (server === "kms" && currentStar >= 15 && currentStar <= 17) {
-    return 2;
-  }
-  if (server !== "kms" && currentStar >= 15 && currentStar <= 16) {
-    return 1;
-  }
-  return 0;
-}
-
-function attemptCost(
-  currentStar: number, 
-  itemLevel: number, 
-  boomProtect: boolean, 
-  thirtyOff: boolean, 
-  starCatch: boolean,
-  mvpDiscount: number,
-  chanceTime: boolean,
-  server: string
-): number {
-  let multiplier = 1;
-
-  // MVP discounts (for stars <= 15)
-  if (mvpDiscount > 0 && currentStar <= 15) {
-    multiplier = multiplier - mvpDiscount;
-  }
-
-  // 30% off event
-  if (thirtyOff) {
-    multiplier = multiplier - 0.3;
-  }
-
-  // Safeguard cost increase - using Brandon's exact logic
-  if (boomProtect && !chanceTime) {
-    multiplier = multiplier + getSafeguardMultiplierIncrease(currentStar, server);
-  }
-
-  const cost = getBaseCost(server, currentStar, itemLevel) * multiplier;
-  return Math.round(cost);
-}
-
-function determineOutcome(
-  currentStar: number, 
-  starCatch: boolean, 
-  boomProtect: boolean, 
-  fiveTenFifteen: boolean,
-  server: string
-): "Success" | "Maintain" | "Decrease" | "Boom" {
-  // 5/10/15 event guaranteed success
-  if (fiveTenFifteen && (currentStar === 5 || currentStar === 10 || currentStar === 15)) {
-    return "Success";
-  }
-
-  // Brandon's exact saviorRates from working calculator
-  const rates: { [key: number]: [number, number, number, number] } = {
-    0: [0.95, 0.05, 0, 0], 1: [0.9, 0.1, 0, 0], 2: [0.85, 0.15, 0, 0], 
-    3: [0.85, 0.15, 0, 0], 4: [0.8, 0.2, 0, 0], 5: [0.75, 0.25, 0, 0],
-    6: [0.7, 0.3, 0, 0], 7: [0.65, 0.35, 0, 0], 8: [0.6, 0.4, 0, 0],
-    9: [0.55, 0.45, 0, 0], 10: [0.5, 0.5, 0, 0], 11: [0.45, 0.55, 0, 0],
-    12: [0.4, 0.6, 0, 0], 13: [0.35, 0.65, 0, 0], 14: [0.3, 0.7, 0, 0],
-    15: [0.3, 0.679, 0, 0.021], 16: [0.3, 0, 0.679, 0.021], 17: [0.3, 0, 0.679, 0.021],
-    18: [0.3, 0, 0.672, 0.028], 19: [0.3, 0, 0.672, 0.028], 20: [0.3, 0.63, 0, 0.07],
-    21: [0.3, 0, 0.63, 0.07], 22: [0.03, 0, 0.776, 0.194], 23: [0.02, 0, 0.686, 0.294],
-    24: [0.01, 0, 0.594, 0.396], 25: [0.01, 0, 0.594, 0.396]
-  };
-
-  let [probSuccess, probMaintain, probDecrease, probBoom] = rates[currentStar] || [0.3, 0.4, 0, 0.3];
-
-  // Use Brandon's exact rates without any overrides
-
-  // Safeguard removes boom chance
-  if (boomProtect && currentStar >= 12 && currentStar <= 16) {
-    if (probDecrease > 0) {
-      probDecrease = probDecrease + probBoom;
-    } else {
-      probMaintain = probMaintain + probBoom;
-    }
-    probBoom = 0;
-  }
-
-  // Star catching (5% multiplicative)
-  if (starCatch) {
-    probSuccess = Math.min(1, probSuccess * 1.05);
-    const leftOver = 1 - probSuccess;
-    
-    if (probDecrease === 0) {
-      probMaintain = probMaintain * leftOver / (probMaintain + probBoom);
-      probBoom = leftOver - probMaintain;
-    } else {
-      probDecrease = probDecrease * leftOver / (probDecrease + probBoom);
-      probBoom = leftOver - probDecrease;
-    }
-  }
-
-  const outcome = Math.random();
-  if (outcome <= probSuccess) return "Success";
-  if (outcome <= probSuccess + probMaintain) return "Maintain";
-  if (outcome <= probSuccess + probMaintain + probDecrease) return "Decrease";
-  return "Boom";
-}
-
-function performExperiment(
-  currentStars: number,
-  desiredStar: number,
-  itemLevel: number,
-  boomProtect: boolean,
-  thirtyOff: boolean,
-  starCatch: boolean,
-  fiveTenFifteen: boolean,
-  mvpDiscount: number,
-  server: string
-): [number, number] {
-  let currentStar = currentStars;
-  let totalMesos = 0;
-  let totalBooms = 0;
-  let decreaseCount = 0;
-
-  while (currentStar < desiredStar) {
-    const chanceTime = decreaseCount === 2;
-    totalMesos += attemptCost(currentStar, itemLevel, boomProtect, thirtyOff, starCatch, mvpDiscount, chanceTime, server);
-
-    if (chanceTime) {
-      currentStar++;
-      decreaseCount = 0;
-    } else {
-      const outcome = determineOutcome(currentStar, starCatch, boomProtect, fiveTenFifteen, server);
-      
-      if (outcome === "Success") {
-        currentStar++;
-        decreaseCount = 0;
-      } else if (outcome === "Decrease") {
-        currentStar--;
-        decreaseCount++;
-      } else if (outcome === "Maintain") {
-        decreaseCount = 0;
-      } else if (outcome === "Boom") {
-        currentStar = 12; // Reset to 12 stars on boom
-        totalBooms++;
-        decreaseCount = 0;
-      }
-    }
-  }
-
-  return [totalMesos, totalBooms];
-}
-
-export function calculateStarForce(
-  itemLevel: number,
-  currentLevel: number,
-  targetLevel: number,
-  tier: string,
-  serverType: "Regular" | "Reboot",
-  events: {
-    costMultiplier?: number;
-    successRateBonus?: number;
-    starCatching?: boolean;
-    safeguard?: boolean;
-  } = {}
-): StarForceCalculation {
-  const {
-    costMultiplier = 1,
-    successRateBonus = 0,
-    starCatching = false,
-    safeguard = false,
-  } = events || {};
-
-  // Input validation
-  if (currentLevel >= targetLevel || itemLevel < 1 || targetLevel > 23 || currentLevel < 0) {
-    return {
-      currentLevel,
-      targetLevel,
-      averageCost: 0,
-      medianCost: 0,
-      p75Cost: 0,
-      averageBooms: 0,
-      medianBooms: 0,
-      p75Booms: 0,
-      successRate: 100,
-      boomRate: 0,
-      costPerAttempt: 0,
-      perStarStats: [],
-      recommendations: [],
-    };
-  }
-
-  const trials = 1000; // Increased for more consistent results
-  const costResults: number[] = []; // Store all cost results for median calculation
-  const boomResults: number[] = []; // Store all boom results for median calculation
-  
-  // Convert events to working calculator format
-  const thirtyOff = costMultiplier < 1;
-  const fiveTenFifteen = successRateBonus > 0;
-  const mvpDiscount = 0; // Could be extracted from costMultiplier if needed
-  const server = "gms"; // Brandon uses lowercase "gms"
-
-  // Run simulations using Brandon's exact algorithm 
-  for (let i = 0; i < trials; i++) {
-    // Each trial gets both meso and boom data from the same experiment
-    const [mesoResult, boomResult] = performExperiment(
-      currentLevel, 
-      targetLevel, 
-      itemLevel, 
-      safeguard, 
-      thirtyOff, 
-      starCatching, 
-      fiveTenFifteen, 
-      mvpDiscount, 
-      server
-    );
-    costResults.push(mesoResult);
-    boomResults.push(boomResult);
-  }
-
-  // Calculate average values
-  const avgCost = costResults.reduce((sum, cost) => sum + cost, 0) / trials;
-  const avgBooms = boomResults.reduce((sum, booms) => sum + booms, 0) / trials;
-
-  // Calculate median values
-  const sortedCosts = [...costResults].sort((a, b) => a - b);
-  const sortedBooms = [...boomResults].sort((a, b) => a - b);
-  
-  const medianCost = trials % 2 === 0
-    ? (sortedCosts[trials / 2 - 1] + sortedCosts[trials / 2]) / 2
-    : sortedCosts[Math.floor(trials / 2)];
-    
-  const medianBooms = trials % 2 === 0
-    ? (sortedBooms[trials / 2 - 1] + sortedBooms[trials / 2]) / 2
-    : sortedBooms[Math.floor(trials / 2)];
-
-  // Calculate 75th percentile values
-  const p75Index = Math.floor(trials * 0.75);
-  const p75Cost = sortedCosts[p75Index];
-  const p75Booms = sortedBooms[p75Index];
-
-  // Calculate per-star stats
-  const perStarStats: { star: number; successRate: number; boomRate: number; cost: number }[] = [];
-  for (let star = currentLevel; star < targetLevel; star++) {
-    // Get base rates
-    const rates: { [key: number]: [number, number, number, number] } = {
-      12: [40, 59.4, 0, 0.6], 13: [35, 63.7, 0, 1.3], 14: [30, 68.6, 0, 1.4],
-      15: [30, 67.9, 0, 2.1], 16: [30, 66.4, 0, 3.6], 17: [30, 63.7, 0, 6.3],
-      18: [30, 60, 0, 10], 19: [30, 50, 0, 20], 20: [30, 40, 0, 30]
-    };
-    
-    const [successRate, , , boomRate] = rates[star] || [star <= 10 ? 95 : 30, 0, 0, 0];
-    
-    perStarStats.push({
-      star,
-      successRate,
-      boomRate,
-      cost: attemptCost(star, itemLevel, safeguard, thirtyOff, starCatching, mvpDiscount, false, server)
-    });
-  }
-
-  // Calculate spares needed based on average booms
-  const sparesNeeded = Math.ceil(avgBooms); // Round up - if 0.7 booms, need 1 spare
-
-  // Generate recommendations
-  const recommendations: string[] = [];
-  
-  if (avgBooms > 0.5 && !safeguard && targetLevel >= 15) {
-    recommendations.push("Consider using Safeguard for stars 15-16 to prevent destruction.");
-  }
-  if (avgCost > 500000000 && !thirtyOff) {
-    recommendations.push("Wait for a 30% Off event to significantly reduce costs.");
-  }
-  if (sparesNeeded > 0) {
-    recommendations.push(`Expected ${avgBooms.toFixed(1)} booms - prepare ${sparesNeeded} spare item${sparesNeeded > 1 ? 's' : ''}.`);
-  }
-
-  function formatMesos(amount: number): string {
-    if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-    return amount.toString();
-  }
-
-  return {
-    currentLevel,
-    targetLevel,
-    averageCost: Math.round(avgCost), // Just enhancement costs
-    averageBooms: Math.round(avgBooms * 100) / 100,
-    medianCost: Math.round(medianCost),
-    medianBooms: Math.round(medianBooms * 100) / 100,
-    p75Cost: Math.round(p75Cost),
-    p75Booms: Math.round(p75Booms * 100) / 100,
-    successRate: Math.round((trials / trials) * 10000) / 100, // Simplified
-    boomRate: Math.round((avgBooms / 5) * 10000) / 100, // Estimated
-    costPerAttempt: Math.round(avgCost / 10), // Estimated
-    perStarStats,
-    recommendations,
-  };
-}
 
 export function StarForceCalculator({ 
-  initialCalculation, 
-  equipment = [], 
+  equipment: propEquipment, // Rename to avoid confusion
   additionalEquipment = [],
-  onUpdateStarforce,
-  onUpdateActualCost,
-  onUpdateSafeguard,
-  mode = 'standalone',
-  characterId,
-  characterName
+  onUpdateStarforce: propOnUpdateStarforce, // Rename to distinguish from context
+  onUpdateActualCost: propOnUpdateActualCost,
+  onUpdateSafeguard: propOnUpdateSafeguard,
+  characterId: propCharacterId, // Use prop or context
+  characterName: propCharacterName
 }: StarForceCalculatorProps) {
-  // Helper functions for per-character localStorage
-  const getCharacterStorageKey = useCallback((key: string) => {
-    if (mode === 'equipment-table') {
-      if (characterId) {
-        return `starforce-${key}-${characterId}`;
-      } else if (characterName) {
-        // Use character name as fallback for existing characters without ID
-        return `starforce-${key}-${characterName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-      }
-    }
-    return `starforce-${key}`;
-  }, [characterId, characterName, mode]);
+  // Get character data from context
+  const selectedCharacter = useSelectedCharacter();
+  const contextEquipment = useSelectedCharacterEquipment();
+  const {
+    updateEquipment,
+  } = useEquipment();
 
-  const loadCharacterSettings = useCallback((key: string, defaultValue: unknown) => {
-    try {
-      const storageKey = getCharacterStorageKey(key);
-      const saved = localStorage.getItem(storageKey);
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (error) {
-      console.error(`Failed to load ${key} from localStorage:`, error);
-    }
-    return defaultValue;
-  }, [getCharacterStorageKey]);
-
-  const saveCharacterSettings = useCallback((key: string, value: unknown) => {
-    try {
-      const storageKey = getCharacterStorageKey(key);
-      localStorage.setItem(storageKey, JSON.stringify(value));
-    } catch (error) {
-      console.error(`Failed to save ${key} to localStorage:`, error);
-    }
-  }, [getCharacterStorageKey]);
-  // State for input fields (standalone mode)
-  const [itemLevel, setItemLevel] = useState(150);
-  const [currentLevel, setCurrentLevel] = useState(0);
-  const [targetLevel, setTargetLevel] = useState(17);
-  const [server, setServer] = useState("Interactive");
-  const [itemType, setItemType] = useState("regular");
-  const [safeguard, setSafeguard] = useState(false);
-  const [starCatching, setStarCatching] = useState(true);
-  const [eventType, setEventType] = useState<string>("");
-  const [costDiscount, setCostDiscount] = useState(0);
-  const [yohiTapEvent, setYohiTapEvent] = useState(false); // The legendary luck
+  // Determine data source: props vs context
+  const equipment = propEquipment || contextEquipment;
+  const characterId = propCharacterId || selectedCharacter?.id;
+  const characterName = propCharacterName || selectedCharacter?.name;
   
-  // Enhanced settings for equipment mode with localStorage persistence
-  const [enhancedSettings, setEnhancedSettings] = useState(() => {
-    const defaultSettings = {
-      discountEvent: false, // 30% off event
-      starcatchEvent: false, // 5/10/15 event
-      starCatching: true, // Star catching enabled globally
-      isInteractive: false, // Interactive server toggle
-      spareCount: 0, // Number of spares
-      sparePrice: 0, // Price per spare in mesos
-    };
-    
-    return loadCharacterSettings('settings', defaultSettings);
+  // Create wrapper functions for the new hook API
+  const onUpdateStarforce = propOnUpdateStarforce || ((equipmentId: string, current: number, target: number) => {
+    updateEquipment(equipmentId, { currentStarForce: current, targetStarForce: target });
+  });
+  
+  const onUpdateActualCost = propOnUpdateActualCost || ((equipmentId: string, cost: number) => {
+    updateEquipment(equipmentId, { actualCost: cost });
+  });
+  
+  const onUpdateSafeguard = propOnUpdateSafeguard || ((equipmentId: string, useSafeguard: boolean) => {
+    updateEquipment(equipmentId, { safeguard: useSafeguard });
   });
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    saveCharacterSettings('settings', enhancedSettings);
-  }, [enhancedSettings, saveCharacterSettings]);
+  // Use hooks for settings and item management
+  const {
+    itemSafeguard,
+    setItemSafeguard,
+    itemSpares,
+    setItemSpares,
+    itemSparePrices,
+    setItemSparePrices,
+    itemActualCosts,
+    setItemActualCosts
+  } = useStarForceItemSettings(characterId);
+
+  // Use formatting hook for display utilities
+  const {
+    formatMesos,
+    getDangerLevel,
+    getLuckColor,
+    getEnhancedLuckRating,
+    getLuckText
+  } = useFormatting();
+
+  // Use table hook for sorting and filtering
+  const {
+    sortState,
+    handleSort,
+    filterState,
+    toggleFilter,
+    isSelected,
+    toggleSelection
+  } = useTable();
+
+  // Local getSortIcon implementation (keeping the original logic)
+  const getSortIcon = (field: SortField) => {
+    if (sortState.field !== field) {
+      return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+    }
+    if (sortState.direction === 'asc') {
+      return <ArrowUp className="w-4 h-4 text-primary" />;
+    } else if (sortState.direction === 'desc') {
+      return <ArrowDown className="w-4 h-4 text-primary" />;
+    }
+    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
+  };
+
+  // Use equipment management hook for character-level equipment operations
+  const {
+    handleQuickAdjust,
+    handleBulkStarforceUpdate,
+    handleActualCostUpdate,
+    handleSafeguardUpdate
+  } = useEquipmentManagement({
+    onUpdateStarforce,
+    onUpdateActualCost,
+    onUpdateSafeguard
+  });
+
+  // Enhanced settings state
+  const [enhancedSettings, setEnhancedSettings] = useState<GlobalSettings>(() => ({
+    thirtyPercentOff: false,
+    fiveTenFifteenEvent: false,
+    starCatching: true,
+    isInteractive: false
+  }));
 
   // Equipment table editing states
   const [editingStarforce, setEditingStarforce] = useState<string | null>(null);
@@ -441,450 +147,38 @@ export function StarForceCalculator({
   const [tempActualCost, setTempActualCost] = useState<number>(0);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   
-  // Per-item safeguard settings
-  const [itemSafeguard, setItemSafeguard] = useState<{ [equipmentId: string]: boolean }>(() => {
-    return loadCharacterSettings('item-safeguard', {}) as { [equipmentId: string]: boolean };
-  });
-  
-  // Per-item spare count
-  const [itemSpares, setItemSpares] = useState<{ [equipmentId: string]: number }>(() => {
-    return loadCharacterSettings('item-spares', {}) as { [equipmentId: string]: number };
-  });
-  
-  // Per-item spare prices (for Interactive server)
-  const [itemSparePrices, setItemSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
-    return loadCharacterSettings('item-spare-prices', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
-  });
-  
   // Temporary spare price editing state (doesn't trigger recalculation until blur)
   const [tempSparePrices, setTempSparePrices] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>({});
+
+  // Sorting state (from useTable hook)
+  const sortField = sortState.field as SortField | null;
+  const sortDirection = sortState.direction;
   
-  // Per-item actual costs with units
-  const [itemActualCosts, setItemActualCosts] = useState<{ [equipmentId: string]: { value: number; unit: 'M' | 'B' } }>(() => {
-    return loadCharacterSettings('item-actual-costs', {}) as { [equipmentId: string]: { value: number; unit: 'M' | 'B' } };
+  // Per-item include/exclude state (manual for now)
+  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
+
+  // Use the calculation hook for equipment mode
+  const {
+    equipmentCalculations,
+    isCalculating,
+    calculationError,
+    aggregateStats,
+    triggerRecalculation
+  } = useStarForceCalculation({
+    equipment,
+    additionalEquipment,
+    globalSettings: enhancedSettings,
+    itemSafeguard,
+    itemSpares,
+    itemSparePrices,
+    itemActualCosts,
+    itemIncluded,
+    sortField,
+    sortDirection
   });
-  
-  // Column sorting state
-  type SortField = 'name' | 'currentStarForce' | 'targetStarForce' | 'averageCost' | 'medianCost' | 'p75Cost' | 'averageBooms' | 'medianBooms' | 'p75Booms' | 'actualCost' | 'luckPercentage';
-  type SortDirection = 'asc' | 'desc' | null;
-  
-  const [sortField, setSortField] = useState<SortField | null>(() => {
-    return loadCharacterSettings('sort-field', null) as SortField | null;
-  });
-  const [sortDirection, setSortDirection] = useState<SortDirection>(() => {
-    return loadCharacterSettings('sort-direction', null) as SortDirection;
-  });
-  
-  // Per-item include/exclude state (default to included)
-  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>(() => {
-    return loadCharacterSettings('item-included', {}) as { [equipmentId: string]: boolean };
-  });
-  
-  // Save per-item settings to localStorage
-  useEffect(() => {
-    saveCharacterSettings('item-safeguard', itemSafeguard);
-  }, [itemSafeguard, saveCharacterSettings]);
 
-  useEffect(() => {
-    saveCharacterSettings('item-spares', itemSpares);
-  }, [itemSpares, saveCharacterSettings]);
+  // Helper functions for luck analysis
 
-  useEffect(() => {
-    saveCharacterSettings('item-spare-prices', itemSparePrices);
-  }, [itemSparePrices, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-actual-costs', itemActualCosts);
-  }, [itemActualCosts, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('sort-field', sortField);
-  }, [sortField, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('sort-direction', sortDirection);
-  }, [sortDirection, saveCharacterSettings]);
-
-  useEffect(() => {
-    saveCharacterSettings('item-included', itemIncluded);
-  }, [itemIncluded, saveCharacterSettings]);
-  
-  const [calculation, setCalculation] = useState<StarForceCalculation | null>(
-    initialCalculation || null
-  );
-
-  // State for handling async calculations
-  const [isCalculating, setIsCalculating] = useState(false);
-  const [calculationError, setCalculationError] = useState<string | null>(null);
-  const [recalculationTrigger, setRecalculationTrigger] = useState(0); // Trigger for manual recalculation
-  
-  // State for equipment calculations
-  interface EquipmentCalculation {
-    equipment: Equipment;
-    calculation: StarForceCalculation;
-    expectedCost: number;
-    actualCost: number;
-    luckPercentage: number;
-    luckAnalysis?: LuckAnalysisDto;
-    spareCostBreakdown: {
-      enhancementCost: number;
-      averageSpareCost: number;
-      medianSpareCost: number;
-      p75SpareCost: number;
-    };
-    spareStatus: string;
-    spareClassName: string;
-    spareTitle: string;
-  }
-  
-  const [equipmentCalculations, setEquipmentCalculations] = useState<EquipmentCalculation[]>([]);
-
-  // Combine all equipment for table mode - memoized to prevent recalculation on hover
-  const pendingEquipment = useMemo(() => {
-    const allEquipment = [...equipment, ...additionalEquipment];
-    return allEquipment.filter(eq => 
-      eq.starforceable && (eq.currentStarForce || 0) < (eq.targetStarForce || 0)
-    );
-  }, [equipment, additionalEquipment]);
-
-  // Calculate costs and statistics for equipment mode using backend API
-  useEffect(() => {
-    async function calculateEquipmentCosts() {
-      if (mode === 'standalone' || !pendingEquipment.length) {
-        setEquipmentCalculations([]);
-        setIsCalculating(false);
-        setCalculationError(null);
-        return;
-      }
-
-      setIsCalculating(true);
-      setCalculationError(null);
-
-      try {
-        // Build API request
-        const request: BulkEnhancedStarforceRequestDto = {
-          isInteractive: enhancedSettings.isInteractive,
-          events: {
-            thirtyOff: enhancedSettings.discountEvent,
-            fiveTenFifteen: enhancedSettings.starcatchEvent,
-            starCatching: enhancedSettings.starCatching !== false,
-            mvpDiscount: 0 // Add to settings if needed
-          },
-          items: pendingEquipment.map(eq => {
-            const actualCostData = itemActualCosts[eq.id];
-            const actualCostInMesos = actualCostData ? convertToMesos(actualCostData) : 0;
-
-            const spareCostData = itemSparePrices[eq.id];
-            const spareCostInMesos = spareCostData ? convertToMesos(spareCostData) : 0;
-
-            return {
-              itemLevel: eq.level,
-              fromStar: eq.currentStarForce || 0,
-              toStar: eq.targetStarForce || 0,
-              safeguardEnabled: itemSafeguard[eq.id] || false,
-              spareCount: itemSpares[eq.id] || 0,
-              spareCost: spareCostInMesos,
-              actualCost: actualCostInMesos,
-              itemName: eq.name
-            };
-          })
-        };
-
-        // Call backend API
-        const { response } = await calculateBulkStarforce(request);
-        
-        // Transform response to match current format
-        const calculations: EquipmentCalculation[] = response.results.map((result, index) => {
-          const equipment = pendingEquipment[index];
-          
-          // Calculate luck percentage from API response
-          const luckPercentage = result.luckAnalysis 
-            ? result.luckAnalysis.percentile <= 50 
-              ? -(50 - result.luckAnalysis.percentile) * 2  // Lucky: negative percentage
-              : (result.luckAnalysis.percentile - 50) * 2   // Unlucky: positive percentage
-            : 0;
-
-          // Get actual cost from our local state
-          const actualCostData = itemActualCosts[equipment.id];
-          const actualCost = actualCostData ? convertToMesos(actualCostData) : (equipment.actualCost || 0);
-
-          // Calculate spare cost breakdown
-          const enhancementCost = result.averageCost;
-          const averageSpareCost = (result.averageSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-          const medianSpareCost = (result.medianSpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-          const p75SpareCost = (result.percentile75SpareCount || 0) * (convertToMesos(itemSparePrices[equipment.id]) || 0);
-
-          const calculation: StarForceCalculation = {
-            currentLevel: result.fromStar,
-            targetLevel: result.toStar,
-            averageCost: result.averageCost,
-            medianCost: result.medianCost,
-            p75Cost: result.percentile75Cost,
-            averageBooms: result.averageSpareCount || 0,
-            medianBooms: result.medianSpareCount || 0,
-            p75Booms: result.percentile75SpareCount || 0,
-            successRate: 0, // Not provided by API
-            boomRate: 0, // Not provided by API
-            costPerAttempt: 0, // Not provided by API
-            perStarStats: [], // Not provided by API
-            recommendations: [] // Not provided by API
-          };
-
-          return {
-            equipment,
-            calculation,
-            expectedCost: result.averageCost, // Use pure average cost, not totalInvestment
-            actualCost,
-            luckPercentage,
-            luckAnalysis: result.luckAnalysis, // Store the full luck analysis
-            spareCostBreakdown: {
-              enhancementCost,
-              averageSpareCost,
-              medianSpareCost,
-              p75SpareCost
-            },
-            // Pre-calculate spare status and related UI data
-            spareStatus: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const boomChance = result.averageSpareCount || 0;
-              
-              if (boomChance === 0) return "none-needed";
-              if (spares === 0) return "none-available";
-              if (spares < Math.ceil(boomChance)) return "insufficient";
-              if (spares >= Math.ceil(boomChance * 1.5)) return "excess";
-              return "adequate";
-            })(),
-            spareClassName: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const boomChance = result.averageSpareCount || 0;
-              
-              if (boomChance === 0) return "";
-              if (spares === 0) return boomChance > 0 ? "border-orange-500 bg-orange-950/30 text-orange-200" : "";
-              if (spares < Math.ceil(boomChance)) return "border-red-500 bg-red-950/30 text-red-200";
-              if (spares >= Math.ceil(boomChance * 1.5)) return "border-blue-500 bg-blue-950/30 text-blue-200";
-              return "border-green-500 bg-green-950/30 text-green-200";
-            })(),
-            spareTitle: (() => {
-              const spares = itemSpares[equipment.id] || 0;
-              const expectedBooms = result.averageSpareCount || 0;
-              
-              if (expectedBooms === 0) return "No booms expected";
-              if (spares === 0) return expectedBooms > 0 ? `${expectedBooms.toFixed(1)} booms expected - consider getting spares` : "";
-              if (spares < Math.ceil(expectedBooms)) return `Need ${Math.ceil(expectedBooms)} spares (${expectedBooms.toFixed(1)} expected booms)`;
-              if (spares >= Math.ceil(expectedBooms * 1.5)) return `More than enough spares`;
-              return `Good! ${Math.ceil(expectedBooms)} spares recommended`;
-            })()
-          };
-        });
-
-        // Apply sorting if specified
-        if (sortField && sortDirection) {
-          calculations.sort((a, b) => {
-            let aValue: string | number;
-            let bValue: string | number;
-
-            switch (sortField) {
-              case 'name':
-                aValue = (a.equipment.name || '').toLowerCase();
-                bValue = (b.equipment.name || '').toLowerCase();
-                break;
-              case 'currentStarForce':
-                aValue = a.equipment.currentStarForce || 0;
-                bValue = b.equipment.currentStarForce || 0;
-                break;
-              case 'targetStarForce':
-                aValue = a.equipment.targetStarForce || 0;
-                bValue = b.equipment.targetStarForce || 0;
-                break;
-              case 'averageCost':
-                aValue = a.expectedCost;
-                bValue = b.expectedCost;
-                break;
-              case 'medianCost':
-                aValue = a.calculation.medianCost;
-                bValue = b.calculation.medianCost;
-                break;
-              case 'p75Cost':
-                aValue = a.calculation.p75Cost;
-                bValue = b.calculation.p75Cost;
-                break;
-              case 'averageBooms':
-                aValue = a.calculation.averageBooms;
-                bValue = b.calculation.averageBooms;
-                break;
-              case 'medianBooms':
-                aValue = a.calculation.medianBooms;
-                bValue = b.calculation.medianBooms;
-                break;
-              case 'p75Booms':
-                aValue = a.calculation.p75Booms;
-                bValue = b.calculation.p75Booms;
-                break;
-              case 'actualCost':
-                aValue = a.actualCost;
-                bValue = b.actualCost;
-                break;
-              case 'luckPercentage':
-                aValue = a.luckPercentage;
-                bValue = b.luckPercentage;
-                break;
-              default:
-                return 0;
-            }
-
-            if (typeof aValue === 'string') {
-              return sortDirection === 'asc' 
-                ? aValue.localeCompare(bValue as string)
-                : (bValue as string).localeCompare(aValue);
-            } else {
-              return sortDirection === 'asc' 
-                ? (aValue as number) - (bValue as number)
-                : (bValue as number) - (aValue as number);
-            }
-          });
-        }
-
-        setEquipmentCalculations(calculations);
-      } catch (error) {
-        console.error('Failed to calculate equipment costs:', error);
-        setCalculationError(error instanceof Error ? error.message : 'Failed to calculate costs');
-        
-        // Fallback to local calculation - for now we'll just set empty array
-        setEquipmentCalculations([]);
-      } finally {
-        setIsCalculating(false);
-      }
-    }
-
-    calculateEquipmentCosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingEquipment, enhancedSettings, itemSafeguard, itemSparePrices, itemActualCosts, mode, sortField, sortDirection, recalculationTrigger]);
-
-  // Enhanced luck rating based on percentile tiers
-  const getEnhancedLuckRating = (percentile: number) => {
-    if (percentile <= 10) return { 
-      rating: "Godlike luck 🍀", 
-      color: "text-emerald-400",
-      shareMessage: `🍀 Godlike luck! Spent less than ${percentile.toFixed(1)}% of players - absolutely legendary RNG!`
-    };
-    if (percentile <= 30) return { 
-      rating: "Very lucky ✨", 
-      color: "text-green-400",
-      shareMessage: `✨ Very lucky! Spent less than ${percentile.toFixed(1)}% of players - exceptional RNG!`
-    };
-    if (percentile <= 50) return { 
-      rating: "Above average 🍂", 
-      color: "text-green-300",
-      shareMessage: `🍂 Above average luck! Spent less than ${percentile.toFixed(1)}% of players - better than most!`
-    };
-    if (percentile <= 70) return { 
-      rating: "Unlucky 😕", 
-      color: "text-orange-400",
-      shareMessage: `😕 Unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - below average RNG.`
-    };
-    if (percentile <= 90) return { 
-      rating: "Very unlucky 😩", 
-      color: "text-red-400",
-      shareMessage: `😩 Very unlucky! Spent more than ${(100-percentile).toFixed(1)}% of players - rough RNG.`
-    };
-    return { 
-      rating: "Nightmare RNG 💀", 
-      color: "text-red-600",
-      shareMessage: `💀 Nightmare RNG! Spent more than ${(100-percentile).toFixed(1)}% of players - absolutely brutal luck!`
-    };
-  };
-
-  // Aggregate statistics for equipment mode - memoized to prevent recalculation on hover
-  const aggregateStats = useMemo(() => {
-    // Only include equipment that is marked as included (default to included if not set)
-    const includedCalculations = equipmentCalculations.filter(calc => 
-      itemIncluded[calc.equipment.id] !== false // Include by default
-    );
-
-    const totalExpectedCost = includedCalculations.reduce((sum, calc) => sum + calc.expectedCost, 0);
-    const totalActualCost = includedCalculations.reduce((sum, calc) => sum + calc.actualCost, 0);
-    const totalExpectedBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.averageBooms, 0);
-    const totalMedianBooms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.medianBooms, 0);
-    const totalP75Cost = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Cost, 0);
-    const totalP75Booms = includedCalculations.reduce((sum, calc) => sum + calc.calculation.p75Booms, 0);
-    
-    const overallLuckPercentage = totalExpectedCost > 0 && totalActualCost > 0
-      ? ((totalActualCost - totalExpectedCost) / totalExpectedCost) * 100 
-      : 0;
-
-    // Calculate enhanced overall luck using weighted average
-    const itemsWithLuck = includedCalculations.filter(calc => 
-      calc.actualCost > 0 && calc.luckAnalysis
-    );
-    
-    let overallLuck = null;
-    if (itemsWithLuck.length > 0) {
-      // Weight by actual cost spent (bigger investments matter more)
-      const totalActualCostWithLuck = itemsWithLuck.reduce((sum, calc) => sum + calc.actualCost, 0);
-      
-      const weightedPercentile = itemsWithLuck.reduce((sum, calc) => {
-        const weight = calc.actualCost / totalActualCostWithLuck;
-        return sum + (calc.luckAnalysis!.percentile * weight);
-      }, 0);
-      
-      const enhancedRating = getEnhancedLuckRating(weightedPercentile);
-      
-      overallLuck = {
-        percentile: weightedPercentile,
-        rating: enhancedRating.rating,
-        color: enhancedRating.color,
-        shareMessage: enhancedRating.shareMessage,
-        description: `Overall spending luck across ${itemsWithLuck.length} items (cost-weighted average)`
-      };
-    }
-
-    // Check if any actual costs have been entered
-    const hasActualCosts = totalActualCost > 0;
-
-    return {
-      totalExpectedCost,
-      totalActualCost,
-      totalExpectedBooms,
-      totalMedianBooms,
-      totalP75Cost,
-      totalP75Booms,
-      overallLuckPercentage,
-      overallLuck, // Add enhanced luck analysis
-      hasActualCosts,
-      includedCount: includedCalculations.length,
-      totalCount: equipmentCalculations.length
-    };
-  }, [equipmentCalculations, itemIncluded]);
-
-  // Sorting helper functions
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      // Cycling through: null -> asc -> desc -> null
-      if (sortDirection === null) {
-        setSortDirection('asc');
-      } else if (sortDirection === 'asc') {
-        setSortDirection('desc');
-      } else {
-        setSortField(null);
-        setSortDirection(null);
-      }
-    } else {
-      setSortField(field);
-      setSortDirection('asc');
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) {
-      return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
-    }
-    if (sortDirection === 'asc') {
-      return <ArrowUp className="w-4 h-4 text-primary" />;
-    } else if (sortDirection === 'desc') {
-      return <ArrowDown className="w-4 h-4 text-primary" />;
-    }
-    return <ArrowUpDown className="w-4 h-4 text-muted-foreground" />;
-  };
 
   // Include/exclude helper functions
   const toggleItemIncluded = (equipmentId: string) => {
@@ -896,60 +190,6 @@ export function StarForceCalculator({
 
   const isItemIncluded = (equipmentId: string) => {
     return itemIncluded[equipmentId] !== false; // Default to included
-  };
-
-  // Format Mesos for display
-  const formatMesos = (amount: number) => {
-    if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-    if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-    if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-    return amount.toString();
-  };
-
-  // Determine danger level for styling
-  const getDangerLevel = (level: number) => {
-    if (level >= 20) return { color: "text-red-400", bg: "bg-red-500/20" };
-    if (level >= 15) return { color: "text-orange-400", bg: "bg-orange-500/20" };
-    return { color: "text-green-400", bg: "bg-green-500/20" };
-  };
-
-  const getLuckColor = (percentage: number) => {
-    if (percentage < -10) return "text-green-400"; // Very lucky
-    if (percentage < 0) return "text-green-300"; // Lucky
-    if (percentage > 25) return "text-red-400"; // Very unlucky
-    if (percentage > 0) return "text-orange-400"; // Unlucky
-    return "text-gray-400"; // No data
-  };
-
-  // New function for percentile-based coloring
-  const getLuckColorFromPercentile = (percentile: number) => {
-    if (percentile <= 10) return "text-green-400"; // Very lucky (bottom 10%)
-    if (percentile <= 25) return "text-green-300"; // Lucky (bottom 25%)
-    if (percentile >= 90) return "text-red-400"; // Very unlucky (top 10%)
-    if (percentile >= 75) return "text-orange-400"; // Unlucky (top 25%)
-    return "text-blue-300"; // Average (25-75%)
-  };
-
-  // Function to get color based on luck rating from API
-  const getLuckColorFromRating = (luckRating: string) => {
-    switch (luckRating) {
-      case 'Very Lucky': return "text-green-400";
-      case 'Lucky': return "text-green-300";
-      case 'Average': return "text-blue-300";
-      case 'Unlucky': return "text-orange-400";
-      case 'Very Unlucky': return "text-red-400";
-      default: return "text-gray-400";
-    }
-  };
-
-  const getLuckText = (percentage: number) => {
-    if (percentage === 0) return "";
-    if (percentage < -25) return "Far below avg";
-    if (percentage < -10) return "Below avg";
-    if (percentage < 0) return "Below avg";
-    if (percentage <= 10) return "Above avg";
-    if (percentage <= 25) return "Above avg";
-    return "Far above avg";
   };
 
   // Helper function to get current spare price (temp or committed)
@@ -971,7 +211,7 @@ export function StarForceCalculator({
   };
 
   // Helper function to check if safeguard is applicable for an item
-  const isSafeguardEligible = useCallback((equipment: Equipment) => {
+  const isSafeguardEligible = useCallback((equipment: Equipment | EquipmentCalculation) => {
     if (!equipment.starforceable) return false;
     const current = equipment.currentStarForce || 0;
     const target = equipment.targetStarForce || 0;
@@ -979,23 +219,8 @@ export function StarForceCalculator({
     return target > 15;
   }, []);
 
-  // Equipment table handlers
-  const handleQuickAdjust = (equipment: Equipment, type: 'current' | 'target', delta: number) => {
-    if (!onUpdateStarforce) return;
-    
-    const current = equipment.currentStarForce || 0;
-    const target = equipment.targetStarForce || 0;
-    
-    if (type === 'current') {
-      const newCurrent = Math.max(0, Math.min(25, current + delta));
-      onUpdateStarforce(equipment.id, newCurrent, target);
-    } else {
-      const newTarget = Math.max(0, Math.min(25, target + delta));
-      onUpdateStarforce(equipment.id, current, newTarget);
-    }
-  };
-
-  const handleStartEdit = (equipment: Equipment) => {
+  // Equipment table handlers - remaining handlers that don't need equipment management hook
+  const handleStartEdit = (equipment: Equipment | EquipmentCalculation) => {
     setEditingStarforce(equipment.id);
     setTempValues({
       current: equipment.currentStarForce || 0,
@@ -1003,7 +228,7 @@ export function StarForceCalculator({
     });
   };
 
-  const handleSaveEdit = (equipment: Equipment) => {
+  const handleSaveEdit = (equipment: Equipment | EquipmentCalculation) => {
     if (onUpdateStarforce) {
       onUpdateStarforce(equipment.id, tempValues.current, tempValues.target);
     }
@@ -1016,15 +241,15 @@ export function StarForceCalculator({
   };
 
   // Auto-determine unit based on table data
-  const getAutoUnit = (equipment: Equipment): 'M' | 'B' => {
+  const getAutoUnit = (equipment: Equipment | EquipmentCalculation): 'M' | 'B' => {
     // Check current calculation values for this equipment
-    const calc = equipmentCalculations.find(c => c.equipment.id === equipment.id);
+    const calc = equipmentCalculations.find(c => c.id === equipment.id);
     if (calc) {
       // If most values are >= 1B, suggest B, otherwise M
       const values = [
-        calc.expectedCost,
-        calc.calculation.medianCost,
-        calc.calculation.p75Cost
+        calc.averageCost,
+        calc.medianCost,
+        calc.p75Cost
       ];
       const billionValues = values.filter(v => v >= 1000000000).length;
       return billionValues >= 2 ? 'B' : 'M'; // If 2+ values are in billions, use B
@@ -1040,13 +265,13 @@ export function StarForceCalculator({
     return 'M'; // Default to millions
   };
 
-  const handleStartActualCostEdit = (equipment: Equipment) => {
+  const handleStartActualCostEdit = (equipment: Equipment | EquipmentCalculation) => {
     setEditingActualCost(equipment.id);
     // Initialize with current value or convert from legacy actualCost
     const currentCost = itemActualCosts[equipment.id];
     if (currentCost) {
       setTempActualCost(currentCost.value);
-    } else if (equipment.actualCost && equipment.actualCost > 0) {
+    } else if ('actualCost' in equipment && equipment.actualCost && equipment.actualCost > 0) {
       // Convert legacy actualCost to M/B format
       const value = equipment.actualCost >= 1000000000 ? equipment.actualCost / 1000000000 : equipment.actualCost / 1000000;
       const unit = equipment.actualCost >= 1000000000 ? 'B' : 'M';
@@ -1063,7 +288,7 @@ export function StarForceCalculator({
     }
   };
 
-  const handleSaveActualCost = (equipment: Equipment) => {
+  const handleSaveActualCost = (equipment: Equipment | EquipmentCalculation) => {
     const unit = itemActualCosts[equipment.id]?.unit || 'M';
     const rawValue = unit === 'B' ? tempActualCost * 1000000000 : tempActualCost * 1000000;
     
@@ -1078,7 +303,7 @@ export function StarForceCalculator({
     }));
     
     // Trigger recalculation manually
-    setRecalculationTrigger(prev => prev + 1);
+    triggerRecalculation();
     
     setEditingActualCost(null);
   };
@@ -1089,151 +314,68 @@ export function StarForceCalculator({
   };
 
   const exportData = () => {
-    // Helper function to convert raw mesos to unitized format
-    const formatMesosForExport = (amount: number): string => {
-      if (amount >= 1000000000) return `${(amount / 1000000000).toFixed(1)}B`;
-      if (amount >= 1000000) return `${(amount / 1000000).toFixed(1)}M`;
-      if (amount >= 1000) return `${(amount / 1000).toFixed(1)}K`;
-      return amount.toString();
-    };
+    // Equipment table export - CSV format with unitized values
+    const summaryRows = [
+      ['StarForce Planning Summary'],
+      [''],
+      ['Statistic', 'Value (Unitized)', 'Status'],
+      ['Total Expected Cost', formatMesos.display(aggregateStats.totalExpectedCost), ''],
+      ['Total Actual Cost', formatMesos.display(aggregateStats.totalActualCost), ''],
+      ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
+      ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
+      ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
+      ['Total 75th Percentile Cost', formatMesos.display(aggregateStats.totalP75Cost), ''],
+      ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
+      [''],
+      ['Equipment Details'],
+      ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Spares', 
+       ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
+       'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
+       'Actual Cost', 'Luck %', 'Luck Status'],
+      ...equipmentCalculations.map(calc => {
+        const eq = calc; // Now it's flattened
+        const sparePriceInfo = itemSparePrices[eq.id];
+        const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
 
-    if (mode === 'standalone' && calculation) {
-      // Standalone export - CSV format with unitized values
-      const csvRows = [
-        ['StarForce Calculator Export'],
-        [''],
-        ['Setting', 'Value'],
-        ['Item Level', itemLevel.toString()],
-        ['Current Star', `★${calculation.currentLevel}`],
-        ['Target Star', `★${calculation.targetLevel}`],
-        [''],
-        ['Cost Statistics', 'Amount (Unitized)'],
-        ['Average Cost', formatMesosForExport(calculation.averageCost)],
-        ['Median Cost', formatMesosForExport(calculation.medianCost)],
-        ['75th Percentile Cost', formatMesosForExport(calculation.p75Cost)],
-        [''],
-        ['Boom Statistics', 'Count'],
-        ['Average Booms', calculation.averageBooms.toFixed(1)],
-        ['Median Booms', calculation.medianBooms.toFixed(1)],
-        ['75th Percentile Booms', calculation.p75Booms.toFixed(1)],
-        [''],
-        ['Per-Star Details', 'Success Rate (%)', 'Boom Rate (%)', 'Cost (Unitized)'],
-        ...calculation.perStarStats.map(stat => 
-          [`★${stat.star}`, stat.successRate.toFixed(1), stat.boomRate.toFixed(1), formatMesosForExport(stat.cost)]
-        )
-      ];
+        return [
+          eq.name || 'Unknown',
+          eq.slot || '',
+          `★${eq.currentStarForce || 0}`,
+          `★${eq.targetStarForce || 0}`,
+          itemSafeguard[eq.id] ? 'Yes' : 'No',
+          (itemSpares[eq.id] || 0).toString(),
+          ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
+          formatMesos.display(calc.averageCost),
+          formatMesos.display(calc.medianCost),
+          formatMesos.display(calc.p75Cost),
+          calc.averageBooms.toFixed(1),
+          calc.medianBooms.toFixed(1),
+          calc.p75Booms.toFixed(1),
+          calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '0',
+          calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
+          calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
+        ];
+      })
+    ];
 
-      const csvContent = csvRows.map(row => 
-        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
+    const csvContent = summaryRows.map(row => 
+      row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
 
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'starforce-calculation.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    } else if (mode === 'equipment-table') {
-      // Equipment table export - CSV format with unitized values
-      const summaryRows = [
-        ['StarForce Planning Summary'],
-        [''],
-        ['Statistic', 'Value (Unitized)', 'Status'],
-        ['Total Expected Cost', formatMesosForExport(aggregateStats.totalExpectedCost), ''],
-        ['Total Actual Cost', formatMesosForExport(aggregateStats.totalActualCost), ''],
-        ['Overall Luck Percentage', `${aggregateStats.overallLuckPercentage.toFixed(1)}%`, getLuckText(aggregateStats.overallLuckPercentage)],
-        ['Total Average Booms', aggregateStats.totalExpectedBooms.toFixed(1), ''],
-        ['Total Median Booms', aggregateStats.totalMedianBooms.toFixed(1), ''],
-        ['Total 75th Percentile Cost', formatMesosForExport(aggregateStats.totalP75Cost), ''],
-        ['Total 75th Percentile Booms', aggregateStats.totalP75Booms.toFixed(1), ''],
-        [''],
-        ['Equipment Details'],
-        ['Item Name', 'Slot', 'Current SF', 'Target SF', 'Safeguard', 'Spares', 
-         ...(enhancedSettings.isInteractive ? ['Spare Price'] : []),
-         'Expected Cost', 'Median Cost', '75th % Cost', 'Average Booms', 'Median Booms', '75th % Booms',
-         'Actual Cost', 'Luck %', 'Luck Status'],
-        ...equipmentCalculations.map(calc => {
-          const eq = calc.equipment;
-          const sparePriceInfo = itemSparePrices[eq.id];
-          const sparePriceFormatted = sparePriceInfo ? `${sparePriceInfo.value}${sparePriceInfo.unit}` : '0';
-
-          return [
-            eq.name || 'Unknown',
-            eq.slot || '',
-            `★${eq.currentStarForce || 0}`,
-            `★${eq.targetStarForce || 0}`,
-            itemSafeguard[eq.id] ? 'Yes' : 'No',
-            (itemSpares[eq.id] || 0).toString(),
-            ...(enhancedSettings.isInteractive ? [sparePriceFormatted] : []),
-            formatMesosForExport(calc.expectedCost),
-            formatMesosForExport(calc.calculation.medianCost),
-            formatMesosForExport(calc.calculation.p75Cost),
-            calc.calculation.averageBooms.toFixed(1),
-            calc.calculation.medianBooms.toFixed(1),
-            calc.calculation.p75Booms.toFixed(1),
-            calc.actualCost > 0 ? formatMesosForExport(calc.actualCost) : '0',
-            calc.actualCost > 0 ? calc.luckPercentage.toFixed(1) : '0',
-            calc.actualCost > 0 ? getLuckText(calc.luckPercentage) : 'No data'
-          ];
-        })
-      ];
-
-      const csvContent = summaryRows.map(row => 
-        row.map(cell => `"${cell.toString().replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'starforce-plan.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'starforce-plan.csv';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  // Handle form submission (standalone mode)
-  const handleCalculate = (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const events: Events = {
-        costMultiplier: 1 - costDiscount / 100,
-        starCatching,
-        safeguard,
-        eventType: eventType as Events["eventType"] || undefined,
-      };
-      
-      let result = calculateStarForce(itemLevel, currentLevel, targetLevel, "epic", "Regular", events);
-      
-      // Apply Yohi's legendary luck - halves cost and spares needed!
-      if (yohiTapEvent) {
-        result = {
-          ...result,
-          averageCost: Math.round(result.averageCost * 0.5), // Yohi's luck halves the cost
-          averageBooms: result.averageBooms * 0.5, // And the boom count
-          costPerAttempt: Math.round(result.costPerAttempt * 0.5), // Per attempt cost too
-          recommendations: [
-            "🍀 Yohi Tap Event is active - all costs and spares have been halved due to supernatural luck!",
-            ...result.recommendations
-          ]
-        };
-      }
-      
-      setCalculation(result);
-    } catch (error) {
-      console.error("Calculation error:", error);
-    }
-  };
+  // Render progress bar for current equipment (if any)
+  const dangerLevel = getDangerLevel(0); // Default danger level
 
-  // Render progress bar
-  const progress = calculation ? (calculation.currentLevel / 23) * 100 : 0;
-  const dangerLevel = calculation ? getDangerLevel(calculation.currentLevel) : getDangerLevel(currentLevel);
-
-  // Equipment Table Mode
-  if (mode === 'equipment-table') {
-    return (
-      <div className="space-y-6">
+  return (
+    <div className="space-y-6">
         {/* Settings Panel */}
         <Card>
           <CardHeader>
@@ -1250,16 +392,16 @@ export function StarForceCalculator({
                 <div className="flex items-center gap-3">
                   <Switch
                     id="discount-event"
-                    checked={enhancedSettings.discountEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, discountEvent: checked }))}
+                    checked={enhancedSettings.thirtyPercentOff}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, thirtyPercentOff: checked }))}
                   />
                   <Label htmlFor="discount-event" className="text-sm cursor-pointer font-maplestory">30% Off Event</Label>
                 </div>
                 <div className="flex items-center gap-3">
                   <Switch
                     id="starcatch-event"
-                    checked={enhancedSettings.starcatchEvent}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starcatchEvent: checked }))}
+                    checked={enhancedSettings.fiveTenFifteenEvent}
+                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, fiveTenFifteenEvent: checked }))}
                   />
                   <Label htmlFor="starcatch-event" className="text-sm cursor-pointer font-maplestory">5/10/15 Event</Label>
                 </div>
@@ -1325,7 +467,7 @@ export function StarForceCalculator({
                   <Calculator className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost)}</div>
+                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos.display(aggregateStats.totalExpectedCost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Average Cost</div>
                 </div>
               </div>
@@ -1339,7 +481,7 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-green-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos(aggregateStats.totalExpectedCost * 0.85)}</div>
+                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos.display(aggregateStats.totalExpectedCost * 0.85)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Median Cost</div>
                 </div>
               </div>
@@ -1353,7 +495,7 @@ export function StarForceCalculator({
                   <TrendingUp className="w-5 h-5 text-red-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos(aggregateStats.totalP75Cost)}</div>
+                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos.display(aggregateStats.totalP75Cost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">75th % Cost</div>
                 </div>
               </div>
@@ -1367,7 +509,7 @@ export function StarForceCalculator({
                   <DollarSign className="w-5 h-5 text-blue-500" />
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400 font-maplestory">{formatMesos(aggregateStats.totalActualCost)}</div>
+                  <div className="text-2xl font-bold text-blue-400 font-maplestory">{formatMesos.display(aggregateStats.totalActualCost)}</div>
                   <div className="text-sm text-muted-foreground font-maplestory">Actual Cost</div>
                 </div>
               </div>
@@ -1399,7 +541,7 @@ export function StarForceCalculator({
                         <span className="text-sm opacity-75">{aggregateStats.overallLuck.rating}</span>
                       </div>
                     ) : (
-                      <div className={`text-2xl font-bold ${getLuckColor(aggregateStats.overallLuckPercentage)} flex flex-col font-maplestory`}>
+                      <div className={`text-2xl font-bold ${getLuckColor.text(aggregateStats.overallLuckPercentage)} flex flex-col font-maplestory`}>
                         <span>{aggregateStats.overallLuckPercentage.toFixed(1)}%</span>
                         {getLuckText(aggregateStats.overallLuckPercentage) && (
                           <span className="text-sm opacity-75">{getLuckText(aggregateStats.overallLuckPercentage)}</span>
@@ -1446,9 +588,8 @@ export function StarForceCalculator({
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    setCalculationError(null);
-                    // Trigger recalculation by updating a dependency
-                    setIsCalculating(true);
+                    // Trigger recalculation
+                    triggerRecalculation();
                   }}
                   className="font-maplestory"
                 >
@@ -1462,916 +603,53 @@ export function StarForceCalculator({
                 <p className="text-muted-foreground font-maplestory">All equipment is already at target StarForce levels!</p>
               </div>
             ) : (
-              <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10 border-b">
-                    <TableRow>
-                      <TableHead>
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('name')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Item
-                            {getSortIcon('name')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('currentStarForce')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Current SF
-                            {getSortIcon('currentStarForce')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('targetStarForce')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Target SF
-                            {getSortIcon('targetStarForce')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center font-maplestory">Safeguard</TableHead>
-                      <TableHead className="text-center font-maplestory">Spares</TableHead>
-                      {enhancedSettings.isInteractive && (
-                        <TableHead className="text-center font-maplestory">Spare Price</TableHead>
-                      )}
-                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + expected spare costs" : "Expected enhancement cost only"}>
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('averageCost')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Average Cost
-                            {getSortIcon('averageCost')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + median spare costs" : "Median enhancement cost only"}>
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('medianCost')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Median Cost
-                            {getSortIcon('medianCost')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center" title={enhancedSettings.isInteractive ? "Enhancement cost + 75th percentile spare costs" : "75th percentile enhancement cost only"}>
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('p75Cost')}
-                        >
-                          <span className="flex items-center gap-1">
-                            75th % Cost
-                            {getSortIcon('p75Cost')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('averageBooms')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Avg Booms
-                            {getSortIcon('averageBooms')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('medianBooms')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Med Booms
-                            {getSortIcon('medianBooms')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('p75Booms')}
-                        >
-                          <span className="flex items-center gap-1">
-                            75th % Booms
-                            {getSortIcon('p75Booms')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('actualCost')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Actual Cost
-                            {getSortIcon('actualCost')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center">
-                        <Button
-                          variant="ghost"
-                          className="font-semibold p-0 h-auto hover:bg-transparent font-maplestory"
-                          onClick={() => handleSort('luckPercentage')}
-                        >
-                          <span className="flex items-center gap-1">
-                            Luck
-                            {getSortIcon('luckPercentage')}
-                          </span>
-                        </Button>
-                      </TableHead>
-                      <TableHead className="text-center font-maplestory">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {equipmentCalculations.map((calc) => {
-                      const included = isItemIncluded(calc.equipment.id);
-                      return (
-                        <TableRow 
-                          key={calc.equipment.id}
-                          onMouseEnter={() => setHoveredRow(calc.equipment.id)}
-                          onMouseLeave={() => setHoveredRow(null)}
-                          className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
-                        >
-                          <TableCell>
-                            <div className="flex items-center justify-center">
-                              <div className="relative flex-shrink-0">
-                                <EquipmentImage
-                                  src={calc.equipment.image}
-                                  alt={calc.equipment.name}
-                                  size="md"
-                                  maxRetries={2}
-                                  showFallback={true}
-                                />
-                                {!included && (
-                                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
-                                    <EyeOff className="w-3 h-3 text-white" />
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                        <TableCell className="text-center">
-                          {editingStarforce === calc.equipment.id ? (
-                            <Input
-                              type="number"
-                              min="0"
-                              max="25"
-                              value={tempValues.current}
-                              onChange={(e) => setTempValues(prev => ({ ...prev, current: parseInt(e.target.value) || 0 }))}
-                              className="w-16 h-8 text-center"
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center gap-1">
-                              <Star className="w-3 h-3 text-yellow-500" />
-                              <span className="font-medium">{calc.equipment.currentStarForce || 0}</span>
-                              {/* Quick Adjust Buttons - Current SF */}
-                              {hoveredRow === calc.equipment.id && (
-                                <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'current', 1)}
-                                    className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                  >
-                                    <ChevronUp className="w-2 h-2 text-green-600" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'current', -1)}
-                                    className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                  >
-                                    <ChevronDown className="w-2 h-2 text-red-600" />
-                                  </Button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {editingStarforce === calc.equipment.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="25"
-                                value={tempValues.target}
-                                onChange={(e) => setTempValues(prev => ({ ...prev, target: parseInt(e.target.value) || 0 }))}
-                                className="w-16 h-8 text-center"
-                              />
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSaveEdit(calc.equipment)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={handleCancelEdit}
-                                className="h-8 w-8 p-0"
-                              >
-                                <X className="w-4 h-4 text-red-500" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center gap-1">
-                              <Target className="w-3 h-3 text-primary" />
-                              <span className="font-medium">{calc.equipment.targetStarForce || 0}</span>
-                              {/* Quick Adjust Buttons - Target SF */}
-                              {hoveredRow === calc.equipment.id && (
-                                <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'target', 1)}
-                                    className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                  >
-                                    <ChevronUp className="w-2 h-2 text-green-600" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleQuickAdjust(calc.equipment, 'target', -1)}
-                                    className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                  >
-                                    <ChevronDown className="w-2 h-2 text-red-600" />
-                                  </Button>
-                                </div>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleStartEdit(calc.equipment)}
-                                className="h-6 w-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {/* Safeguard Toggle */}
-                          <div className="flex items-center justify-center">
-                            {isSafeguardEligible(calc.equipment) ? (
-                              <Switch
-                                checked={itemSafeguard[calc.equipment.id] || false}
-                                onCheckedChange={(checked) => {
-                                  console.log(`Setting safeguard for ${calc.equipment.id}: ${checked}`);
-                                  setItemSafeguard(prev => ({ ...prev, [calc.equipment.id]: checked }));
-                                  // Update the equipment object in the parent component
-                                  if (onUpdateSafeguard) {
-                                    onUpdateSafeguard(calc.equipment.id, checked);
-                                  }
-                                }}
-                              />
-                            ) : (
-                              <span className="text-xs text-muted-foreground" title="Safeguard only applies when targeting 15-16★">
-                                N/A
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {/* Spares Input */}
-                          <div className="flex items-center justify-center gap-1">
-                            <div className="relative">
-                              <Input
-                                type="number"
-                                min="0"
-                                max="99"
-                                value={itemSpares[calc.equipment.id] || 0}
-                                onChange={(e) => {
-                                  const spares = parseInt(e.target.value) || 0;
-                                  setItemSpares(prev => ({ ...prev, [calc.equipment.id]: spares }));
-                                }}
-                                className={`w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${calc.spareClassName}`}
-                                placeholder="0"
-                                title={calc.spareTitle}
-                              />
-                            </div>
-                            {/* Quick Adjust Buttons - Spares */}
-                            {hoveredRow === calc.equipment.id && (
-                              <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    const current = itemSpares[calc.equipment.id] || 0;
-                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.min(99, current + 1) }));
-                                  }}
-                                  className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                >
-                                  <ChevronUp className="w-2 h-2 text-green-600" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => {
-                                    const current = itemSpares[calc.equipment.id] || 0;
-                                    setItemSpares(prev => ({ ...prev, [calc.equipment.id]: Math.max(0, current - 1) }));
-                                  }}
-                                  className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                >
-                                  <ChevronDown className="w-2 h-2 text-red-600" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        {enhancedSettings.isInteractive && (
-                          <TableCell className="text-center">
-                            {/* Spare Price Input */}
-                            <div className="flex items-center justify-center gap-1">
-                              <Input
-                                type="number"
-                                min="0"
-                                value={getCurrentSparePrice(calc.equipment.id).value}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value) || 0;
-                                  setTempSparePrices(prev => ({ 
-                                    ...prev, 
-                                    [calc.equipment.id]: { 
-                                      value, 
-                                      unit: getCurrentSparePrice(calc.equipment.id).unit
-                                    } 
-                                  }));
-                                }}
-                                onBlur={() => commitSparePriceChange(calc.equipment.id)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    commitSparePriceChange(calc.equipment.id);
-                                    e.currentTarget.blur();
-                                  }
-                                }}
-                                className="w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                placeholder="0"
-                              />
-                              <Select
-                                value={getCurrentSparePrice(calc.equipment.id).unit}
-                                onValueChange={(unit: 'M' | 'B') => {
-                                  const currentPrice = getCurrentSparePrice(calc.equipment.id);
-                                  const newPrice = { ...currentPrice, unit };
-                                  setTempSparePrices(prev => ({ 
-                                    ...prev, 
-                                    [calc.equipment.id]: newPrice
-                                  }));
-                                  // For unit changes, commit immediately since it's a deliberate choice
-                                  setItemSparePrices(prev => ({ ...prev, [calc.equipment.id]: newPrice }));
-                                  setTempSparePrices(prev => {
-                                    const newState = { ...prev };
-                                    delete newState[calc.equipment.id];
-                                    return newState;
-                                  });
-                                }}
-                              >
-                                <SelectTrigger className="w-16 h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="M">M</SelectItem>
-                                  <SelectItem value="B">B</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </TableCell>
-                        )}
-                        <TableCell className="text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="font-medium text-yellow-400">
-                              {formatMesos(calc.expectedCost)}
-                            </span>
-                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.averageSpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.averageSpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.averageSpareCost)} spares)
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="font-medium text-orange-400">
-                              {formatMesos(calc.calculation.medianCost)}
-                            </span>
-                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.medianSpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.medianSpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.medianSpareCost)} spares)
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="font-medium text-red-400">
-                              {formatMesos(calc.calculation.p75Cost)}
-                            </span>
-                            {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.p75SpareCost > 0 && (
-                              <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos(calc.calculation.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos(calc.spareCostBreakdown.p75SpareCost)}`}>
-                                (+{formatMesos(calc.spareCostBreakdown.p75SpareCost)} spares)
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-red-500" />
-                            <span className="font-medium text-red-400">
-                              {calc.calculation.averageBooms.toFixed(1)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-orange-500" />
-                            <span className="font-medium text-orange-400">
-                              {calc.calculation.medianBooms.toFixed(1)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-red-600" />
-                            <span className="font-medium text-red-600">
-                              {calc.calculation.p75Booms.toFixed(1)}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {editingActualCost === calc.equipment.id ? (
-                            <div className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                min="0"
-                                value={tempActualCost}
-                                onChange={(e) => setTempActualCost(parseFloat(e.target.value) || 0)}
-                                className="w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                                placeholder="0"
-                                step="0.1"
-                              />
-                              <Select
-                                value={itemActualCosts[calc.equipment.id]?.unit || 'M'}
-                                onValueChange={(unit: 'M' | 'B') => {
-                                  setItemActualCosts(prev => ({ 
-                                    ...prev, 
-                                    [calc.equipment.id]: { 
-                                      value: prev[calc.equipment.id]?.value || 0, 
-                                      unit 
-                                    } 
-                                  }));
-                                }}
-                              >
-                                <SelectTrigger className="w-16 h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="M">M</SelectItem>
-                                  <SelectItem value="B">B</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleSaveActualCost(calc.equipment)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <CheckCircle2 className="w-4 h-4 text-green-500" />
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={handleCancelActualCostEdit}
-                                className="h-8 w-8 p-0"
-                              >
-                                <X className="w-4 h-4 text-red-500" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center gap-1">
-                              <span className="font-medium text-blue-400">
-                                {calc.actualCost > 0 ? formatMesos(calc.actualCost) : '-'}
-                              </span>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleStartActualCostEdit(calc.equipment)}
-                                className="h-6 w-6 p-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className={`font-medium ${calc.luckAnalysis ? getEnhancedLuckRating(calc.luckAnalysis.percentile).color : getLuckColor(calc.luckPercentage)}`}>
-                            {calc.actualCost > 0 && calc.luckAnalysis ? (
-                              <div 
-                                className="flex flex-col cursor-help" 
-                                title={getEnhancedLuckRating(calc.luckAnalysis.percentile).shareMessage}
-                              >
-                                <span>{calc.luckAnalysis.percentile.toFixed(1)}th percentile</span>
-                                <span className="text-xs opacity-75">{getEnhancedLuckRating(calc.luckAnalysis.percentile).rating}</span>
-                              </div>
-                            ) : calc.actualCost > 0 ? (
-                              <div className="flex flex-col">
-                                <span>{calc.luckPercentage.toFixed(1)}%</span>
-                                {getLuckText(calc.luckPercentage) && (
-                                  <span className="text-xs opacity-75">{getLuckText(calc.luckPercentage)}</span>
-                                )}
-                              </div>
-                            ) : '-'}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          {/* Actions */}
-                          <div className="flex items-center justify-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => toggleItemIncluded(calc.equipment.id)}
-                              className={`h-7 w-7 p-0 ${
-                                included 
-                                  ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' 
-                                  : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20'
-                              }`}
-                              title={included ? "Exclude from calculations" : "Include in calculations"}
-                            >
-                              {included ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                if (onUpdateStarforce) {
-                                  onUpdateStarforce(calc.equipment.id, calc.equipment.targetStarForce || 0, calc.equipment.targetStarForce || 0);
-                                }
-                              }}
-                              className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-                              title="Mark as completed (set current = target)"
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                if (onUpdateStarforce) {
-                                  onUpdateStarforce(calc.equipment.id, 0, 0);
-                                }
-                              }}
-                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                              title="Remove from planning (set target = current)"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+              <EquipmentTableContent
+                equipmentCalculations={equipmentCalculations}
+                enhancedSettings={enhancedSettings}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                getSortIcon={getSortIcon}
+                hoveredRow={hoveredRow}
+                setHoveredRow={setHoveredRow}
+                isItemIncluded={isItemIncluded}
+                editingStarforce={editingStarforce}
+                tempValues={tempValues}
+                setTempValues={setTempValues}
+                editingActualCost={editingActualCost}
+                tempActualCost={tempActualCost}
+                setTempActualCost={setTempActualCost}
+                itemSafeguard={itemSafeguard}
+                setItemSafeguard={setItemSafeguard}
+                itemSpares={itemSpares}
+                setItemSpares={setItemSpares}
+                itemSparePrices={itemSparePrices}
+                setItemSparePrices={setItemSparePrices}
+                tempSparePrices={tempSparePrices}
+                setTempSparePrices={setTempSparePrices}
+                itemActualCosts={itemActualCosts}
+                setItemActualCosts={setItemActualCosts}
+                onUpdateSafeguard={onUpdateSafeguard}
+                onUpdateStarforce={onUpdateStarforce}
+                toggleItemIncluded={toggleItemIncluded}
+                isSafeguardEligible={isSafeguardEligible}
+                getCurrentSparePrice={getCurrentSparePrice}
+                commitSparePriceChange={commitSparePriceChange}
+                handleQuickAdjust={handleQuickAdjust}
+                handleStartEdit={handleStartEdit}
+                handleSaveEdit={handleSaveEdit}
+                handleCancelEdit={handleCancelEdit}
+                handleStartActualCostEdit={handleStartActualCostEdit}
+                handleSaveActualCost={handleSaveActualCost}
+                handleCancelActualCostEdit={handleCancelActualCostEdit}
+                formatMesos={formatMesos}
+                getLuckColor={getLuckColor}
+                getEnhancedLuckRating={getEnhancedLuckRating}
+                getLuckText={getLuckText}
+              />
             )}
           </CardContent>
         </Card>
       </div>
     );
-  }
-
-  // Standalone Mode (original calculator)
-  return (
-    <Card className="bg-gradient-to-br from-card to-card/80">
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-lg font-maplestory">
-            <Calculator className="w-5 h-5 text-primary" />
-            Advanced StarForce Calculator
-          </div>
-          {calculation && (
-            <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-              <Download className="w-4 h-4" />
-              Export
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Input Form */}
-        <form onSubmit={handleCalculate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Item Level</label>
-              <Input
-                type="number"
-                value={itemLevel}
-                onChange={(e) => setItemLevel(Number(e.target.value))}
-                min={1}
-                max={300}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Item Type</label>
-              <Select value={itemType} onValueChange={setItemType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="regular">Regular</SelectItem>
-                  <SelectItem value="superior">Superior (Tyrant)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Current Star</label>
-              <Input
-                type="number"
-                value={currentLevel}
-                onChange={(e) => setCurrentLevel(Number(e.target.value))}
-                min={0}
-                max={23}
-                className="mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Target Star</label>
-              <Input
-                type="number"
-                value={targetLevel}
-                onChange={(e) => setTargetLevel(Number(e.target.value))}
-                min={1}
-                max={23}
-                className="mt-1"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Server</label>
-              <Select value={server} onValueChange={setServer}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="GMS">GMS (Global)</SelectItem>
-                  <SelectItem value="KMS">KMS (Korea)</SelectItem>
-                  <SelectItem value="MSEA">MSEA (SEA)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground font-maplestory">Event Type</label>
-              <Select value={eventType} onValueChange={setEventType}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="No Event" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No Event</SelectItem>
-                  <SelectItem value="5/10/15">5/10/15 Event</SelectItem>
-                  <SelectItem value="30% Off">30% Off Event</SelectItem>
-                  <SelectItem value="No Boom">No Boom Event</SelectItem>
-                  <SelectItem value="Shining Star">Shining Star</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={safeguard} onCheckedChange={(checked) => setSafeguard(checked === true)} />
-              <label className="text-sm text-muted-foreground font-maplestory">Safeguard (15-16★)</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox checked={starCatching} onCheckedChange={(checked) => setStarCatching(checked === true)} />
-              <label className="text-sm text-muted-foreground font-maplestory">Star Catching (+5%)</label>
-            </div>
-          </div>
-          
-          {/* Yohi Tap Event - The legendary luck */}
-          <div className="flex items-center space-x-2 p-3 bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border border-yellow-500/20 rounded-lg">
-            <Checkbox 
-              checked={yohiTapEvent} 
-              onCheckedChange={(checked) => setYohiTapEvent(checked === true)} 
-            />
-            <div className="flex-1">
-              <label className="text-sm font-medium text-yellow-400 font-maplestory">
-                🍀 Yohi Tap Event (Legendary Luck)
-              </label>
-              <p className="text-xs text-muted-foreground font-maplestory">
-                Activates Yohi's supernatural luck - halves all costs and spares needed!
-              </p>
-            </div>
-          </div>
-          
-          <div>
-            <label className="text-sm text-muted-foreground font-maplestory">Cost Discount (%)</label>
-            <Input
-              type="number"
-              value={costDiscount}
-              onChange={(e) => setCostDiscount(Number(e.target.value))}
-              min={0}
-              max={50}
-              step={5}
-              className="mt-1"
-            />
-          </div>
-          <Button type="submit" className="w-full font-maplestory">
-            Calculate Enhancement Cost
-          </Button>
-        </form>
-
-        {/* Results */}
-        {calculation && (
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3 font-maplestory">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="details">Star Details</TabsTrigger>
-              <TabsTrigger value="recommendations">Tips</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-4">
-              {/* Current Progress */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground font-maplestory">Current Level</span>
-                  <Badge className={`${dangerLevel.bg} ${dangerLevel.color} border-current/30 font-maplestory`}>
-                    ★{calculation.currentLevel}
-                  </Badge>
-                </div>
-                <Progress value={progress} className="h-2" />
-                <div className="flex items-center justify-between text-xs text-muted-foreground font-maplestory">
-                  <span>★0</span>
-                  <span>★23 (Max)</span>
-                </div>
-              </div>
-
-              {/* Target and Stats */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
-                    <Target className="w-4 h-4" />
-                    Target Level
-                  </div>
-                  <div className="text-2xl font-bold text-primary font-maplestory">
-                    ★{calculation.targetLevel}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
-                    <TrendingUp className="w-4 h-4" />
-                    Success Rate
-                  </div>
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">
-                    {calculation.successRate}%
-                  </div>
-                </div>
-              </div>
-
-              {/* Cost Breakdown */}
-              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
-                <h4 className="font-semibold text-foreground font-maplestory">Cost Analysis</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Per Attempt (Avg)</span>
-                    <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos(calculation.costPerAttempt)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Average Total</span>
-                    <p className="font-semibold text-yellow-400 font-maplestory">
-                      {formatMesos(calculation.averageCost)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">Median Total</span>
-                    <p className="font-semibold text-orange-400 font-maplestory">
-                      {formatMesos(calculation.medianCost)} mesos
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground font-maplestory">75th % Total</span>
-                    <p className="font-semibold text-red-400 font-maplestory">
-                      {formatMesos(calculation.p75Cost)} mesos
-                    </p>
-                  </div>
-                </div>
-                {calculation.boomRate > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-red-500/10 border border-red-500/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">Average Booms: </span>
-                        <span className="font-semibold text-red-400 font-maplestory">
-                          {calculation.averageBooms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-orange-500/10 border border-orange-500/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-orange-400" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">Median Booms: </span>
-                        <span className="font-semibold text-orange-400 font-maplestory">
-                          {calculation.medianBooms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-red-600/10 border border-red-600/20 rounded">
-                      <AlertTriangle className="w-4 h-4 text-red-600" />
-                      <div className="text-sm">
-                        <span className="text-muted-foreground font-maplestory">75th % Booms: </span>
-                        <span className="font-semibold text-red-600 font-maplestory">
-                          {calculation.p75Booms.toFixed(1)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="details" className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-foreground font-maplestory">Per-Star Analysis</h4>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-maplestory">Star</TableHead>
-                      <TableHead className="font-maplestory">Success Rate</TableHead>
-                      <TableHead className="font-maplestory">Boom Rate</TableHead>
-                      <TableHead className="font-maplestory">Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {calculation.perStarStats.map((stat) => (
-                      <TableRow key={stat.star}>
-                        <TableCell className="font-medium font-maplestory">★{stat.star}</TableCell>
-                        <TableCell className="text-green-400 font-maplestory">{stat.successRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-red-400 font-maplestory">{stat.boomRate.toFixed(1)}%</TableCell>
-                        <TableCell className="text-yellow-400 font-maplestory">{formatMesos(stat.cost)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="recommendations" className="space-y-4">
-              <div className="space-y-2">
-                <h4 className="font-semibold text-foreground flex items-center gap-2 font-maplestory">
-                  <Info className="w-4 h-4" />
-                  Enhancement Tips
-                </h4>
-                {calculation.recommendations.length > 0 ? (
-                  <div className="space-y-2">
-                    {calculation.recommendations.map((rec, index) => (
-                      <div key={index} className="p-3 bg-primary/10 border border-primary/20 rounded text-sm font-maplestory">
-                        {rec}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground text-sm font-maplestory">
-                    Your enhancement strategy looks good! Proceed with caution and good luck!
-                  </p>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
-export default StarForceCalculator;
+}

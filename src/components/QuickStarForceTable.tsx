@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Equipment } from "@/types";
-import { calculateStarForce } from "@/components/StarForceCalculator";
+import { calculateBulkStarforce } from "@/services/starforceService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -118,40 +118,55 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
 
   // Update calculations when equipment or events change
   useEffect(() => {
-    const newCalculations = equipment.map(eq => {
-      // Apply event modifiers
-      let costMultiplier = 1;
-      let successRateBonus = 0;
-      
-      if (events.thirtyPercentOff) {
-        costMultiplier *= 0.7;
+    const calculateCosts = async () => {
+      if (equipment.length === 0) {
+        setCalculations([]);
+        return;
       }
-      if (events.fiveTenFifteen) {
-        successRateBonus = 0.1;
+
+      try {
+        // Prepare bulk API request
+        const request = {
+          isInteractive: false, // Regular server for quick calculations
+          events: {
+            thirtyOff: events.thirtyPercentOff,
+            fiveTenFifteen: events.fiveTenFifteen,
+            starCatching: events.starCatching,
+          },
+          items: equipment.map(eq => ({
+            itemLevel: eq.level || 150,
+            fromStar: eq.currentStarForce,
+            toStar: eq.targetStarForce,
+            safeguardEnabled: false, // Simplified for quick calculator
+            spareCount: 0,
+            spareCost: 0,
+            actualCost: 0,
+            itemName: eq.name || `${eq.slot} Level ${eq.level}`
+          }))
+        };
+
+        const { response } = await calculateBulkStarforce(request);
+        
+        const newCalculations = equipment.map((eq, index) => ({
+          equipment: eq,
+          expectedCost: response.results[index]?.averageCost || 0,
+          isCalculated: true,
+        }));
+        
+        setCalculations(newCalculations);
+      } catch (error) {
+        console.error("Failed to calculate starforce costs:", error);
+        // Fallback to showing equipment without calculations
+        const fallbackCalculations = equipment.map(eq => ({
+          equipment: eq,
+          expectedCost: 0,
+          isCalculated: false,
+        }));
+        setCalculations(fallbackCalculations);
       }
-      
-      const starForceCalc = calculateStarForce(
-        eq.level || 150,
-        eq.currentStarForce,
-        eq.targetStarForce,
-        eq.tier || "epic",
-        "Regular",
-        { 
-          costMultiplier, 
-          successRateBonus,
-          starCatching: events.starCatching,
-          safeguard: false // Simplified for quick calculator
-        }
-      );
-      
-      return {
-        equipment: eq,
-        expectedCost: starForceCalc.averageCost,
-        isCalculated: true,
-      };
-    });
-    
-    setCalculations(newCalculations);
+    };
+
+    calculateCosts();
   }, [equipment, events]);
 
   const totalCost = calculations.reduce((sum, calc) => sum + calc.expectedCost, 0);

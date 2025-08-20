@@ -105,8 +105,8 @@ export const getDefaultTargetStarForce = (level: number): number => {
 
 interface CharacterStarForceSettings {
   enhancedSettings?: {
-    discountEvent: boolean;
-    starcatchEvent: boolean;
+    thirtyPercentOff: boolean;
+    fiveTenFifteenEvent: boolean;
     isInteractive: boolean;
     spareCount: number;
     sparePrice: number;
