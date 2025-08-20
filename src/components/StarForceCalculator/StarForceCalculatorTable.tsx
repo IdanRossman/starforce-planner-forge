@@ -145,6 +145,12 @@ export function StarForceCalculatorTable({
   // Formatting utilities
   const { formatMesos, getLuckColor, getDangerLevel, getEnhancedLuckRating, getLuckText } = useFormatting();
 
+  // Wrapper for getSortIcon to match expected signature
+  const getSortIconElement = (field: SortField) => {
+    const IconComponent = getSortIcon(field);
+    return <IconComponent className="w-4 h-4" />;
+  };
+
   // Event handlers that bridge editing state with business logic
   const handleStartEdit = (calc: EquipmentCalculation) => {
     editingActions.startEditStarforce(calc.id, calc.currentStarForce, calc.targetStarForce);
@@ -224,7 +230,7 @@ export function StarForceCalculatorTable({
             sortField={sortState.field}
             sortDirection={sortState.direction}
             onSort={handleSort}
-            getSortIcon={getSortIcon}
+            getSortIcon={getSortIconElement}
             hoveredRow={editingState.hoveredRow}
             setHoveredRow={editingActions.setHoveredRow}
             isItemIncluded={isItemIncluded}
