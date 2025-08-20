@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
+import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier, PotentialLine } from '@/types';
 import { EquipmentImage } from '@/components/EquipmentImage';
 import { StarForceTransferDialog } from '@/components/StarForceTransferDialog';
 import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
 import { MapleDialog, MapleButton, ApiStatusBadge } from '@/components/shared';
 import { CategorizedSelect, SelectCategory, MapleInput, StarForceSlider, FormFieldWrapper, ToggleField, StarForceSliderField } from '@/components/shared/forms';
+import { usePotential } from '@/hooks/game/usePotential';
 import { 
   ArrowRightLeft,
   Info
@@ -23,6 +24,12 @@ import {
 import {
   Form,
 } from '@/components/ui/form';
+import {
+  Button
+} from '@/components/ui/button';
+import {
+  Input
+} from '@/components/ui/input';
 import { getMaxStarForce, getDefaultTargetStarForce, getSlotIcon } from '@/lib/utils';
 
 // Create dynamic schema that considers transferred stars
@@ -31,7 +38,6 @@ const createEquipmentSchema = (transferredStars: number = 0) => z.object({
   type: z.enum(['armor', 'weapon', 'accessory'] as const),
   level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
   set: z.string().optional(),
-  tier: z.enum(['rare', 'epic', 'unique', 'legendary'] as const).nullable(),
   currentStarForce: z.number().min(transferredStars, transferredStars > 0 ? `Current StarForce cannot be below ${transferredStars}★ (transferred stars)` : 'Current StarForce must be at least 0'),
   targetStarForce: z.number().min(0),
   starforceable: z.boolean(),
@@ -226,7 +232,6 @@ export function EquipmentForm({
       type: 'armor',
       level: 200,
       set: '',
-      tier: null,
       currentStarForce: 0,
       targetStarForce: 22,
       starforceable: true,
@@ -244,11 +249,52 @@ export function EquipmentForm({
   // Transfer dialog state
   const [showTransferDialog, setShowTransferDialog] = useState<boolean>(false);
 
+  // Potential hook for managing potential templates
+  const { 
+    getPotentialTemplates, 
+    formatPotentialLine, 
+    createPotentialLine
+  } = usePotential();
+
+  // State for potential value management
+  const [targetPotentialValue, setTargetPotentialValue] = useState<string>('');
+  const [currentPotentialValue, setCurrentPotentialValue] = useState<string>('');
+
   // Watch for starforceable toggle and slot changes
   const watchStarforceable = form.watch('starforceable');
   const watchSlot = form.watch('slot');
   const watchLevel = form.watch('level');
   const watchCurrentStars = form.watch('currentStarForce');
+  const watchType = form.watch('type');
+
+  // Create categorized potential options based on equipment type
+  const getPotentialCategories = useMemo((): SelectCategory[] => {
+    if (!watchType) return [];
+
+    const tiers: EquipmentTier[] = ['rare', 'epic', 'unique', 'legendary'];
+    
+    return tiers.map(tier => {
+      const templates = getPotentialTemplates(watchType, tier);
+      return {
+        name: tier.charAt(0).toUpperCase() + tier.slice(1),
+        options: templates.map(template => ({
+          value: `${tier}:${template}`, // Encode tier and template in value
+          label: formatPotentialLine(template),
+          badges: [
+            {
+              text: tier.charAt(0).toUpperCase() + tier.slice(1),
+              className: `text-xs px-1.5 py-0.5 rounded ${
+                tier === 'rare' ? 'bg-blue-100 text-blue-800' :
+                tier === 'epic' ? 'bg-purple-100 text-purple-800' :
+                tier === 'unique' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-red-100 text-red-800'
+              }`
+            }
+          ]
+        }))
+      };
+    }).filter(category => category.options.length > 0); // Only show tiers that have options
+  }, [watchType, getPotentialTemplates, formatPotentialLine]);
 
   // Real-time validation for transferred stars minimum
   useEffect(() => {
@@ -328,7 +374,6 @@ export function EquipmentForm({
           type: equipment.type,
           level: equipment.level,
           set: equipment.name || equipment.set || '', // Use name if available, fallback to set
-          tier: equipment.tier,
           currentStarForce: equipment.currentStarForce,
           targetStarForce: equipment.targetStarForce,
           starforceable: equipment.starforceable,
@@ -344,7 +389,6 @@ export function EquipmentForm({
           type: 'armor',
           level: defaultLevel,
           set: '',
-          tier: null,
           currentStarForce: 0,
           targetStarForce: defaultTarget,
           starforceable: false, // Start with StarForce off for new equipment
@@ -415,6 +459,12 @@ export function EquipmentForm({
   // Create current equipment object with form values for transfer dialog
   // This works for both editing existing equipment and creating new equipment
   const currentEquipmentForTransfer: Equipment | null = (() => {
+    // Helper function to decode potential value
+    const decodePotentialValue = (value: string) => {
+      const [tier, template] = value.split(':');
+      return { tier: tier as EquipmentTier, template };
+    };
+
     // Don't process transfer logic when dialog is closed to avoid form corruption
     if (!open) {
       console.log('⏸️ currentEquipmentForTransfer: Dialog closed, skipping processing');
@@ -483,7 +533,7 @@ export function EquipmentForm({
       currentStarForce: watchedValues.currentStarForce,
       targetStarForce: watchedValues.targetStarForce,
       starforceable: watchedValues.starforceable,
-      tier: watchedValues.tier as EquipmentTier | null | undefined,
+      tier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : equipment?.tier,
       set: watchedValues.set,
       image: equipmentImage,
       actualCost: equipment?.actualCost,
@@ -499,8 +549,8 @@ export function EquipmentForm({
         currentStarForce: watchedValues.currentStarForce,
         targetStarForce: watchedValues.targetStarForce,
         starforceable: watchedValues.starforceable,
-        // Also preserve other critical form values that user might have customized
-        tier: watchedValues.tier as EquipmentTier | null | undefined,
+        // Use tier from potential selection or selected equipment
+        tier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : selectedEquipment.tier,
       };
     }
     
@@ -571,6 +621,50 @@ export function EquipmentForm({
     onOpenChange(false);
   };
 
+  // Helper functions to handle encoded potential values
+  const encodePotentialValue = (tier: EquipmentTier, template: string): string => {
+    return `${tier}:${template}`;
+  };
+
+  const decodePotentialValue = (encodedValue: string): { tier: EquipmentTier; template: string } | null => {
+    if (!encodedValue || encodedValue === 'none') return null;
+    const [tier, ...templateParts] = encodedValue.split(':');
+    const template = templateParts.join(':'); // In case template contains colons
+    return { tier: tier as EquipmentTier, template };
+  };
+
+  const getTemplateFromEncodedValue = (encodedValue: string): string => {
+    const decoded = decodePotentialValue(encodedValue);
+    return decoded ? decoded.template : '';
+  };
+
+  // Initialize potential values from existing equipment
+  useEffect(() => {
+    if (equipment?.targetPotential && equipment.targetPotential.length > 0) {
+      const targetTemplate = equipment.targetPotential[0].value;
+      const targetTier = equipment.targetPotentialTier;
+      if (targetTier) {
+        setTargetPotentialValue(encodePotentialValue(targetTier, targetTemplate));
+      } else {
+        setTargetPotentialValue(targetTemplate);
+      }
+    } else {
+      setTargetPotentialValue('');
+    }
+    
+    if (equipment?.currentPotential && equipment.currentPotential.length > 0) {
+      const currentTemplate = equipment.currentPotential[0].value;
+      const currentTier = equipment.tier; // Use equipment tier for current potential
+      if (currentTier) {
+        setCurrentPotentialValue(encodePotentialValue(currentTier, currentTemplate));
+      } else {
+        setCurrentPotentialValue(currentTemplate);
+      }
+    } else {
+      setCurrentPotentialValue('');
+    }
+  }, [equipment]);
+
   const onSubmit = (data: EquipmentFormData) => {
     // Additional validation for transferred stars
     const transferredStars = equipment?.transferredStars || 0;
@@ -589,6 +683,12 @@ export function EquipmentForm({
     const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
     const equipmentImage = selectedEquipmentImage || selectedEquipment?.image;
 
+    // Helper function to decode potential value
+    const decodePotentialValue = (value: string) => {
+      const [tier, template] = value.split(':');
+      return { tier: tier as EquipmentTier, template };
+    };
+
     if (isEditing && equipment) {
       onSave({
         ...equipment,
@@ -596,11 +696,14 @@ export function EquipmentForm({
         name: data.set, // Store the selected name
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
-        tier: data.tier as EquipmentTier | null | undefined,
         image: equipmentImage,
         // Preserve itemType and base_attack from selected equipment or existing equipment, with fallbacks
         itemType: selectedEquipment?.itemType || equipment.itemType || data.slot,
         base_attack: selectedEquipment?.base_attack || equipment.base_attack || (data.type === 'weapon' ? 0 : undefined),
+        // Include potential values
+        currentPotential: currentPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(currentPotentialValue))] : undefined,
+        targetPotential: targetPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(targetPotentialValue))] : undefined,
+        targetPotentialTier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : undefined,
       });
     } else {
       onSave({
@@ -610,7 +713,6 @@ export function EquipmentForm({
         type: data.type as EquipmentType,
         level: data.level,
         set: selectedEquipment?.set, // Store the actual set name from API
-        tier: data.tier as EquipmentTier | null | undefined,
         currentStarForce: data.starforceable ? data.currentStarForce : 0,
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
         starforceable: data.starforceable,
@@ -618,6 +720,10 @@ export function EquipmentForm({
         // Include itemType and base_attack from selected equipment with fallbacks
         itemType: selectedEquipment?.itemType || data.slot,
         base_attack: selectedEquipment?.base_attack || (data.type === 'weapon' ? 0 : undefined),
+        // Include potential values
+        currentPotential: currentPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(currentPotentialValue))] : undefined,
+        targetPotential: targetPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(targetPotentialValue))] : undefined,
+        targetPotentialTier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : undefined,
       });
     }
     onOpenChange(false);
@@ -739,10 +845,9 @@ export function EquipmentForm({
                       value={field.value}
                       onValueChange={(value) => {
                         field.onChange(value);
-                          // Auto-update tier and level based on equipment selection
+                          // Auto-update level based on equipment selection
                         const equipData = availableEquipment.find(eq => eq.name === value);
                         if (equipData) {
-                          form.setValue('tier', equipData.tier);
                           form.setValue('level', equipData.level);
                           // Update the image state immediately
                           setSelectedEquipmentImage(equipData.image);
@@ -786,28 +891,63 @@ export function EquipmentForm({
                 }}
               </FormFieldWrapper>
 
-              {/* Potential Tier Selection */}
-              <FormFieldWrapper
-                name="tier"
-                label="Potential Tier"
-                control={form.control}
-              >
-                {(field) => (
+              {/* Current Potential Selection - Only show if equipment type is selected */}
+              {watchType && getPotentialCategories.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 font-maplestory">
+                    Current Potential
+                  </label>
+                  
                   <CategorizedSelect
-                    value={field.value ?? "none"}
+                    value={currentPotentialValue || "none"}
                     onValueChange={(value) => {
                       if (value === "none") {
-                        field.onChange(null);
+                        setCurrentPotentialValue('');
                       } else {
-                        field.onChange(value as EquipmentTier);
+                        setCurrentPotentialValue(value);
                       }
                     }}
-                    placeholder="Select potential tier (optional)"
-                    categories={POTENTIAL_TIER_CATEGORIES}
+                    placeholder="Select current potential"
+                    categories={[
+                      {
+                        name: 'No Potential',
+                        options: [{ value: 'none', label: 'No current potential' }]
+                      },
+                      ...getPotentialCategories
+                    ]}
                     className="bg-white border-gray-300 font-maplestory w-full"
                   />
-                )}
-              </FormFieldWrapper>
+                </div>
+              )}
+
+              {/* Target Potential Selection - Only show if equipment type is selected */}
+              {watchType && getPotentialCategories.length > 0 && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-gray-700 font-maplestory">
+                    Target Potential
+                  </label>
+                  
+                  <CategorizedSelect
+                    value={targetPotentialValue || "none"}
+                    onValueChange={(value) => {
+                      if (value === "none") {
+                        setTargetPotentialValue('');
+                      } else {
+                        setTargetPotentialValue(value);
+                      }
+                    }}
+                    placeholder="Select target potential"
+                    categories={[
+                      {
+                        name: 'No Target',
+                        options: [{ value: 'none', label: 'No target potential' }]
+                      },
+                      ...getPotentialCategories
+                    ]}
+                    className="bg-white border-gray-300 font-maplestory w-full"
+                  />
+                </div>
+              )}
 
               {/* StarForce Toggle */}
               <ToggleField

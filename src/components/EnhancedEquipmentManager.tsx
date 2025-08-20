@@ -12,6 +12,7 @@ import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
 import { StarForceOptimizer } from "@/components/StarForceOptimizer";
+import { usePotential } from "@/hooks/game/usePotential";
 import { 
   trackEquipmentAdded, 
   trackStarForceCalculation, 
@@ -37,7 +38,9 @@ import {
   ChevronUp,
   ChevronDown,
   DollarSign,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Zap,
+  Crown
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -83,6 +86,9 @@ export function EnhancedEquipmentManager({
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("equipment");
+
+  // Use the potential hook
+  const { getPotentialSummary } = usePotential();
 
   // Handle tab switching with analytics tracking
   const handleTabChange = (newTab: string) => {
@@ -247,6 +253,24 @@ export function EnhancedEquipmentManager({
     }
   };
 
+  // Helper function to format target potential summary
+  const getTargetPotentialSummary = (equipment: Equipment): string => {
+    if (!equipment.targetPotential || equipment.targetPotential.length === 0) {
+      return "No target set";
+    }
+
+    return getPotentialSummary(equipment.targetPotential);
+  };
+
+  // Helper function to format current potential summary
+  const getCurrentPotentialSummary = (equipment: Equipment): string => {
+    if (!equipment.currentPotential || equipment.currentPotential.length === 0) {
+      return "No potential";
+    }
+
+    return getPotentialSummary(equipment.currentPotential);
+  };
+
   return (
     <div className="space-y-6">
       {/* Main Content with Tabs */}
@@ -392,6 +416,8 @@ export function EnhancedEquipmentManager({
                               <TableHead className="font-maplestory">Item</TableHead>
                               <TableHead className="text-center font-maplestory">Current SF</TableHead>
                               <TableHead className="text-center font-maplestory">Target SF</TableHead>
+                              <TableHead className="text-center font-maplestory">Current Potential</TableHead>
+                              <TableHead className="text-center font-maplestory">Target Potential</TableHead>
                               <TableHead className="text-center font-maplestory">Status</TableHead>
                               <TableHead className="text-center font-maplestory">Actions</TableHead>
                             </TableRow>
@@ -530,6 +556,22 @@ export function EnhancedEquipmentManager({
                                       )}
                                     </div>
                                   )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Zap className="w-3 h-3 text-blue-500" />
+                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getCurrentPotentialSummary(item)}>
+                                      {getCurrentPotentialSummary(item)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Zap className="w-3 h-3 text-purple-500" />
+                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getTargetPotentialSummary(item)}>
+                                      {getTargetPotentialSummary(item)}
+                                    </span>
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-center">
                                   {getStatusBadge(item)}
