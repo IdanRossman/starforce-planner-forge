@@ -52,7 +52,8 @@ export default function CharacterDashboard() {
     transferStarForce: transferEquipment,
     updateEquipment: saveEquipment,
     addEquipment,
-    removeEquipment: clearEquipmentSlot
+    removeEquipment,
+    clearEquipmentSlot
   } = useEquipment();
   
   // Local state for UI components only
@@ -387,6 +388,12 @@ export default function CharacterDashboard() {
       });
     } else {
       // Create new character
+      console.log('📝 Creating character with equipment:', {
+        name: newCharacter.name,
+        equipmentCount: newCharacter.equipment?.length || 0,
+        equipment: newCharacter.equipment?.map(eq => ({ id: eq.id, name: eq.name, slot: eq.slot })) || []
+      });
+      
       createCharacter(newCharacter);
       
       // Track character creation
@@ -469,7 +476,8 @@ export default function CharacterDashboard() {
   };
 
   const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
-    transferEquipment(sourceEquipment, targetEquipment);
+    // Don't call transferEquipment here - it's already been called by the EquipmentForm
+    // This callback is just for additional processing like showing toasts
     
     toast({
       title: "Transfer Planned",

@@ -7,7 +7,7 @@ export interface CharacterContextState {
   selectedCharacter: Character | null;
   
   // Basic Character CRUD Operations
-  addCharacter: (character: Omit<Character, 'id' | 'equipment'>) => void;
+  addCharacter: (character: Omit<Character, 'id'>) => void;
   updateCharacter: (characterId: string, updates: Partial<Character>) => void;
   deleteCharacter: (characterId: string) => void;
   selectCharacter: (characterId: string | null) => void;
@@ -90,11 +90,11 @@ export function CharacterProvider({ children }: CharacterProviderProps) {
     }
   }, [selectedCharacter, isLoading]);
 
-  const addCharacter = useCallback((characterData: Omit<Character, 'id' | 'equipment'>) => {
+  const addCharacter = useCallback((characterData: Omit<Character, 'id'>) => {
     const newCharacter: Character = {
       ...characterData,
       id: crypto.randomUUID(),
-      equipment: [],
+      equipment: characterData.equipment || [], // Use provided equipment or empty array
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

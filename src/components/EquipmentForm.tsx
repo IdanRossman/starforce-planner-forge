@@ -7,67 +7,19 @@ import { EquipmentImage } from '@/components/EquipmentImage';
 import { StarForceTransferDialog } from '@/components/StarForceTransferDialog';
 import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
 import { MapleDialog, MapleButton, ApiStatusBadge } from '@/components/shared';
-import { CategorizedSelect, SelectCategory, MapleInput, StarForceSlider, FormFieldWrapper, ToggleField, StarForceSliderField } from '@/components/shared/forms';
+import { SelectCategory } from '@/components/shared/forms';
 import { usePotential } from '@/hooks/game/usePotential';
-import { 
-  ArrowRightLeft,
-  Info
-} from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useEquipment } from '@/hooks/data/useEquipment';
+import { useEquipmentFormValidation, type EquipmentFormData } from '@/hooks/utils/useEquipmentFormValidation';
+import { useStarForceUtils } from '@/hooks/starforce/useStarForceUtils';
+import { EquipmentFormCards } from './EquipmentForm/EquipmentFormCards';
+import { CompactEquipmentForm } from './EquipmentForm/CompactEquipmentForm';
+import { SlimEquipmentFormCards } from './EquipmentForm/SlimEquipmentFormCards';
+import { EnhancedStarForceConfigurationSection } from '@/components/EquipmentForm/EnhancedStarForceConfigurationSection';
 import {
   Form,
 } from '@/components/ui/form';
-import {
-  Button
-} from '@/components/ui/button';
-import {
-  Input
-} from '@/components/ui/input';
-import { getMaxStarForce, getDefaultTargetStarForce, getSlotIcon } from '@/lib/utils';
-
-// Create dynamic schema that considers transferred stars
-const createEquipmentSchema = (transferredStars: number = 0) => z.object({
-  slot: z.string().min(1, 'Equipment slot is required'),
-  type: z.enum(['armor', 'weapon', 'accessory'] as const),
-  level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
-  set: z.string().optional(),
-  currentStarForce: z.number().min(transferredStars, transferredStars > 0 ? `Current StarForce cannot be below ${transferredStars}★ (transferred stars)` : 'Current StarForce must be at least 0'),
-  targetStarForce: z.number().min(0),
-  starforceable: z.boolean(),
-}).refine((data) => {
-  // Only validate StarForce levels if the item is starforceable
-  if (!data.starforceable) return true;
-  const maxStars = getMaxStarForce(data.level);
-  return data.currentStarForce <= maxStars && data.targetStarForce <= maxStars;
-}, {
-  message: "StarForce levels cannot exceed the maximum for this equipment level",
-  path: ["targetStarForce"],
-}).refine((data) => {
-  // Only validate StarForce levels if the item is starforceable
-  if (!data.starforceable) return true;
-  return data.targetStarForce >= data.currentStarForce;
-}, {
-  message: "Target StarForce must be greater than or equal to current StarForce",
-  path: ["targetStarForce"],
-});
-
-// Default schema for new equipment (no transferred stars)
-const equipmentSchema = createEquipmentSchema(0);
-
-// Helper function to determine default starforceable status based on slot
-const getDefaultStarforceable = (slot: string): boolean => {
-  const nonStarforceableSlots = ['pocket', 'emblem', 'badge', 'secondary'];
-  return !nonStarforceableSlots.includes(slot);
-};
-
-type EquipmentFormData = z.infer<typeof equipmentSchema>;
+import { getSlotIcon } from '@/lib/utils';
 
 interface EquipmentFormProps {
   open: boolean;
@@ -196,13 +148,6 @@ export function EquipmentForm({
   selectedJob,
   existingEquipment = []
 }: EquipmentFormProps) {
-  console.log('🔄 EquipmentForm render:', {
-    equipmentProp: equipment?.name || 'none',
-    equipmentExists: !!equipment,
-    open,
-    isEditing: !!equipment
-  });
-
   const isEditing = !!equipment;
 
   // MapleDialog visibility states
@@ -224,6 +169,12 @@ export function EquipmentForm({
       setTimeout(() => setIsVisible(false), 200);
     }
   }, [open]);
+
+  // Form validation hook for schema and validation logic
+  const { createEquipmentSchema, equipmentSchema, getDefaultStarforceable } = useEquipmentFormValidation();
+
+  // StarForce utilities hook for calculations and validation
+  const { getMaxStars, getDefaultTarget, validateAndAdjustStarForce } = useStarForceUtils();
 
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
@@ -248,6 +199,8 @@ export function EquipmentForm({
   const [equipmentSource, setEquipmentSource] = useState<'api' | 'local'>('local');
   // Transfer dialog state
   const [showTransferDialog, setShowTransferDialog] = useState<boolean>(false);
+  // State to track when we last reset the form to prevent unnecessary resets
+  const [lastResetKey, setLastResetKey] = useState<string>('');
 
   // Potential hook for managing potential templates
   const { 
@@ -255,6 +208,9 @@ export function EquipmentForm({
     formatPotentialLine, 
     createPotentialLine
   } = usePotential();
+
+  // Equipment operations hook for transfer functionality
+  const { canTransfer, transferStarForce } = useEquipment();
 
   // State for potential value management
   const [targetPotentialValue, setTargetPotentialValue] = useState<string>('');
@@ -296,110 +252,148 @@ export function EquipmentForm({
     }).filter(category => category.options.length > 0); // Only show tiers that have options
   }, [watchType, getPotentialTemplates, formatPotentialLine]);
 
-  // Real-time validation for transferred stars minimum
-  useEffect(() => {
-    const transferredStars = equipment?.transferredStars || 0;
-    if (transferredStars > 0 && watchCurrentStars < transferredStars) {
-      form.setError('currentStarForce', {
-        type: 'manual',
-        message: `Current StarForce cannot be below ${transferredStars}★ (transferred stars)`
-      });
-    } else {
-      // Clear the error if the value is valid
-      const errors = form.formState.errors;
-      if (errors.currentStarForce?.type === 'manual') {
-        form.clearErrors('currentStarForce');
-      }
-    }
-  }, [watchCurrentStars, equipment?.transferredStars, form]);
+  // TEMPORARILY DISABLED - Real-time validation for transferred stars minimum
+  // useEffect(() => {
+  //   const transferredStars = equipment?.transferredStars || 0;
+  //   if (transferredStars > 0 && watchCurrentStars < transferredStars) {
+  //     form.setError('currentStarForce', {
+  //       type: 'manual',
+  //       message: `Current StarForce cannot be below ${transferredStars}★ (transferred stars)`
+  //     });
+  //   } else {
+  //     // Clear the error if the value is valid
+  //     const errors = form.formState.errors;
+  //     if (errors.currentStarForce?.type === 'manual') {
+  //       form.clearErrors('currentStarForce');
+  //     }
+  //   }
+  // }, [watchCurrentStars, equipment?.transferredStars, form]);
 
-  // Update form resolver when equipment changes to use correct schema for transferred stars
-  useEffect(() => {
-    const transferredStars = equipment?.transferredStars || 0;
-    const newSchema = createEquipmentSchema(transferredStars);
-    form.clearErrors(); // Clear any existing validation errors
-    // Note: We can't dynamically change the resolver in react-hook-form
-    // So we'll rely on the UI constraints instead
-  }, [equipment, form]);
+  // TEMPORARILY DISABLED - Update form resolver when equipment changes
+  // useEffect(() => {
+  //   const transferredStars = equipment?.transferredStars || 0;
+  //   const newSchema = createEquipmentSchema(transferredStars);
+  //   form.clearErrors(); // Clear any existing validation errors
+  //   // Note: We can't dynamically change the resolver in react-hook-form
+  //   // So we'll rely on the UI constraints instead
+  // }, [equipment, form, createEquipmentSchema]);
 
-  // Update StarForce values when level changes
-  useEffect(() => {
-    if (watchLevel && watchStarforceable) {
-      const maxStars = getMaxStarForce(watchLevel);
-      const defaultTarget = getDefaultTargetStarForce(watchLevel);
-      const currentTarget = form.getValues('targetStarForce');
-      const currentCurrent = form.getValues('currentStarForce');
-      let adjustments = {};
+  // TEMPORARILY DISABLED - Update StarForce values when level changes
+  // useEffect(() => {
+  //   if (watchLevel && watchStarforceable) {
+  //     const maxStars = getMaxStars(watchLevel);
+  //     const currentTarget = form.getValues('targetStarForce');
+  //     const currentCurrent = form.getValues('currentStarForce');
+  //     let adjustments = {};
       
-      // Always update current StarForce if it's above the new max
-      if (currentCurrent > maxStars) {
-        form.setValue('currentStarForce', maxStars);
-        adjustments = { ...adjustments, current: true };
-      }
+  //     // Only clamp values if they exceed the maximum allowed
+  //     if (currentCurrent > maxStars) {
+  //       form.setValue('currentStarForce', maxStars);
+  //       adjustments = { ...adjustments, current: true };
+  //     }
       
-      // Update target StarForce logic
-      if (currentTarget > maxStars) {
-        // If target is above new max, clamp it to max
-        form.setValue('targetStarForce', maxStars);
-        adjustments = { ...adjustments, target: true };
-      } else if (!equipment && currentTarget === 0) {
-        // For new equipment only: if target is 0, set it to default
-        form.setValue('targetStarForce', defaultTarget);
-      }
+  //     if (currentTarget > maxStars) {
+  //       form.setValue('targetStarForce', maxStars);
+  //       adjustments = { ...adjustments, target: true };
+  //     }
       
-      // Set auto-adjustment tracking and clear after 3 seconds
-      if (Object.keys(adjustments).length > 0) {
-        setAutoAdjusted(adjustments);
-        setTimeout(() => setAutoAdjusted({}), 3000);
-      }
-    }
-  }, [watchLevel, equipment, watchStarforceable, form]);
+  //     // Set auto-adjustment tracking and clear after 3 seconds
+  //     if (Object.keys(adjustments).length > 0) {
+  //       setAutoAdjusted(adjustments);
+  //       setTimeout(() => setAutoAdjusted({}), 3000);
+  //     }
+  //   }
+  // }, [watchLevel, equipment, watchStarforceable, form, getMaxStars]);
 
-  // Update starforceable default when slot changes
-  useEffect(() => {
-    if (watchSlot && !equipment) { // Only for new equipment, not editing
-      // Always start with StarForce off for new equipment
-      form.setValue('starforceable', false);
-      form.setValue('currentStarForce', 0);
-      form.setValue('targetStarForce', 0);
-    }
-  }, [watchSlot, equipment, form]);
+  // Note: Removed auto-reset of starforceable when slot changes to allow user input
 
-  // Reset form when dialog opens/closes or equipment changes
+  // Reset form when dialog opens/closes or equipment changes (FIXED)
   useEffect(() => {
     if (open) {
-      if (equipment) {
-        form.reset({
-          slot: equipment.slot,
-          type: equipment.type,
-          level: equipment.level,
-          set: equipment.name || equipment.set || '', // Use name if available, fallback to set
-          currentStarForce: equipment.currentStarForce,
-          targetStarForce: equipment.targetStarForce,
-          starforceable: equipment.starforceable,
-        });
+      // Create a unique key for this dialog state
+      const currentResetKey = `${defaultSlot || 'new'}-${equipment?.id || 'new'}`;
+      
+      // Only reset if this is a different slot/equipment combination than last time
+      if (currentResetKey !== lastResetKey) {
+        if (equipment) {
+          // Editing existing equipment - populate with equipment data
+          form.reset({
+            slot: equipment.slot,
+            type: equipment.type,
+            level: equipment.level,
+            set: equipment.name || equipment.set || '',
+            currentStarForce: equipment.currentStarForce,
+            targetStarForce: equipment.targetStarForce,
+            starforceable: equipment.starforceable,
+          });
+          
+          setSelectedEquipmentImage(equipment.image || '');
+        } else {
+          // New equipment - clean slate
+          const defaultLevel = 200;
+          const defaultTarget = getDefaultTarget(defaultLevel);
+          
+          form.reset({
+            slot: defaultSlot || '',
+            type: 'armor',
+            level: defaultLevel,
+            set: '',
+            currentStarForce: 0,
+            targetStarForce: defaultTarget,
+            starforceable: false,
+          });
+          
+          setSelectedEquipmentImage('');
+          setCurrentPotentialValue('');
+          setTargetPotentialValue('');
+        }
         
-        // Set the image state for existing equipment
-        setSelectedEquipmentImage(equipment.image || '');
-      } else {
-        const defaultLevel = 200;
-        const defaultTarget = getDefaultTargetStarForce(defaultLevel);
-        form.reset({
-          slot: defaultSlot || '',
-          type: 'armor',
-          level: defaultLevel,
-          set: '',
-          currentStarForce: 0,
-          targetStarForce: defaultTarget,
-          starforceable: false, // Start with StarForce off for new equipment
-        });
-        // Reset image state for new equipment
-        setSelectedEquipmentImage('');
+        // Update the reset key
+        setLastResetKey(currentResetKey);
       }
+    } else {
+      // Dialog closed - clear the reset key so next open will reset properly
+      setLastResetKey('');
     }
-  }, [open, equipment, defaultSlot, form]);
+  }, [open, equipment, defaultSlot, form, getDefaultTarget, setCurrentPotentialValue, setTargetPotentialValue, setSelectedEquipmentImage, lastResetKey, setLastResetKey]);
 
   const selectedSlot = form.watch('slot');
+  
+  // TEMPORARILY DISABLED - Reset form when slot actually changes (not on equipment selection)
+  // useEffect(() => {
+  //   if (open && selectedSlot && !equipment && selectedSlot !== previousSlot) {
+  //     // Only reset when the slot actually changes, not when equipment is selected
+  //     const defaultLevel = 200;
+  //     const defaultTarget = getDefaultTarget(defaultLevel);
+      
+  //     // Reset the form for new slot
+  //     form.reset({
+  //       slot: selectedSlot,
+  //       type: 'armor',
+  //       level: defaultLevel,
+  //       set: '',
+  //       currentStarForce: 0,
+  //       targetStarForce: defaultTarget,
+  //       starforceable: false,
+  //     });
+      
+  //     // Clear all additional state
+  //     setCurrentPotentialValue('');
+  //     setTargetPotentialValue('');
+  //     setSelectedEquipmentImage('');
+      
+  //     // Update previous slot tracking
+  //     setPreviousSlot(selectedSlot);
+      
+  //     // Clear errors
+  //     setTimeout(() => {
+  //       form.clearErrors();
+  //     }, 0);
+  //   } else if (selectedSlot && selectedSlot !== previousSlot) {
+  //     // Just update tracking if not resetting
+  //     setPreviousSlot(selectedSlot);
+  //   }
+  // }, [selectedSlot, open, equipment, previousSlot, form, getDefaultTarget, setCurrentPotentialValue, setTargetPotentialValue, setSelectedEquipmentImage]);
   
   // Fetch equipment data when slot changes
   useEffect(() => {
@@ -431,28 +425,6 @@ export function EquipmentForm({
   // Watch for overall/top/bottom conflicts
   const currentSlot = form.watch('slot');
 
-  // Helper function to check if transfer is possible
-  const canTransfer = (source: Equipment, target: Equipment): boolean => {
-    // Same slot requirement
-    if (source.slot !== target.slot) return false;
-    
-    // Target level must be within 10 levels ABOVE the source (can only transfer up)
-    const levelDiff = target.level - source.level;
-    if (levelDiff < 0 || levelDiff > 10) return false;
-    
-    // Source must have StarForce target and be starforceable
-    if (!source.starforceable || source.targetStarForce === 0) return false;
-    
-    // Target must be starforceable
-    if (!target.starforceable) return false;
-    
-    // Can't transfer to the same equipment (check by ID, name, and level)
-    if (source.id === target.id) return false;
-    if (source.name === target.name && source.level === target.level) return false;
-    
-    return true;
-  };
-
   // Watch form values for real-time transfer eligibility check
   const watchedValues = form.watch();
   
@@ -467,19 +439,12 @@ export function EquipmentForm({
 
     // Don't process transfer logic when dialog is closed to avoid form corruption
     if (!open) {
-      console.log('⏸️ currentEquipmentForTransfer: Dialog closed, skipping processing');
       return null;
     }
     
     // Must have required values for transfer
     if (!watchedValues.level || watchedValues.currentStarForce === undefined || 
         watchedValues.targetStarForce === undefined || watchedValues.starforceable === undefined) {
-      console.log('❌ currentEquipmentForTransfer: Missing required values', {
-        level: watchedValues.level,
-        currentStarForce: watchedValues.currentStarForce,
-        targetStarForce: watchedValues.targetStarForce,
-        starforceable: watchedValues.starforceable
-      });
       return null;
     }
     
@@ -491,35 +456,13 @@ export function EquipmentForm({
       // Editing existing equipment
       equipmentName = equipment.name;
       equipmentImage = equipment.image || '';
-      console.log('✅ currentEquipmentForTransfer: Using existing equipment', {
-        name: equipmentName,
-        originalTargetStarForce: equipment.targetStarForce,
-        formTargetStarForce: watchedValues.targetStarForce,
-        starforceable: watchedValues.starforceable,
-        isEditing,
-        equipmentExists: !!equipment
-      });
     } else if (watchedValues.set && availableEquipment.find(eq => eq.name === watchedValues.set)) {
       // Creating new equipment and user selected from dropdown
       const selectedEquipment = availableEquipment.find(eq => eq.name === watchedValues.set)!;
       equipmentName = selectedEquipment.name;
       equipmentImage = selectedEquipment.image || '';
-      console.log('✅ currentEquipmentForTransfer: Using new equipment from dropdown', {
-        name: equipmentName,
-        targetStarForce: watchedValues.targetStarForce,
-        selectedEquipmentStarforceable: selectedEquipment.starforceable,
-        formStarforceable: watchedValues.starforceable,
-        isEditing,
-        equipmentExists: !!equipment
-      });
     } else {
       // Creating new equipment without selecting from dropdown - no name yet
-      console.log('❌ currentEquipmentForTransfer: No equipment name available', {
-        isEditing,
-        equipmentExists: !!equipment,
-        watchedSet: watchedValues.set,
-        availableEquipmentCount: availableEquipment.length
-      });
       return null;
     }
     
@@ -564,60 +507,43 @@ export function EquipmentForm({
     return canTransfer(currentEquipmentForTransfer, eq);
   });
 
-  // Handle transfer completion
+  // Handle transfer completion using the useEquipment hook
   const handleTransfer = (sourceEquipment: Equipment, targetEquipment: Equipment, targetCurrentStars: number, targetTargetStars: number) => {
-    // Calculate the actual transferred star amount (source target - 1 for penalty)
-    const transferredStarAmount = Math.max(0, sourceEquipment.targetStarForce - 1);
+    console.log('🚀 EquipmentForm handleTransfer called with:', {
+      sourceEquipment: { id: sourceEquipment.id, name: sourceEquipment.name },
+      targetEquipment: { id: targetEquipment.id, name: targetEquipment.name },
+      targetCurrentStars,
+      targetTargetStars,
+      hasOnTransfer: !!onTransfer
+    });
+
+    // Create updated equipment with form values for transfer
+    const updatedSourceEquipment: Equipment = {
+      ...sourceEquipment,
+      currentStarForce: sourceEquipment.targetStarForce || 0, // Use target as current for transfer
+    };
     
-    // Ensure we have the correct image for the target equipment
-    const targetImage = targetEquipment.image || availableEquipment.find(eq => eq.id === targetEquipment.id)?.image || '';
-    
-    // Determine the correct specific slot for the target equipment
-    // If target has a generic slot (pendant, ring), find an available specific slot
-    let targetSlot: EquipmentSlot = targetEquipment.slot;
-    const sourceSlot = sourceEquipment.slot;
-    
-    // Handle multi-slot types (rings, pendants) - check the string value of the slot
-    const targetSlotString = targetEquipment.slot as string;
-    if (targetSlotString === 'pendant' || targetSlotString === 'ring') {
-      // Find an available specific slot for this type
-      const possibleSlots: EquipmentSlot[] = targetSlotString === 'pendant' 
-        ? ['pendant1', 'pendant2'] 
-        : ['ring1', 'ring2', 'ring3', 'ring4'];
-      
-      // Find first available slot or use the source slot if it's the same type
-      const availableSlot = possibleSlots.find(slot => {
-        const existing = existingEquipment?.find(eq => eq.slot === slot && eq.id !== sourceEquipment.id);
-        return !existing;
-      });
-      
-      targetSlot = availableSlot || sourceSlot; // Fallback to source slot if no available slot found
-    }
-    
-    // Create the updated target equipment with transferred stars
     const updatedTargetEquipment: Equipment = {
       ...targetEquipment,
-      slot: targetSlot, // Use the determined specific slot
       currentStarForce: targetCurrentStars,
       targetStarForce: targetTargetStars,
-      transferredFrom: sourceEquipment.id, // Mark as transfer target
-      transferredStars: transferredStarAmount, // Track the actual transferred star amount as minimum
-      image: targetImage, // Explicitly ensure the image is preserved
     };
+    
+    console.log('📦 Prepared equipment for transfer:', {
+      updatedSource: { id: updatedSourceEquipment.id, currentStars: updatedSourceEquipment.currentStarForce, targetStars: updatedSourceEquipment.targetStarForce },
+      updatedTarget: { id: updatedTargetEquipment.id, currentStars: updatedTargetEquipment.currentStarForce, targetStars: updatedTargetEquipment.targetStarForce }
+    });
 
-    // Create the source equipment for the table (with transfer indicator)
-    const sourceForTable: Equipment = {
-      ...sourceEquipment,
-      transferredTo: targetEquipment.id, // Mark as transfer source
-    };
-
-    // Use the transfer callback if available, otherwise use regular save for the target
-    if (onTransfer) {
-      onTransfer(sourceForTable, updatedTargetEquipment);
-    } else {
-      // Fallback: just save the target equipment
-      onSave(updatedTargetEquipment);
-    }
+    // Use the hook's enhanced transfer function - it handles all the complex logic
+    transferStarForce(
+      updatedSourceEquipment, 
+      updatedTargetEquipment, 
+      targetCurrentStars, 
+      targetTargetStars,
+      existingEquipment || [],
+      onTransfer // Pass the onTransfer callback to the hook
+    );
+    console.log('🔚 Closing transfer dialog');
     onOpenChange(false);
   };
 
@@ -736,8 +662,8 @@ export function EquipmentForm({
         opacity={opacity}
         transform={transform}
         position="center"
-        minWidth="800px"
-        className="max-w-4xl max-h-[90vh]"
+        minWidth="900px"
+        className="max-w-5xl max-h-[90vh] mx-auto"
         onClose={() => onOpenChange(false)}
         character={{
           name: form.getValues('set') || equipment?.name || 'Equipment',
@@ -764,273 +690,39 @@ export function EquipmentForm({
           </div>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full">
-              {/* Equipment Slot Selection */}
-              <FormFieldWrapper
-                name="slot"
-                label="Equipment Slot"
-                control={form.control}
-              >
-                {(field) => (
-                  <CategorizedSelect
-                    value={field.value}
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      // Clear equipment selection when slot changes since equipment might not be valid for new slot
-                      form.setValue('set', '');
-                      setSelectedEquipmentImage('');
-                    }}
-                    placeholder="Select equipment slot"
-                    categories={EQUIPMENT_SLOT_CATEGORIES}
-                    className="bg-white border-gray-300 font-maplestory w-full"
-                    disabled={(isEditing && !allowSlotEdit) || (!!defaultSlot && !allowSlotEdit)}
-                  />
-                )}
-              </FormFieldWrapper>
-
-              {/* Second line: Equipment (main selection) */}
-              <FormFieldWrapper
-                name="set"
-                label="Equipment"
-                control={form.control}
-                underText={equipmentSource === 'local' && availableEquipment.length > 0 ? (
-                  <ApiStatusBadge status="local" />
-                ) : undefined}
-              >
-                {(field) => {
-                  // Create categories for equipment selection
-                  const equipmentCategories: SelectCategory[] = (() => {
-                    if (equipmentLoading) return [];
-                    if (availableEquipment.length === 0) return [];
-                    
-                    // Single category with all equipment items
-                    return [{
-                      name: 'Available Equipment',
-                      options: availableEquipment
-                        .sort((a, b) => a.level - b.level) // Sort by level ascending
-                        .map(eq => ({
-                          value: eq.name || eq.id,
-                          label: eq.name && eq.name.trim() 
-                            ? `${eq.name} (Lv.${eq.level})`
-                            : `Level ${eq.level} Equipment`,
-                          icon: () => (
-                            <EquipmentImage 
-                              src={eq.image} 
-                              alt={eq.name || `Equipment ${eq.id}`}
-                              size="sm"
-                              fallbackIcon={getSlotIcon(selectedSlot)}
-                            />
-                          )
-                        }))
-                    }];
-                  })();
-                  
-                  if (equipmentLoading) {
-                    return (
-                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
-                        Loading equipment...
-                      </div>
-                    );
-                  }
-                  
-                  if (availableEquipment.length === 0) {
-                    return (
-                      <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
-                        No equipment found for this slot
-                      </div>
-                    );
-                  }
-                  
-                  return (
-                    <CategorizedSelect
-                      value={field.value}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                          // Auto-update level based on equipment selection
-                        const equipData = availableEquipment.find(eq => eq.name === value);
-                        if (equipData) {
-                          form.setValue('level', equipData.level);
-                          // Update the image state immediately
-                          setSelectedEquipmentImage(equipData.image);
-                          
-                          // Auto-determine type based on slot
-                          const slot = form.getValues('slot');
-                          if (['weapon', 'secondary', 'emblem'].includes(slot)) {
-                            form.setValue('type', 'weapon');
-                          } else if (['hat', 'top', 'bottom', 'overall', 'shoes', 'gloves', 'cape', 'belt', 'shoulder'].includes(slot)) {
-                            form.setValue('type', 'armor');
-                          } else {
-                            form.setValue('type', 'accessory');
-                          }                          // Only auto-set StarForce values for new equipment, not when editing existing equipment
-                          if (!isEditing) {
-                            // Set starforceable based on API data for new equipment only
-                            form.setValue('starforceable', equipData.starforceable);
-                            
-                            // Reset StarForce if not starforceable
-                            if (!equipData.starforceable) {
-                              form.setValue('currentStarForce', 0);
-                              form.setValue('targetStarForce', 0);
-                            } else {
-                              // If starforceable, set target to default for current level and ensure current is valid
-                              const defaultTarget = getDefaultTargetStarForce(equipData.level);
-                              form.setValue('targetStarForce', defaultTarget);
-                              // Ensure current StarForce doesn't exceed the max for this level
-                              const maxStars = getMaxStarForce(equipData.level);
-                              const currentCurrent = form.getValues('currentStarForce');
-                              if (currentCurrent > maxStars) {
-                                form.setValue('currentStarForce', 0);
-                              }
-                            }
-                          }
-                        }
-                      }}
-                      placeholder="Select equipment"
-                      categories={equipmentCategories}
-                      className="bg-white border-gray-300 font-maplestory w-full"
-                    />
-                  );
-                }}
-              </FormFieldWrapper>
-
-              {/* Current Potential Selection - Only show if equipment type is selected */}
-              {watchType && getPotentialCategories.length > 0 && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700 font-maplestory">
-                    Current Potential
-                  </label>
-                  
-                  <CategorizedSelect
-                    value={currentPotentialValue || "none"}
-                    onValueChange={(value) => {
-                      if (value === "none") {
-                        setCurrentPotentialValue('');
-                      } else {
-                        setCurrentPotentialValue(value);
-                      }
-                    }}
-                    placeholder="Select current potential"
-                    categories={[
-                      {
-                        name: 'No Potential',
-                        options: [{ value: 'none', label: 'No current potential' }]
-                      },
-                      ...getPotentialCategories
-                    ]}
-                    className="bg-white border-gray-300 font-maplestory w-full"
-                  />
-                </div>
-              )}
-
-              {/* Target Potential Selection - Only show if equipment type is selected */}
-              {watchType && getPotentialCategories.length > 0 && (
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700 font-maplestory">
-                    Target Potential
-                  </label>
-                  
-                  <CategorizedSelect
-                    value={targetPotentialValue || "none"}
-                    onValueChange={(value) => {
-                      if (value === "none") {
-                        setTargetPotentialValue('');
-                      } else {
-                        setTargetPotentialValue(value);
-                      }
-                    }}
-                    placeholder="Select target potential"
-                    categories={[
-                      {
-                        name: 'No Target',
-                        options: [{ value: 'none', label: 'No target potential' }]
-                      },
-                      ...getPotentialCategories
-                    ]}
-                    className="bg-white border-gray-300 font-maplestory w-full"
-                  />
-                </div>
-              )}
-
-              {/* StarForce Toggle */}
-              <ToggleField
-                name="starforceable"
-                title="StarForce Enhancement"
-                description="Can this equipment be enhanced with StarForce?"
-                control={form.control}
-                variant="amber"
+              {/* Slim Equipment Form Cards */}
+              <SlimEquipmentFormCards
+                form={form}
+                equipment={equipment}
+                isEditing={isEditing}
+                slotCategories={EQUIPMENT_SLOT_CATEGORIES}
+                allowSlotEdit={allowSlotEdit}
+                defaultSlot={defaultSlot}
+                availableEquipment={availableEquipment}
+                equipmentLoading={equipmentLoading}
+                equipmentSource={equipmentSource}
+                selectedSlot={selectedSlot}
+                selectedEquipmentImage={selectedEquipmentImage}
+                setSelectedEquipmentImage={setSelectedEquipmentImage}
+                currentPotentialValue={currentPotentialValue}
+                setCurrentPotentialValue={setCurrentPotentialValue}
+                targetPotentialValue={targetPotentialValue}
+                setTargetPotentialValue={setTargetPotentialValue}
+                getPotentialCategories={getPotentialCategories}
+                watchStarforceable={watchStarforceable}
+                watchLevel={watchLevel}
+                autoAdjusted={autoAdjusted}
+                hasValidTransferCandidates={hasValidTransferCandidates}
+                currentEquipmentForTransfer={currentEquipmentForTransfer}
+                setShowTransferDialog={setShowTransferDialog}
               />
-
-              {/* StarForce Sliders - Only show if starforceable */}
-              {watchStarforceable && (
-                <>
-                {/* Auto-adjustment notification */}
-                {(autoAdjusted.current || autoAdjusted.target) && (
-                  <div className="p-3 bg-blue-100 border-2 border-blue-400 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm text-blue-700 font-maplestory">
-                        Star force values auto-adjusted to match level {watchLevel} limits
-                        {autoAdjusted.current && autoAdjusted.target ? ' (current & target)' : 
-                         autoAdjusted.current ? ' (current)' : ' (target)'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-              <StarForceSliderField
-                name="currentStarForce"
-                title={`Current StarForce: ${watchCurrentStars}★`}
-                subtitle={(() => {
-                  const minStars = equipment?.transferredStars || 0;
-                  return minStars > 0 ? `(min: ${minStars}★ transferred)` : undefined;
-                })()}
-                control={form.control}
-                min={equipment?.transferredStars || 0}
-                max={getMaxStarForce(watchLevel)}
-              />
-
-              <StarForceSliderField
-                name="targetStarForce"
-                title={`Target StarForce: ${form.watch('targetStarForce')}★`}
-                subtitle={`(Max: ${getMaxStarForce(watchLevel)}★ for Lv.${watchLevel})`}
-                control={form.control}
-                min={0}
-                max={getMaxStarForce(watchLevel)}
-              />
-                </>
-              )}
-
-              {/* Transfer StarForce Button - Only show when transfer is possible */}
-              {currentEquipmentForTransfer && hasValidTransferCandidates && (
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2 text-sm text-blue-700 font-maplestory">
-                      <Info className="w-4 h-4" />
-                      <span>StarForce Transfer Available</span>
-                    </div>
-                    <MapleButton 
-                      variant="blue"
-                      size="sm"
-                      type="button"
-                      onClick={() => onTransfer ? setShowTransferDialog(true) : undefined} 
-                      disabled={!onTransfer}
-                    >
-                      <ArrowRightLeft className="w-4 h-4 mr-2" />
-                      Transfer StarForce
-                    </MapleButton>
-                    {!onTransfer && (
-                      <span className="text-xs text-muted-foreground font-maplestory text-center">
-                        Available after character creation
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </form>
           </Form>
         </div>
       </MapleDialog>
 
-      {/* StarForce Transfer Dialog - only render when transfer callback is available */}
-      {onTransfer && currentEquipmentForTransfer && (
+      {/* StarForce Transfer Dialog */}
+      {currentEquipmentForTransfer && (
         <StarForceTransferDialog
           open={showTransferDialog}
           onOpenChange={setShowTransferDialog}

@@ -28,6 +28,7 @@ export type {
 
 // Utility hooks - table operations, UI helpers
 export { useTable } from './utils/useTable';
+export { useEquipmentFormValidation } from './utils/useEquipmentFormValidation';
 export type { 
   SortDirection, 
   SortField, 
@@ -35,6 +36,7 @@ export type {
   FilterState, 
   TableUtilities 
 } from './utils/useTable';
+export type { EquipmentFormData } from './utils/useEquipmentFormValidation';
 
 // Legacy hooks - maintain compatibility
 export { useCharacterContext } from './useCharacterContext';
@@ -42,10 +44,12 @@ export { useCharacterContext } from './useCharacterContext';
 // StarForce-specific legacy hooks (to be migrated)
 export { useStarForceCalculation } from './starforce/useStarForceCalculation';
 export { useStarForceItemSettings } from './starforce/useStarForceItemSettings';
+export { useStarForceUtils } from './starforce/useStarForceUtils';
 export type { 
   EquipmentCalculation,
   UseStarForceCalculationOptions 
 } from './starforce/useStarForceCalculation';
+export type { StarForceUtilities } from './starforce/useStarForceUtils';
 
 /**
  * Hook Organization:

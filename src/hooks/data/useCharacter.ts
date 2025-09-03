@@ -5,7 +5,7 @@ import { fetchCharacterFromMapleRanks } from '../../services/mapleRanksService';
 
 export interface CharacterOperations {
   // Character CRUD operations
-  createCharacter: (characterData: Omit<Character, 'id' | 'equipment'>) => void;
+  createCharacter: (characterData: Omit<Character, 'id'>) => void;
   updateCharacter: (characterId: string, updates: Partial<Character>) => void;
   deleteCharacter: (characterId: string) => void;
   duplicateCharacter: (characterId: string) => void;
@@ -58,10 +58,10 @@ export function useCharacter(): CharacterOperations {
   } = useCharacterContext();
 
   // Character CRUD operations
-  const createCharacter = useCallback((characterData: Omit<Character, 'id' | 'equipment'>) => {
+  const createCharacter = useCallback((characterData: Omit<Character, 'id'>) => {
     const character = {
       ...characterData,
-      equipment: [],
+      equipment: characterData.equipment || [], // Use provided equipment or empty array
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -91,11 +91,12 @@ export function useCharacter(): CharacterOperations {
     const character = characters.find(char => char.id === characterId);
     if (!character) return;
 
-    const duplicated: Omit<Character, 'id' | 'equipment'> = {
+    const duplicated: Omit<Character, 'id'> = {
       name: `${character.name} (Copy)`,
       class: character.class,
       level: character.level,
       image: character.image,
+      equipment: [], // Empty equipment for duplicated character
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -194,24 +195,17 @@ export function useCharacter(): CharacterOperations {
       }
 
       // Generate new character data
-      const characterData: Omit<Character, 'id' | 'equipment'> = {
+      const characterData: Omit<Character, 'id'> = {
         name: `${data.name} (Imported)`,
         class: data.class,
         level: data.level,
         image: data.image,
+        equipment: data.equipment || [], // Include equipment from import data
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       createCharacter(characterData);
-      
-      // Import equipment if present - we'll need to handle this separately
-      // since createCharacter doesn't return the character ID
-      if (data.equipment && Array.isArray(data.equipment)) {
-        // Note: Equipment import would need to be handled after character creation
-        // This could be improved by having the context return the created character
-        console.log('Equipment import not fully implemented - character created without equipment');
-      }
 
     } catch (error) {
       console.error('Failed to import character data:', error);

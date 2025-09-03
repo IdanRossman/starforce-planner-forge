@@ -187,6 +187,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
       const jobDbString = getJobDatabaseString(wizardData.class);
       const equipment = await getTemplateEquipmentForJob(template.id, jobDbString);
       
+      console.log('🎯 Template equipment loaded:', {
+        templateId: template.id,
+        jobDbString,
+        equipmentCount: equipment.length,
+        equipment: equipment.map(eq => ({ id: eq.id, name: eq.name, slot: eq.slot }))
+      });
+      
       setWizardData(prev => ({
         ...prev,
         selectedTemplate: template,
@@ -236,6 +243,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
       image: wizardData.image,
       equipment: wizardData.equipment,
     };
+    
+    console.log('🚀 Character wizard completing with:', {
+      name: newCharacter.name,
+      equipmentCount: newCharacter.equipment.length,
+      equipment: newCharacter.equipment.map(eq => ({ id: eq.id, name: eq.name, slot: eq.slot }))
+    });
+    
     onComplete(newCharacter);
     handleOpenChange(false);
   };

@@ -46,6 +46,12 @@ export interface EquipmentCalculation {
     p75SpareCost: number;
   };
   
+  // Transfer fields
+  transferredTo?: string; // ID of equipment that was transferred to (for transfer sources)
+  transferredFrom?: string; // ID of equipment that was transferred from (for transfer targets)
+  transferredStars?: number; // Number of stars transferred
+  isTransferSource?: boolean; // Flag indicating this equipment will be destroyed after transfer
+  
   // UI-specific pre-calculated data
   spareStatus: string;
   spareClassName: string;
@@ -261,6 +267,12 @@ export function useStarForceCalculation({
               medianSpareCost,
               p75SpareCost
             },
+            
+            // Transfer fields
+            transferredTo: equipment.transferredTo,
+            transferredFrom: equipment.transferredFrom,
+            transferredStars: equipment.transferredStars,
+            isTransferSource: equipment.isTransferSource,
             
             // Pre-calculate spare status and related UI data
             spareStatus: (() => {
