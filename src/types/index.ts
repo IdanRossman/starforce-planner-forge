@@ -31,6 +31,7 @@ export interface Equipment {
   safeguard?: boolean; // Whether safeguard is enabled for this equipment
   itemType?: string; // Specific equipment type from database (weapon, secondary, gloves, etc.)
   base_attack?: number; // Base attack for weapons to calculate 2% visible ATT gains
+  includeInCalculations?: boolean; // Whether to include this equipment in StarForce calculator and Smart Planner (defaults to true)
   // Potential System
   currentPotential?: PotentialLine[]; // Array of current potential lines
   targetPotential?: PotentialLine[]; // Array of desired potential lines (based on potential tier)

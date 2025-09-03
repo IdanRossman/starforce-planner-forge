@@ -66,10 +66,12 @@ export function StarForceOptimizer({
   
   const { toast } = useToast();
 
-  // Get all starforceable equipment
+  // Get all starforceable equipment that are included in calculations
   const allEquipment = [...equipment, ...additionalEquipment];
   const pendingEquipment = allEquipment.filter(eq => 
-    eq.starforceable && eq.currentStarForce < eq.targetStarForce
+    eq.starforceable && 
+    eq.currentStarForce < eq.targetStarForce &&
+    eq.includeInCalculations !== false // Default to true if undefined
   );
 
   // Memoize equipment IDs to prevent unnecessary re-renders

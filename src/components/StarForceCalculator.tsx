@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Equipment } from "@/types";
 import { 
   useStarForceCalculation,
@@ -37,6 +37,8 @@ interface StarForceCalculatorProps {
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
+  onSaveEquipment?: (equipment: Equipment) => void;
+  onSaveAdditionalEquipment?: (equipment: Equipment) => void;
   characterId?: string; // For per-character localStorage - optional if using context
   characterName?: string; // Fallback for characters without ID
 }
@@ -48,6 +50,8 @@ export function StarForceCalculator({
   onUpdateStarforce: propOnUpdateStarforce, // Rename to distinguish from context
   onUpdateActualCost: propOnUpdateActualCost,
   onUpdateSafeguard: propOnUpdateSafeguard,
+  onSaveEquipment: propOnSaveEquipment,
+  onSaveAdditionalEquipment: propOnSaveAdditionalEquipment,
   characterId: propCharacterId, // Use prop or context
   characterName: propCharacterName
 }: StarForceCalculatorProps) {
@@ -154,8 +158,15 @@ export function StarForceCalculator({
   const sortField = sortState.field as SortField | null;
   const sortDirection = sortState.direction;
   
-  // Per-item include/exclude state (manual for now)
-  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
+  // Derive itemIncluded from equipment's includeInCalculations field
+  const itemIncluded = useMemo(() => {
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const included: { [equipmentId: string]: boolean } = {};
+    allEquipment.forEach(eq => {
+      included[eq.id] = eq.includeInCalculations !== false; // Default to true if undefined
+    });
+    return included;
+  }, [equipment, additionalEquipment]);
 
   // Use the calculation hook for equipment mode
   const {
@@ -182,10 +193,26 @@ export function StarForceCalculator({
 
   // Include/exclude helper functions
   const toggleItemIncluded = (equipmentId: string) => {
-    setItemIncluded(prev => ({ 
-      ...prev, 
-      [equipmentId]: prev[equipmentId] === false ? true : false 
-    }));
+    // Find the equipment and update its includeInCalculations setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const newIncludeValue = !(targetEquipment.includeInCalculations !== false);
+      const updatedEquipment = { ...targetEquipment, includeInCalculations: newIncludeValue };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = additionalEquipment.some(eq => eq.id === equipmentId);
+      
+      if (isAdditional && propOnSaveAdditionalEquipment) {
+        propOnSaveAdditionalEquipment(updatedEquipment);
+      } else if (propOnSaveEquipment) {
+        propOnSaveEquipment(updatedEquipment);
+      } else {
+        // Fallback to context-based update
+        updateEquipment(equipmentId, { includeInCalculations: newIncludeValue });
+      }
+    }
   };
 
   const isItemIncluded = (equipmentId: string) => {

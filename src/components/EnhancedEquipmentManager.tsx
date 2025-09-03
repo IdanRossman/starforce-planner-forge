@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
@@ -40,7 +41,9 @@ import {
   DollarSign,
   ArrowRightLeft,
   Zap,
-  Crown
+  Crown,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -222,6 +225,25 @@ export function EnhancedEquipmentManager({
     
     if (targetEquipment) {
       const updatedEquipment = { ...targetEquipment, safeguard };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = isAdditionalEquipment(targetEquipment);
+      
+      if (isAdditional && onSaveAdditionalEquipment) {
+        onSaveAdditionalEquipment(updatedEquipment);
+      } else if (onSaveEquipment) {
+        onSaveEquipment(updatedEquipment);
+      }
+    }
+  };
+
+  const handleUpdateIncludeInCalculations = (equipmentId: string, includeInCalculations: boolean) => {
+    // Find the equipment and update its includeInCalculations setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const updatedEquipment = { ...targetEquipment, includeInCalculations };
       
       // Check if it's additional equipment or main equipment
       const isAdditional = isAdditionalEquipment(targetEquipment);
@@ -428,16 +450,23 @@ export function EnhancedEquipmentManager({
                                 key={item.id}
                                 onMouseEnter={() => setHoveredRow(item.id)}
                                 onMouseLeave={() => setHoveredRow(null)}
-                                className="group"
+                                className={`group transition-opacity ${item.includeInCalculations !== false ? '' : 'opacity-50 bg-muted/30'}`}
                               >
                                 <TableCell>
-                                  <EquipmentImage
-                                    src={item.image}
-                                    alt={item.name}
-                                    size="md"
-                                    maxRetries={2}
-                                    showFallback={true}
-                                  />
+                                  <div className="relative flex-shrink-0">
+                                    <EquipmentImage
+                                      src={item.image}
+                                      alt={item.name}
+                                      size="md"
+                                      maxRetries={2}
+                                      showFallback={true}
+                                    />
+                                    {item.includeInCalculations === false && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
+                                        <EyeOff className="w-3 h-3 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   <div>
@@ -599,6 +628,20 @@ export function EnhancedEquipmentManager({
                                       </>
                                     ) : (
                                       <>
+                                        {/* Eye toggle button */}
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handleUpdateIncludeInCalculations(item.id, !(item.includeInCalculations !== false))}
+                                          className="h-8 w-8 p-0"
+                                          title={item.includeInCalculations !== false ? "Exclude from calculations" : "Include in calculations"}
+                                        >
+                                          {item.includeInCalculations !== false ? (
+                                            <Eye className="w-4 h-4 text-blue-500" />
+                                          ) : (
+                                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                                          )}
+                                        </Button>
                                         {item.starforceable && (
                                           <Button
                                             size="sm"
@@ -662,6 +705,8 @@ export function EnhancedEquipmentManager({
                   onUpdateStarforce={onUpdateStarforce}
                   onUpdateActualCost={onUpdateActualCost}
                   onUpdateSafeguard={handleUpdateSafeguard}
+                  onSaveEquipment={onSaveEquipment}
+                  onSaveAdditionalEquipment={onSaveAdditionalEquipment}
                 />
               ) : (
                 <Card>
