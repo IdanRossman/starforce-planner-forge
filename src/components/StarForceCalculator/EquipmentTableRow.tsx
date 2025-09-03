@@ -517,7 +517,15 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
         ) : (
           <div className="flex items-center justify-center gap-1">
             <span className="font-medium text-blue-400">
-              {calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '-'}
+              {(() => {
+                // Show current state value if available, otherwise fallback to calculated value
+                const stateValue = itemActualCosts[calc.id];
+                if (stateValue && stateValue.value > 0) {
+                  const displayValue = stateValue.unit === 'B' ? stateValue.value * 1000000000 : stateValue.value * 1000000;
+                  return formatMesos.display(displayValue);
+                }
+                return calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '-';
+              })()}
             </span>
             <Button
               size="sm"

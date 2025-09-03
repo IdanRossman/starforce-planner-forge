@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentTableContent } from "./StarForceCalculator/EquipmentTableContent";
@@ -174,7 +174,8 @@ export function StarForceCalculator({
     isCalculating,
     calculationError,
     aggregateStats,
-    triggerRecalculation
+    triggerRecalculation,
+    hasChanges
   } = useStarForceCalculation({
     equipment,
     additionalEquipment,
@@ -185,7 +186,8 @@ export function StarForceCalculator({
     itemActualCosts,
     itemIncluded,
     sortField,
-    sortDirection
+    sortDirection,
+    manualMode: true
   });
 
   // Helper functions for luck analysis
@@ -329,8 +331,8 @@ export function StarForceCalculator({
       [equipment.id]: { value: tempActualCost, unit } 
     }));
     
-    // Trigger recalculation manually
-    triggerRecalculation();
+    // In manual mode, don't auto-trigger recalculation - let user decide
+    // triggerRecalculation(); // Removed for manual mode
     
     setEditingActualCost(null);
   };
@@ -594,10 +596,36 @@ export function StarForceCalculator({
                 <Calculator className="w-5 h-5 text-primary" />
                 StarForce Planning Table
               </CardTitle>
-              <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
+              <div className="flex items-center gap-2">
+                {hasChanges && (
+                  <Button
+                    onClick={triggerRecalculation}
+                    disabled={isCalculating}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-maplestory animate-pulse shadow-lg shadow-yellow-500/25 border-2 border-yellow-400 relative"
+                    size="sm"
+                  >
+                    {/* Glowing effect */}
+                    <div className="absolute inset-0 bg-yellow-400 rounded opacity-20 animate-ping"></div>
+                    <div className="relative flex items-center">
+                      {isCalculating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Calculating...
+                        </>
+                      ) : (
+                        <>
+                          <Calculator className="w-4 h-4 mr-2" />
+                          Recalculate
+                        </>
+                      )}
+                    </div>
+                  </Button>
+                )}
+                <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
