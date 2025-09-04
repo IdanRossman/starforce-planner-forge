@@ -36,7 +36,6 @@ interface SlimEquipmentFormCardsProps {
   setCurrentPotentialValue: (value: string) => void;
   targetPotentialValue: string;
   setTargetPotentialValue: (value: string) => void;
-  getPotentialCategories: SelectCategory[];
   
   // StarForce props
   watchStarforceable: boolean;
@@ -66,7 +65,6 @@ export function SlimEquipmentFormCards({
   setCurrentPotentialValue,
   targetPotentialValue,
   setTargetPotentialValue,
-  getPotentialCategories,
   watchStarforceable,
   watchLevel,
   autoAdjusted,
@@ -167,8 +165,9 @@ export function SlimEquipmentFormCards({
               setCurrentPotentialValue={setCurrentPotentialValue}
               targetPotentialValue={targetPotentialValue}
               setTargetPotentialValue={setTargetPotentialValue}
-              getPotentialCategories={getPotentialCategories}
               equipment={equipment}
+              equipmentType={form.watch('type')}
+              equipmentLevel={form.watch('level')}
             />
           </CardContent>
         </Card>

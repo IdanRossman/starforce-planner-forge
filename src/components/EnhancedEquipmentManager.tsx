@@ -13,6 +13,7 @@ import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
 import { StarForceOptimizer } from "@/components/StarForceOptimizer";
+import { PotentialCalculator } from "@/components/PotentialCalculator";
 import { usePotential } from "@/hooks/game/usePotential";
 import { 
   trackEquipmentAdded, 
@@ -106,6 +107,9 @@ export function EnhancedEquipmentManager({
   const starforceableEquipment = allEquipment.filter(eq => eq.starforceable);
   const pendingEquipment = starforceableEquipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
   const completedEquipment = starforceableEquipment.filter(eq => eq.currentStarForce >= eq.targetStarForce);
+  const potentialEquipment = allEquipment.filter(eq => 
+    eq.currentPotentialValue || eq.targetPotentialValue
+  );
   const completionRate = starforceableEquipment.length > 0 
     ? Math.round((completedEquipment.length / starforceableEquipment.length) * 100)
     : 0;
@@ -311,7 +315,7 @@ export function EnhancedEquipmentManager({
       <Card>
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 border border-border/50">
+            <TabsList className="grid w-full grid-cols-4 border border-border/50">
               <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-blue-300 data-[state=active]:bg-blue-50/50">
                 {/* Animated highlight background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-indigo-400/40 to-blue-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -339,6 +343,24 @@ export function EnhancedEquipmentManager({
                   {pendingEquipment.length > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-400 font-maplestory">
                       {pendingEquipment.length}
+                    </Badge>
+                  )}
+                </div>
+              </TabsTrigger>
+              <TabsTrigger value="potential" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-purple-300 data-[state=active]:bg-purple-50/50">
+                {/* Animated highlight background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/30 via-violet-400/40 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/15 to-transparent animate-pulse" />
+                
+                {/* Tab content */}
+                <div className="relative flex items-center gap-2">
+                  <Zap className="w-4 h-4 animate-pulse text-purple-600" />
+                  <span className="text-purple-700 font-medium">Potential Calculator</span>
+                  {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-purple-500/20 text-purple-400 font-maplestory">
+                      {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
                     </Badge>
                   )}
                 </div>
@@ -749,6 +771,18 @@ export function EnhancedEquipmentManager({
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Potential Calculator Tab */}
+            <TabsContent value="potential" className="mt-6">
+              <PotentialCalculator
+                characterId={characterId}
+                characterName={characterName}
+                equipment={equipment}
+                additionalEquipment={additionalEquipment}
+                onSaveEquipment={onSaveEquipment}
+                onSaveAdditionalEquipment={onSaveAdditionalEquipment}
+              />
             </TabsContent>
 
             {/* Smart Planner Tab */}

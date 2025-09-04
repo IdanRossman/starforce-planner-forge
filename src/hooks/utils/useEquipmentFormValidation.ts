@@ -22,7 +22,7 @@ export function useEquipmentFormValidation() {
    */
   const createEquipmentSchema = (transferredStars: number = 0) => z.object({
     slot: z.string().min(1, 'Equipment slot is required'),
-    type: z.enum(['armor', 'weapon', 'accessory'] as const),
+    type: z.string(), // Allow any equipment type string from API
     level: z.number().min(1, 'Equipment level is required').max(300, 'Level cannot exceed 300'),
     set: z.string().optional(),
     currentStarForce: z.number().min(

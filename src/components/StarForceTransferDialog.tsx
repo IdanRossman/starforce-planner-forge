@@ -286,7 +286,7 @@ export function StarForceTransferDialog({
                   />
                   <div className="text-center max-w-[200px]">
                     <div className="text-blue-700 font-maplestory text-sm">{targetEquipment.name}</div>
-                    <div className="text-gray-600 text-xs font-maplestory">0★ → {targetEquipment.targetStarForce}★</div>
+                    <div className="text-gray-600 text-xs font-maplestory">{targetEquipment.currentStarForce}★ → {targetEquipment.targetStarForce}★</div>
                   </div>
                 </div>
                 

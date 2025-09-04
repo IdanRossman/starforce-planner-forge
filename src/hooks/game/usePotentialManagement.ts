@@ -31,14 +31,18 @@ export function usePotentialManagement(options: UsePotentialManagementOptions = 
    * Fetch available potential lines for item type and level (legendary tier only)
    */
   const fetchPotentialLines = useCallback(async (itemType: string, itemLevel: number) => {
+    console.log('fetchPotentialLines function called with:', { itemType, itemLevel });
     setIsLoading(true);
     setError(null);
 
     try {
+      console.log('About to make HTTP request to getPotentialLines...');
       const response: PotentialLinesResponse = await potentialService.getPotentialLines(itemType, itemLevel);
+      console.log('HTTP response received:', response);
       setAvailableCategories(response.dropdownOptions);
       return response;
     } catch (err) {
+      console.error('Error in fetchPotentialLines:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch potential lines';
       setError(errorMessage);
       onError?.(err instanceof Error ? err : new Error(errorMessage));

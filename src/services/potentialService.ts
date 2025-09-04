@@ -33,6 +33,56 @@ export interface PotentialLinesResponse {
   dropdownOptions: PotentialDropdownCategory[];
 }
 
+// New interfaces for bulk calculation with individual cube types
+export interface PotentialBulkItem {
+  itemType: string;
+  itemLevel: number;
+  selectedOption: string;
+  cubeType: 'red' | 'black';
+  isDMT?: boolean; // Always false
+  itemName?: string;
+}
+
+export interface PotentialBulkRequest {
+  items: PotentialBulkItem[];
+}
+
+export interface PotentialBulkItemResult {
+  itemType: string;
+  itemLevel: number;
+  selectedOption: string;
+  cubeType: 'red' | 'black';
+  isDMT: boolean;
+  itemName?: string;
+  result: {
+    probability: number;
+    averageCubes: number;
+    medianCubes: number;
+    percentile75Cubes: number;
+    averageCost: number;
+    medianCost: number;
+    percentile75Cost: number;
+    inputParameters: {
+      selectedOption: string;
+      itemType: string;
+      cubeType: string;
+      itemLevel: number;
+      isDMT: boolean;
+    };
+  } | null;
+  error?: string | null;
+}
+
+export interface PotentialBulkResponse {
+  results: PotentialBulkItemResult[];
+  summary: {
+    totalAverageCost: number;
+    totalMedianCost: number;
+    totalAverageCubes: number;
+    itemCount: number;
+  };
+}
+
 class PotentialService {
   /**
    * Get available potential lines for a specific item type and level (legendary tier only)
@@ -70,6 +120,25 @@ class PotentialService {
       return await apiService.post<PotentialCalculation>('/potential/calculate', request);
     } catch (error) {
       console.error('Failed to calculate potential cost:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Bulk calculate potential costs with individual cube types
+   */
+  async calculateBulkPotentialCosts(items: PotentialBulkItem[]): Promise<PotentialBulkResponse> {
+    try {
+      const request: PotentialBulkRequest = {
+        items: items.map(item => ({
+          ...item,
+          isDMT: false // Always false as specified
+        }))
+      };
+
+      return await apiService.post<PotentialBulkResponse>('/potential/bulk-calculate-individual-cubes', request);
+    } catch (error) {
+      console.error('Failed to calculate bulk potential costs:', error);
       throw error;
     }
   }

@@ -285,18 +285,33 @@ export function useEquipment(): EquipmentOperations {
           return eq;
         });
       } else {
-        // Target doesn't exist - update source and add target
-        updatedEquipment = [
-          ...selectedCharacter.equipment.map(eq => {
-            if (eq.id === sourceEquipment.id) {
-              console.log('🔄 Updating source equipment:', { id: eq.id, name: eq.name, newState: 'transferred' });
-              return sourceForTable;
-            }
-            return eq;
-          }),
-          updatedTargetEquipment // Add the target equipment as new item
-        ];
-        console.log('➕ Adding new target equipment:', { id: updatedTargetEquipment.id, name: updatedTargetEquipment.name, slot: targetSlot });
+        // Target doesn't exist - we need to add target and potentially source
+        const sourceExistsInCharacter = selectedCharacter.equipment.some(eq => eq.id === sourceEquipment.id);
+        console.log('🔍 Source equipment exists in character?', { exists: sourceExistsInCharacter, sourceId: sourceEquipment.id });
+        
+        if (sourceExistsInCharacter) {
+          // Source exists, target doesn't - update source and add target
+          updatedEquipment = [
+            ...selectedCharacter.equipment.map(eq => {
+              if (eq.id === sourceEquipment.id) {
+                console.log('🔄 Updating existing source equipment:', { id: eq.id, name: eq.name, newState: 'transferred' });
+                return sourceForTable;
+              }
+              return eq;
+            }),
+            updatedTargetEquipment // Add the target equipment as new item
+          ];
+          console.log('➕ Adding new target equipment:', { id: updatedTargetEquipment.id, name: updatedTargetEquipment.name, slot: targetSlot });
+        } else {
+          // Neither source nor target exist - add both
+          updatedEquipment = [
+            ...selectedCharacter.equipment,
+            sourceForTable, // Add the source equipment
+            updatedTargetEquipment // Add the target equipment as new item
+          ];
+          console.log('➕ Adding new source equipment:', { id: sourceForTable.id, name: sourceForTable.name });
+          console.log('➕ Adding new target equipment:', { id: updatedTargetEquipment.id, name: updatedTargetEquipment.name, slot: targetSlot });
+        }
       }
       
       console.log('📝 About to update character equipment. Character ID:', selectedCharacter.id);

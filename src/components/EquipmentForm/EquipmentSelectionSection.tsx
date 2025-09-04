@@ -144,10 +144,39 @@ export function EquipmentSelectionSection({
                   
                   // Use a timeout to ensure other effects don't interfere
                   setTimeout(() => {
+                    // Map slot to correct equipment type for potential API
+                    const getEquipmentTypeFromSlot = (slot: string): string => {
+                      // Complete mapping for all equipment types
+                      const slotMapping: Record<string, string> = {
+                        // Rings and pendants (multi-slot items)
+                        'ring1': 'ring', 'ring2': 'ring', 'ring3': 'ring', 'ring4': 'ring',
+                        'pendant1': 'pendant', 'pendant2': 'pendant',
+                        // Accessories
+                        'face': 'face',
+                        'eye': 'eye', 
+                        'earring': 'accessory',
+                        // Armor pieces
+                        'hat': 'hat',
+                        'top': 'top',
+                        'bottom': 'bottom',
+                        'shoes': 'shoes',
+                        'shoulder': 'shoulder',
+                        'gloves': 'gloves',
+                        'cape': 'cape',
+                        // Special items
+                        'emblem': 'emblem',
+                        'secondary': 'secondary',
+                        'heart': 'heart',
+                        'badge': 'badge'
+                      };
+                      
+                      return slotMapping[slot] || equipData.type; // Fallback to original type
+                    };
+                    
                     // Update all fields at once to prevent conflicts
                     const updates = {
                       set: value,
-                      type: equipData.type,
+                      type: getEquipmentTypeFromSlot(equipData.slot), // Use mapped type
                       level: equipData.level,
                       starforceable: equipData.starforceable ?? false,
                       currentStarForce: equipData.starforceable ? (equipData.currentStarForce ?? 0) : 0,

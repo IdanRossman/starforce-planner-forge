@@ -12,6 +12,9 @@ interface SimplePotentialConfigurationSectionProps {
   
   // Equipment context
   equipment?: Equipment;
+  // Fallback values for API calls when equipment is temporarily unavailable
+  equipmentType?: string;
+  equipmentLevel?: number;
 }
 
 /**
@@ -22,7 +25,9 @@ export function SimplePotentialConfigurationSection({
   setCurrentPotentialValue,
   targetPotentialValue,
   setTargetPotentialValue,
-  equipment
+  equipment,
+  equipmentType,
+  equipmentLevel
 }: SimplePotentialConfigurationSectionProps) {
   
   // Use the potential management hook
@@ -36,10 +41,30 @@ export function SimplePotentialConfigurationSection({
 
   // Fetch potential lines when equipment changes
   useEffect(() => {
-    if (equipment?.type && equipment?.level) {
-      fetchPotentialLines(equipment.type, equipment.level);
+    // Use specific equipment type for API calls (e.g., "belt", "hat", "weapon")
+    // Prioritize form data since it's always up-to-date
+    const type = equipmentType || equipment?.type;
+    const level = equipmentLevel || equipment?.level; // Prioritize form level over equipment level
+    
+    console.log('useEffect triggered - equipment change:', {
+      hasEquipment: !!equipment,
+      equipmentType: equipment?.type,
+      equipmentLevel: equipment?.level,
+      fallbackType: equipmentType,
+      fallbackLevel: equipmentLevel,
+      finalType: type,
+      finalLevel: level,
+      name: equipment?.name,
+      willMakeAPICall: !!(type && level)
+    });
+    
+    if (type && level) {
+      console.log('Making API call for potential lines with:', { type, level });
+      fetchPotentialLines(type, level);
+    } else {
+      console.log('Skipping API call - missing type or level');
     }
-  }, [equipment?.type, equipment?.level, fetchPotentialLines]);
+  }, [equipment, equipmentType, equipmentLevel, fetchPotentialLines]);
 
   // Set potential values after options are loaded and match with existing equipment values
   useEffect(() => {

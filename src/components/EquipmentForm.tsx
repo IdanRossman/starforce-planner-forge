@@ -316,10 +316,39 @@ export function EquipmentForm({
       // Only reset if this is a different slot/equipment combination than last time
       if (currentResetKey !== lastResetKey) {
         if (equipment) {
+          // Map equipment type for potential API consistency
+          const getEquipmentTypeFromSlot = (slot: string, originalType: string): string => {
+            // Complete mapping for all equipment types
+            const slotMapping: Record<string, string> = {
+              // Rings and pendants (multi-slot items)
+              'ring1': 'ring', 'ring2': 'ring', 'ring3': 'ring', 'ring4': 'ring',
+              'pendant1': 'pendant', 'pendant2': 'pendant',
+              // Accessories
+              'face': 'face',
+              'eye': 'eye', 
+              'earring': 'accessory',
+              // Armor pieces
+              'hat': 'hat',
+              'top': 'top',
+              'bottom': 'bottom',
+              'shoes': 'shoes',
+              'shoulder': 'shoulder',
+              'gloves': 'gloves',
+              'cape': 'cape',
+              // Special items
+              'emblem': 'emblem',
+              'secondary': 'secondary',
+              'heart': 'heart',
+              'badge': 'badge'
+            };
+            
+            return slotMapping[slot] || originalType; // Fallback to original type
+          };
+          
           // Editing existing equipment - populate with equipment data
           form.reset({
             slot: equipment.slot,
-            type: equipment.type,
+            type: getEquipmentTypeFromSlot(equipment.slot, equipment.type),
             level: equipment.level,
             set: equipment.name || equipment.set || '',
             currentStarForce: equipment.currentStarForce,
@@ -356,6 +385,43 @@ export function EquipmentForm({
       setLastResetKey('');
     }
   }, [open, equipment, defaultSlot, form, getDefaultTarget, setCurrentPotentialValue, setTargetPotentialValue, setSelectedEquipmentImage, lastResetKey, setLastResetKey]);
+
+  // Update type when slot changes (for potential API calls)
+  useEffect(() => {
+    if (watchSlot && !equipment) { // Only for new equipment (not editing)
+      // Map slot names to equipment types for potential API calls
+      const getEquipmentTypeFromSlot = (slot: string): string => {
+        // Complete mapping for all equipment types
+        const slotMapping: Record<string, string> = {
+          // Rings and pendants (multi-slot items)
+          'ring1': 'ring', 'ring2': 'ring', 'ring3': 'ring', 'ring4': 'ring',
+          'pendant1': 'pendant', 'pendant2': 'pendant',
+          // Accessories
+          'face': 'face',
+          'eye': 'eye', 
+          'earring': 'accessory',
+          // Armor pieces
+          'hat': 'hat',
+          'top': 'top',
+          'bottom': 'bottom',
+          'shoes': 'shoes',
+          'shoulder': 'shoulder',
+          'gloves': 'gloves',
+          'cape': 'cape',
+          // Special items
+          'emblem': 'emblem',
+          'secondary': 'secondary',
+          'heart': 'heart',
+          'badge': 'badge'
+        };
+        
+        return slotMapping[slot] || slot; // Fallback to slot name
+      };
+      
+      const equipmentType = getEquipmentTypeFromSlot(watchSlot);
+      form.setValue('type', equipmentType, { shouldValidate: true });
+    }
+  }, [watchSlot, equipment, form]);
 
   const selectedSlot = form.watch('slot');
   
@@ -504,7 +570,8 @@ export function EquipmentForm({
   // Check if the current form values can transfer to any available equipment from API
   // Works for both editing existing equipment and creating new equipment from dropdown
   const hasValidTransferCandidates = currentEquipmentForTransfer && availableEquipment.some(eq => {
-    return canTransfer(currentEquipmentForTransfer, eq);
+    const result = canTransfer(currentEquipmentForTransfer, eq);
+    return result.canTransfer;
   });
 
   // Handle transfer completion using the useEquipment hook
@@ -517,10 +584,15 @@ export function EquipmentForm({
       hasOnTransfer: !!onTransfer
     });
 
+    // Get the current StarForce from the form (what user set)
+    const formCurrentStars = form.getValues('currentStarForce');
+    const formTargetStars = form.getValues('targetStarForce');
+
     // Create updated equipment with form values for transfer
     const updatedSourceEquipment: Equipment = {
       ...sourceEquipment,
-      currentStarForce: sourceEquipment.targetStarForce || 0, // Use target as current for transfer
+      currentStarForce: formCurrentStars, // Use form's current value
+      targetStarForce: formTargetStars, // Use form's target value
     };
     
     const updatedTargetEquipment: Equipment = {
@@ -706,7 +778,6 @@ export function EquipmentForm({
                 setCurrentPotentialValue={setCurrentPotentialValue}
                 targetPotentialValue={targetPotentialValue}
                 setTargetPotentialValue={setTargetPotentialValue}
-                getPotentialCategories={getPotentialCategories}
                 watchStarforceable={watchStarforceable}
                 watchLevel={watchLevel}
                 autoAdjusted={autoAdjusted}

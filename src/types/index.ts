@@ -40,6 +40,7 @@ export interface Equipment {
   // Simple string representations for display/form
   currentPotentialValue?: string; // String representation of current potential
   targetPotentialValue?: string; // String representation of target potential
+  cubeType?: 'red' | 'black'; // Preferred cube type for this equipment
 }
 
 export interface EquipmentWithCharacter extends Equipment {
