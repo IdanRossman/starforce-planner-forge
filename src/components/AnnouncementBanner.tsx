@@ -25,30 +25,30 @@ const SESSION_KEY = 'starforce-planner-session-announcements-shown';
 // Mock announcement data - in a real app, this would come from an API
 const mockAnnouncements: AnnouncementData[] = [
   {
-    id: 'starforce-transfer',
-    title: 'New Feature: StarForce Transfer System',
-    message: 'You can now transfer StarForce from one equipment to another! Click the transfer button in equipment forms to try it out.',
+    id: 'potential-management',
+    title: 'New Feature: Potential Calculator & Investment Tracking',
+    message: 'Plan your cube investments with our new Potential Calculator! Track current and target potential values, get cost estimates with smart cube optimization, and see your total character worth including both StarForce and Potential investments.',
     type: 'feature',
-    startDate: '2025-01-25T00:00:00Z',
-    endDate: '2025-02-15T23:59:59Z',
+    priority: 'high',
+    startDate: '2025-09-04T00:00:00Z',
     dismissible: false
   },
   {
-    id: 'ui-improvements',
-    title: 'Enhanced User Interface',
-    message: 'We\'ve updated the interface with better navigation and improved visual design for a smoother experience. The card design now matches the in-game chat window style - I hope you like it!',
-    type: 'info',
+    id: 'character-overview-enhanced',
+    title: 'Enhanced Character Dashboard with Worth Summary',
+    message: 'The character overview now shows your total equipment investment at a glance! See StarForce costs, Potential cube investments, and total character worth directly in the dashboard.',
+    type: 'feature',
     priority: 'normal',
-    startDate: '2025-01-20T00:00:00Z',
+    startDate: '2025-09-04T00:00:00Z',
     dismissible: false
   },
   {
-    id: 'bug-fixes',
-    title: 'Bug Fixes & Performance',
-    message: 'Fixed several issues with equipment calculations and improved overall app performance.',
+    id: 'bug-fixes-september',
+    title: 'Bug Fixes & Performance Improvements',
+    message: 'Fixed various issues with equipment calculations, improved form validation, resolved display inconsistencies, and enhanced overall app stability and performance.',
     type: 'patch',
     priority: 'normal',
-    startDate: '2025-01-15T00:00:00Z',
+    startDate: '2025-09-04T00:00:00Z',
     dismissible: false
   }
 ];
@@ -313,11 +313,6 @@ export function AnnouncementBanner() {
                             >
                               {getBadgeText(announcement.type)}
                             </Badge>
-                            {announcement.priority === 'high' && (
-                              <Badge variant="destructive" className="text-xs">
-                                Priority
-                              </Badge>
-                            )}
                           </div>
                           <h3 className="text-lg font-bold leading-tight font-maplestory text-foreground mb-2">
                             {announcement.title}

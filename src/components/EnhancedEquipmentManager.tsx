@@ -357,7 +357,13 @@ export function EnhancedEquipmentManager({
                 {/* Tab content */}
                 <div className="relative flex items-center gap-2">
                   <Zap className="w-4 h-4 animate-pulse text-purple-600" />
-                  <span className="text-purple-700 font-medium">Potential Calculator</span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-purple-700 font-medium">Potential Calculator</span>
+                    {/* "NEW" indicator positioned to the side */}
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-full animate-bounce">
+                      NEW
+                    </span>
+                  </span>
                   {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-purple-500/20 text-purple-400 font-maplestory">
                       {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
@@ -375,13 +381,7 @@ export function EnhancedEquipmentManager({
                 {/* Tab content */}
                 <div className="relative flex items-center gap-2">
                   <Sparkles className="w-4 h-4 animate-pulse text-orange-600" />
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-orange-700 font-medium">Smart Planner</span>
-                    {/* "NEW" indicator positioned to the side */}
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full animate-bounce">
-                      NEW
-                    </span>
-                  </span>
+                  <span className="text-orange-700 font-medium">Smart Planner</span>
                   {pendingEquipment.length > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-600 border-orange-500/30 font-maplestory">
                       BETA

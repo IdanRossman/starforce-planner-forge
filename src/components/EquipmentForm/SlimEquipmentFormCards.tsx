@@ -157,6 +157,10 @@ export function SlimEquipmentFormCards({
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-purple-600" />
               <CardTitle className="text-sm font-maplestory text-purple-900">Potential</CardTitle>
+              {/* "NEW" indicator */}
+              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-full animate-bounce">
+                NEW
+              </span>
             </div>
           </CardHeader>
           <CardContent className="pt-0">
