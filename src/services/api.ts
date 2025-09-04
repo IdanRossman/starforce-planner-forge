@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://forge-service-production.up.railway.app';
+const API_BASE_URL = 'http://localhost:3000';
 
 import { StarforceOptimizationRequestDto, StarforceOptimizationResponseDto } from '@/types';
 
@@ -110,6 +110,24 @@ class ApiService {
   // StarForce Optimization method
   async optimizeStarforce(request: StarforceOptimizationRequestDto): Promise<StarforceOptimizationResponseDto> {
     return this.post<StarforceOptimizationResponseDto>('/Starforce/optimize', request);
+  }
+
+  // Potential management methods
+  async getPotentialLines(equipmentType: string, tier: string): Promise<string[]> {
+    return this.get<string[]>(`/Potential/lines?equipmentType=${encodeURIComponent(equipmentType)}&tier=${encodeURIComponent(tier)}`);
+  }
+
+  async calculatePotentialCost(equipmentType: string, currentTier: string, targetTier: string, targetLines: string[]): Promise<any> {
+    return this.post('/Potential/calculate', {
+      equipmentType,
+      currentTier,
+      targetTier,
+      targetLines
+    });
+  }
+
+  async enhancePotential(equipmentId: number, enhancementData: any): Promise<any> {
+    return this.post(`/Potential/enhance/${equipmentId}`, enhancementData);
   }
 }
 

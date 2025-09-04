@@ -277,6 +277,12 @@ export function EnhancedEquipmentManager({
 
   // Helper function to format target potential summary
   const getTargetPotentialSummary = (equipment: Equipment): string => {
+    // First check for string value (new format)
+    if (equipment.targetPotentialValue) {
+      return equipment.targetPotentialValue;
+    }
+    
+    // Fallback to array format (old format)
     if (!equipment.targetPotential || equipment.targetPotential.length === 0) {
       return "No target set";
     }
@@ -286,6 +292,12 @@ export function EnhancedEquipmentManager({
 
   // Helper function to format current potential summary
   const getCurrentPotentialSummary = (equipment: Equipment): string => {
+    // First check for string value (new format)
+    if (equipment.currentPotentialValue) {
+      return equipment.currentPotentialValue;
+    }
+    
+    // Fallback to array format (old format)
     if (!equipment.currentPotential || equipment.currentPotential.length === 0) {
       return "No potential";
     }

@@ -626,10 +626,9 @@ export function EquipmentForm({
         // Preserve itemType and base_attack from selected equipment or existing equipment, with fallbacks
         itemType: selectedEquipment?.itemType || equipment.itemType || data.slot,
         base_attack: selectedEquipment?.base_attack || equipment.base_attack || (data.type === 'weapon' ? 0 : undefined),
-        // Include potential values
-        currentPotential: currentPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(currentPotentialValue))] : undefined,
-        targetPotential: targetPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(targetPotentialValue))] : undefined,
-        targetPotentialTier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : undefined,
+        // Include potential values as strings
+        currentPotentialValue: currentPotentialValue || undefined,
+        targetPotentialValue: targetPotentialValue || undefined,
       });
     } else {
       onSave({
@@ -646,10 +645,9 @@ export function EquipmentForm({
         // Include itemType and base_attack from selected equipment with fallbacks
         itemType: selectedEquipment?.itemType || data.slot,
         base_attack: selectedEquipment?.base_attack || (data.type === 'weapon' ? 0 : undefined),
-        // Include potential values
-        currentPotential: currentPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(currentPotentialValue))] : undefined,
-        targetPotential: targetPotentialValue ? [createPotentialLine(getTemplateFromEncodedValue(targetPotentialValue))] : undefined,
-        targetPotentialTier: targetPotentialValue ? decodePotentialValue(targetPotentialValue)?.tier : undefined,
+        // Include potential values as strings
+        currentPotentialValue: currentPotentialValue || undefined,
+        targetPotentialValue: targetPotentialValue || undefined,
       });
     }
     onOpenChange(false);

@@ -37,6 +37,9 @@ export interface Equipment {
   targetPotential?: PotentialLine[]; // Array of desired potential lines (based on potential tier)
   potentialTier?: EquipmentTier; // Current potential tier
   targetPotentialTier?: EquipmentTier; // Target potential tier
+  // Simple string representations for display/form
+  currentPotentialValue?: string; // String representation of current potential
+  targetPotentialValue?: string; // String representation of target potential
 }
 
 export interface EquipmentWithCharacter extends Equipment {
