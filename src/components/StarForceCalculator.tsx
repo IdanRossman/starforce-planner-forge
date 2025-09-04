@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Equipment } from "@/types";
 import { 
   useStarForceCalculation,
@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff } from "lucide-react";
+import { Calculator, Target, TrendingUp, TrendingDown, AlertTriangle, Star, Download, DollarSign, ChevronUp, ChevronDown, Edit, CheckCircle2, X, Settings, ArrowUpDown, ArrowUp, ArrowDown, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentTableContent } from "./StarForceCalculator/EquipmentTableContent";
@@ -37,6 +37,8 @@ interface StarForceCalculatorProps {
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
   onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onUpdateSafeguard?: (equipmentId: string, safeguard: boolean) => void;
+  onSaveEquipment?: (equipment: Equipment) => void;
+  onSaveAdditionalEquipment?: (equipment: Equipment) => void;
   characterId?: string; // For per-character localStorage - optional if using context
   characterName?: string; // Fallback for characters without ID
 }
@@ -48,6 +50,8 @@ export function StarForceCalculator({
   onUpdateStarforce: propOnUpdateStarforce, // Rename to distinguish from context
   onUpdateActualCost: propOnUpdateActualCost,
   onUpdateSafeguard: propOnUpdateSafeguard,
+  onSaveEquipment: propOnSaveEquipment,
+  onSaveAdditionalEquipment: propOnSaveAdditionalEquipment,
   characterId: propCharacterId, // Use prop or context
   characterName: propCharacterName
 }: StarForceCalculatorProps) {
@@ -154,8 +158,15 @@ export function StarForceCalculator({
   const sortField = sortState.field as SortField | null;
   const sortDirection = sortState.direction;
   
-  // Per-item include/exclude state (manual for now)
-  const [itemIncluded, setItemIncluded] = useState<{ [equipmentId: string]: boolean }>({});
+  // Derive itemIncluded from equipment's includeInCalculations field
+  const itemIncluded = useMemo(() => {
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const included: { [equipmentId: string]: boolean } = {};
+    allEquipment.forEach(eq => {
+      included[eq.id] = eq.includeInCalculations !== false; // Default to true if undefined
+    });
+    return included;
+  }, [equipment, additionalEquipment]);
 
   // Use the calculation hook for equipment mode
   const {
@@ -163,7 +174,8 @@ export function StarForceCalculator({
     isCalculating,
     calculationError,
     aggregateStats,
-    triggerRecalculation
+    triggerRecalculation,
+    hasChanges
   } = useStarForceCalculation({
     equipment,
     additionalEquipment,
@@ -174,7 +186,8 @@ export function StarForceCalculator({
     itemActualCosts,
     itemIncluded,
     sortField,
-    sortDirection
+    sortDirection,
+    manualMode: true
   });
 
   // Helper functions for luck analysis
@@ -182,10 +195,26 @@ export function StarForceCalculator({
 
   // Include/exclude helper functions
   const toggleItemIncluded = (equipmentId: string) => {
-    setItemIncluded(prev => ({ 
-      ...prev, 
-      [equipmentId]: prev[equipmentId] === false ? true : false 
-    }));
+    // Find the equipment and update its includeInCalculations setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const newIncludeValue = !(targetEquipment.includeInCalculations !== false);
+      const updatedEquipment = { ...targetEquipment, includeInCalculations: newIncludeValue };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = additionalEquipment.some(eq => eq.id === equipmentId);
+      
+      if (isAdditional && propOnSaveAdditionalEquipment) {
+        propOnSaveAdditionalEquipment(updatedEquipment);
+      } else if (propOnSaveEquipment) {
+        propOnSaveEquipment(updatedEquipment);
+      } else {
+        // Fallback to context-based update
+        updateEquipment(equipmentId, { includeInCalculations: newIncludeValue });
+      }
+    }
   };
 
   const isItemIncluded = (equipmentId: string) => {
@@ -302,8 +331,8 @@ export function StarForceCalculator({
       [equipment.id]: { value: tempActualCost, unit } 
     }));
     
-    // Trigger recalculation manually
-    triggerRecalculation();
+    // In manual mode, don't auto-trigger recalculation - let user decide
+    // triggerRecalculation(); // Removed for manual mode
     
     setEditingActualCost(null);
   };
@@ -567,10 +596,36 @@ export function StarForceCalculator({
                 <Calculator className="w-5 h-5 text-primary" />
                 StarForce Planning Table
               </CardTitle>
-              <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
+              <div className="flex items-center gap-2">
+                {hasChanges && (
+                  <Button
+                    onClick={triggerRecalculation}
+                    disabled={isCalculating}
+                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-maplestory animate-pulse shadow-lg shadow-yellow-500/25 border-2 border-yellow-400 relative"
+                    size="sm"
+                  >
+                    {/* Glowing effect */}
+                    <div className="absolute inset-0 bg-yellow-400 rounded opacity-20 animate-ping"></div>
+                    <div className="relative flex items-center">
+                      {isCalculating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Calculating...
+                        </>
+                      ) : (
+                        <>
+                          <Calculator className="w-4 h-4 mr-2" />
+                          Recalculate
+                        </>
+                      )}
+                    </div>
+                  </Button>
+                )}
+                <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

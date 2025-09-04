@@ -87,7 +87,7 @@ export function MapleDialog({
 
   return (
     <div 
-      className={`${positionClasses[position]} z-50 max-w-lg ${className}`}
+      className={`${positionClasses[position]} z-50 ${className}`}
       style={{ 
         opacity: opacity,
         transform: finalTransform,

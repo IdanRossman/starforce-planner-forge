@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Calculator, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../ui/card';
 import { Switch } from '../../../ui/switch';
 import { Label } from '../../../ui/label';
@@ -14,7 +14,8 @@ export function EquipmentTableSettings({
   globalSettings,
   onUpdateGlobalSettings,
   onRecalculate,
-  isCalculating
+  isCalculating,
+  hasChanges = false
 }: EquipmentTableSettingsProps) {
   
   const handleSettingChange = <K extends keyof typeof globalSettings>(
@@ -90,13 +91,38 @@ export function EquipmentTableSettings({
 
         {/* Recalculate Button */}
         <div className="pt-2 border-t">
+          {hasChanges && (
+            <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+              <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                <Calculator className="w-4 h-4" />
+                <span className="text-sm font-medium font-maplestory">Changes Detected</span>
+              </div>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1 font-maplestory">
+                Equipment settings have been modified. Click to recalculate costs.
+              </p>
+            </div>
+          )}
           <Button
             onClick={onRecalculate}
             disabled={isCalculating}
-            className="w-full sm:w-auto"
-            variant="outline"
+            className={`w-full sm:w-auto font-maplestory ${
+              hasChanges 
+                ? 'bg-yellow-500 hover:bg-yellow-600 text-black border-yellow-500' 
+                : ''
+            }`}
+            variant={hasChanges ? 'default' : 'outline'}
           >
-            {isCalculating ? 'Calculating...' : 'Recalculate'}
+            {isCalculating ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Calculating...
+              </>
+            ) : (
+              <>
+                <Calculator className="w-4 h-4 mr-2" />
+                {hasChanges ? 'Recalculate' : 'Calculate'}
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

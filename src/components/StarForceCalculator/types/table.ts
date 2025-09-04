@@ -62,6 +62,7 @@ export interface EquipmentTableSettingsProps {
   onUpdateGlobalSettings: (settings: GlobalSettings) => void;
   onRecalculate: () => void;
   isCalculating: boolean;
+  hasChanges?: boolean;
 }
 
 export interface OverallLuckAnalysis {

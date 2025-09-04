@@ -11,10 +11,7 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
   
   // Try NA server first with corsproxy.io
   try {
-    console.log('MapleRanks: Using corsproxy.io for NA server:', characterName);
-    
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(naUrl)}`;
-    console.log('MapleRanks: Fetching from:', proxyUrl);
     
     const response = await fetch(proxyUrl, {
       method: 'GET',
@@ -24,36 +21,23 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       signal: AbortSignal.timeout(10000) // 10 second timeout
     });
     
-    console.log('MapleRanks: NA Response status:', response.status, response.statusText);
-    
     if (response.ok) {
       const html = await response.text();
-      console.log('MapleRanks: Got NA HTML content, length:', html?.length || 'No content');
       
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed character data from NA server');
           return result;
-        } else {
-          console.warn('MapleRanks: Got HTML but parsing failed for NA server');
         }
-      } else {
-        console.warn('MapleRanks: Insufficient HTML content received from NA server');
       }
-    } else {
-      console.warn('MapleRanks: NA proxy request failed with status:', response.status);
     }
   } catch (error) {
-    console.error('MapleRanks: NA proxy request error:', error);
+    // Silently continue to EU server
   }
   
   // Try EU server with corsproxy.io as fallback
   try {
-    console.log('MapleRanks: Using corsproxy.io for EU server:', characterName);
-    
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(euUrl)}`;
-    console.log('MapleRanks: Fetching from EU:', proxyUrl);
     
     const response = await fetch(proxyUrl, {
       method: 'GET',
@@ -63,33 +47,22 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       signal: AbortSignal.timeout(10000) // 10 second timeout
     });
     
-    console.log('MapleRanks: EU Response status:', response.status, response.statusText);
-    
     if (response.ok) {
       const html = await response.text();
-      console.log('MapleRanks: Got EU HTML content, length:', html?.length || 'No content');
       
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed character data from EU server');
           return result;
-        } else {
-          console.warn('MapleRanks: Got HTML but parsing failed for EU server');
         }
-      } else {
-        console.warn('MapleRanks: Insufficient HTML content received from EU server');
       }
-    } else {
-      console.warn('MapleRanks: EU proxy request failed with status:', response.status);
     }
   } catch (error) {
-    console.error('MapleRanks: EU proxy request error:', error);
+    // Silently continue to direct access fallback
   }
   
   // If both proxy attempts fail, try direct access as final fallback (try NA first, then EU)
   try {
-    console.log('MapleRanks: Trying direct NA URL as fallback:', naUrl);
     
     const response = await fetch(naUrl, {
       method: 'GET',
@@ -106,18 +79,16 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed data via direct NA access');
           return result;
         }
       }
     }
   } catch (error) {
-    console.log('MapleRanks: Direct NA access failed (expected):', error.message);
+    // Silently continue to EU fallback
   }
   
   // Try direct EU access as final fallback
   try {
-    console.log('MapleRanks: Trying direct EU URL as final fallback:', euUrl);
     
     const response = await fetch(euUrl, {
       method: 'GET',
@@ -134,16 +105,14 @@ export const fetchCharacterFromMapleRanks = async (characterName: string): Promi
       if (html && html.length > 100) {
         const result = parseMapleRanksHTML(html);
         if (result) {
-          console.log('MapleRanks: Successfully parsed data via direct EU access');
           return result;
         }
       }
     }
   } catch (error) {
-    console.log('MapleRanks: Direct EU access failed (expected):', error.message);
+    // All methods failed
   }
   
-  console.error('MapleRanks: All methods failed');
   return null;
 };
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { 
   Star, 
   Target, 
@@ -14,7 +15,9 @@ import {
   ChevronUp, 
   ChevronDown, 
   Eye, 
-  EyeOff 
+  EyeOff,
+  ArrowRight,
+  ArrowLeft 
 } from "lucide-react";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentCalculation } from '@/hooks/starforce/useStarForceCalculation';
@@ -122,7 +125,7 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
     >
       {/* Equipment Image/Name */}
       <TableCell>
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center justify-center gap-1">
           <div className="relative flex-shrink-0">
             <EquipmentImage
               src={calc.image}
@@ -137,6 +140,20 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
               </div>
             )}
           </div>
+          
+          {/* Transfer Status Indicators */}
+          {calc.transferredTo && (
+            <Badge variant="destructive" className="text-xs px-1 py-0 h-4 flex items-center gap-1">
+              <ArrowRight className="w-2 h-2" />
+              Destroyed
+            </Badge>
+          )}
+          {calc.transferredFrom && (
+            <Badge variant="secondary" className="text-xs px-1 py-0 h-4 flex items-center gap-1">
+              <ArrowLeft className="w-2 h-2" />
+              Transferred
+            </Badge>
+          )}
         </div>
       </TableCell>
       
@@ -500,7 +517,15 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
         ) : (
           <div className="flex items-center justify-center gap-1">
             <span className="font-medium text-blue-400">
-              {calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '-'}
+              {(() => {
+                // Show current state value if available, otherwise fallback to calculated value
+                const stateValue = itemActualCosts[calc.id];
+                if (stateValue && stateValue.value > 0) {
+                  const displayValue = stateValue.unit === 'B' ? stateValue.value * 1000000000 : stateValue.value * 1000000;
+                  return formatMesos.display(displayValue);
+                }
+                return calc.actualCost > 0 ? formatMesos.display(calc.actualCost) : '-';
+              })()}
             </span>
             <Button
               size="sm"

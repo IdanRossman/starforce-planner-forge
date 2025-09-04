@@ -107,7 +107,8 @@ export function StarForceCalculatorTable({
     isCalculating,
     calculationError,
     aggregateStats,
-    triggerRecalculation
+    triggerRecalculation,
+    hasChanges
   } = useStarForceCalculation({
     equipment,
     additionalEquipment,
@@ -118,7 +119,8 @@ export function StarForceCalculatorTable({
     itemActualCosts,
     itemIncluded,
     sortField: sortState.field as SortField,
-    sortDirection: sortState.direction as SortDirection
+    sortDirection: sortState.direction as SortDirection,
+    manualMode: true
   });
 
   // Equipment management hook
@@ -206,6 +208,7 @@ export function StarForceCalculatorTable({
         onUpdateGlobalSettings={setEnhancedSettings}
         onRecalculate={triggerRecalculation}
         isCalculating={isCalculating}
+        hasChanges={hasChanges}
       />
 
       {/* Equipment Status Summary */}

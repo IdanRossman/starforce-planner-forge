@@ -31,10 +31,43 @@ export interface Equipment {
   safeguard?: boolean; // Whether safeguard is enabled for this equipment
   itemType?: string; // Specific equipment type from database (weapon, secondary, gloves, etc.)
   base_attack?: number; // Base attack for weapons to calculate 2% visible ATT gains
+  includeInCalculations?: boolean; // Whether to include this equipment in StarForce calculator and Smart Planner (defaults to true)
+  // Potential System
+  currentPotential?: PotentialLine[]; // Array of current potential lines
+  targetPotential?: PotentialLine[]; // Array of desired potential lines (based on potential tier)
+  potentialTier?: EquipmentTier; // Current potential tier
+  targetPotentialTier?: EquipmentTier; // Target potential tier
+  // Simple string representations for display/form
+  currentPotentialValue?: string; // String representation of current potential
+  targetPotentialValue?: string; // String representation of target potential
+  cubeType?: 'red' | 'black'; // Preferred cube type for this equipment
 }
 
 export interface EquipmentWithCharacter extends Equipment {
   characterName: string;
+}
+
+// Potential System Types
+export interface PotentialLine {
+  id: string; // Unique identifier for the potential line
+  value: string; // The potential line value (e.g., "13% STR", "23% ATT", etc.) - fetched from server
+}
+
+export interface PotentialCalculation {
+  equipmentId: string;
+  currentTier: EquipmentTier;
+  targetTier: EquipmentTier;
+  currentPotential: PotentialLine[];
+  targetPotential: PotentialLine[];
+  averageCost: number;
+  medianCost: number;
+  p75Cost: number;
+  averageCubes: number;
+  medianCubes: number;
+  p75Cubes: number;
+  successRate: number;
+  costPerCube: number;
+  recommendations: string[];
 }
 
 export type EquipmentSlot = 

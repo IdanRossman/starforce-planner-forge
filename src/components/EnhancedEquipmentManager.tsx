@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
@@ -12,6 +13,8 @@ import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
 import { StarForceOptimizer } from "@/components/StarForceOptimizer";
+import { PotentialCalculator } from "@/components/PotentialCalculator";
+import { usePotential } from "@/hooks/game/usePotential";
 import { 
   trackEquipmentAdded, 
   trackStarForceCalculation, 
@@ -37,7 +40,11 @@ import {
   ChevronUp,
   ChevronDown,
   DollarSign,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Zap,
+  Crown,
+  Eye,
+  EyeOff
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -84,6 +91,9 @@ export function EnhancedEquipmentManager({
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("equipment");
 
+  // Use the potential hook
+  const { getPotentialSummary } = usePotential();
+
   // Handle tab switching with analytics tracking
   const handleTabChange = (newTab: string) => {
     if (newTab !== activeTab) {
@@ -97,6 +107,9 @@ export function EnhancedEquipmentManager({
   const starforceableEquipment = allEquipment.filter(eq => eq.starforceable);
   const pendingEquipment = starforceableEquipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
   const completedEquipment = starforceableEquipment.filter(eq => eq.currentStarForce >= eq.targetStarForce);
+  const potentialEquipment = allEquipment.filter(eq => 
+    eq.currentPotentialValue || eq.targetPotentialValue
+  );
   const completionRate = starforceableEquipment.length > 0 
     ? Math.round((completedEquipment.length / starforceableEquipment.length) * 100)
     : 0;
@@ -228,6 +241,25 @@ export function EnhancedEquipmentManager({
     }
   };
 
+  const handleUpdateIncludeInCalculations = (equipmentId: string, includeInCalculations: boolean) => {
+    // Find the equipment and update its includeInCalculations setting
+    const allEquipment = [...equipment, ...additionalEquipment];
+    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
+    
+    if (targetEquipment) {
+      const updatedEquipment = { ...targetEquipment, includeInCalculations };
+      
+      // Check if it's additional equipment or main equipment
+      const isAdditional = isAdditionalEquipment(targetEquipment);
+      
+      if (isAdditional && onSaveAdditionalEquipment) {
+        onSaveAdditionalEquipment(updatedEquipment);
+      } else if (onSaveEquipment) {
+        onSaveEquipment(updatedEquipment);
+      }
+    }
+  };
+
   const getStarforceStatus = (equipment: Equipment) => {
     if (!equipment.starforceable) return "non-starforceable";
     if (equipment.currentStarForce >= equipment.targetStarForce) return "completed";
@@ -247,13 +279,43 @@ export function EnhancedEquipmentManager({
     }
   };
 
+  // Helper function to format target potential summary
+  const getTargetPotentialSummary = (equipment: Equipment): string => {
+    // First check for string value (new format)
+    if (equipment.targetPotentialValue) {
+      return equipment.targetPotentialValue;
+    }
+    
+    // Fallback to array format (old format)
+    if (!equipment.targetPotential || equipment.targetPotential.length === 0) {
+      return "No target set";
+    }
+
+    return getPotentialSummary(equipment.targetPotential);
+  };
+
+  // Helper function to format current potential summary
+  const getCurrentPotentialSummary = (equipment: Equipment): string => {
+    // First check for string value (new format)
+    if (equipment.currentPotentialValue) {
+      return equipment.currentPotentialValue;
+    }
+    
+    // Fallback to array format (old format)
+    if (!equipment.currentPotential || equipment.currentPotential.length === 0) {
+      return "No potential";
+    }
+
+    return getPotentialSummary(equipment.currentPotential);
+  };
+
   return (
     <div className="space-y-6">
       {/* Main Content with Tabs */}
       <Card>
         <CardContent className="pt-6">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 border border-border/50">
+            <TabsList className="grid w-full grid-cols-4 border border-border/50">
               <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-blue-300 data-[state=active]:bg-blue-50/50">
                 {/* Animated highlight background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-indigo-400/40 to-blue-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -285,6 +347,30 @@ export function EnhancedEquipmentManager({
                   )}
                 </div>
               </TabsTrigger>
+              <TabsTrigger value="potential" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-purple-300 data-[state=active]:bg-purple-50/50">
+                {/* Animated highlight background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/30 via-violet-400/40 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/15 to-transparent animate-pulse" />
+                
+                {/* Tab content */}
+                <div className="relative flex items-center gap-2">
+                  <Zap className="w-4 h-4 animate-pulse text-purple-600" />
+                  <span className="flex items-center gap-1.5">
+                    <span className="text-purple-700 font-medium">Potential Calculator</span>
+                    {/* "NEW" indicator positioned to the side */}
+                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-full animate-bounce">
+                      NEW
+                    </span>
+                  </span>
+                  {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-purple-500/20 text-purple-400 font-maplestory">
+                      {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
+                    </Badge>
+                  )}
+                </div>
+              </TabsTrigger>
               <TabsTrigger value="optimizer" className="flex items-center gap-2 font-maplestory relative overflow-hidden group data-[state=active]:border-orange-300 data-[state=active]:bg-gray-900/20">
                 {/* Animated highlight background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-800/40 via-gray-700/50 to-gray-800/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -295,13 +381,7 @@ export function EnhancedEquipmentManager({
                 {/* Tab content */}
                 <div className="relative flex items-center gap-2">
                   <Sparkles className="w-4 h-4 animate-pulse text-orange-600" />
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-orange-700 font-medium">Smart Planner</span>
-                    {/* "NEW" indicator positioned to the side */}
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded-full animate-bounce">
-                      NEW
-                    </span>
-                  </span>
+                  <span className="text-orange-700 font-medium">Smart Planner</span>
                   {pendingEquipment.length > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-600 border-orange-500/30 font-maplestory">
                       BETA
@@ -392,6 +472,8 @@ export function EnhancedEquipmentManager({
                               <TableHead className="font-maplestory">Item</TableHead>
                               <TableHead className="text-center font-maplestory">Current SF</TableHead>
                               <TableHead className="text-center font-maplestory">Target SF</TableHead>
+                              <TableHead className="text-center font-maplestory">Current Potential</TableHead>
+                              <TableHead className="text-center font-maplestory">Target Potential</TableHead>
                               <TableHead className="text-center font-maplestory">Status</TableHead>
                               <TableHead className="text-center font-maplestory">Actions</TableHead>
                             </TableRow>
@@ -402,16 +484,23 @@ export function EnhancedEquipmentManager({
                                 key={item.id}
                                 onMouseEnter={() => setHoveredRow(item.id)}
                                 onMouseLeave={() => setHoveredRow(null)}
-                                className="group"
+                                className={`group transition-opacity ${item.includeInCalculations !== false ? '' : 'opacity-50 bg-muted/30'}`}
                               >
                                 <TableCell>
-                                  <EquipmentImage
-                                    src={item.image}
-                                    alt={item.name}
-                                    size="md"
-                                    maxRetries={2}
-                                    showFallback={true}
-                                  />
+                                  <div className="relative flex-shrink-0">
+                                    <EquipmentImage
+                                      src={item.image}
+                                      alt={item.name}
+                                      size="md"
+                                      maxRetries={2}
+                                      showFallback={true}
+                                    />
+                                    {item.includeInCalculations === false && (
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
+                                        <EyeOff className="w-3 h-3 text-white" />
+                                      </div>
+                                    )}
+                                  </div>
                                 </TableCell>
                                 <TableCell>
                                   <div>
@@ -532,6 +621,22 @@ export function EnhancedEquipmentManager({
                                   )}
                                 </TableCell>
                                 <TableCell className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Zap className="w-3 h-3 text-blue-500" />
+                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getCurrentPotentialSummary(item)}>
+                                      {getCurrentPotentialSummary(item)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Zap className="w-3 h-3 text-purple-500" />
+                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getTargetPotentialSummary(item)}>
+                                      {getTargetPotentialSummary(item)}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-center">
                                   {getStatusBadge(item)}
                                 </TableCell>
                                 <TableCell className="text-center">
@@ -557,6 +662,20 @@ export function EnhancedEquipmentManager({
                                       </>
                                     ) : (
                                       <>
+                                        {/* Eye toggle button */}
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => handleUpdateIncludeInCalculations(item.id, !(item.includeInCalculations !== false))}
+                                          className="h-8 w-8 p-0"
+                                          title={item.includeInCalculations !== false ? "Exclude from calculations" : "Include in calculations"}
+                                        >
+                                          {item.includeInCalculations !== false ? (
+                                            <Eye className="w-4 h-4 text-blue-500" />
+                                          ) : (
+                                            <EyeOff className="w-4 h-4 text-muted-foreground" />
+                                          )}
+                                        </Button>
                                         {item.starforceable && (
                                           <Button
                                             size="sm"
@@ -620,6 +739,8 @@ export function EnhancedEquipmentManager({
                   onUpdateStarforce={onUpdateStarforce}
                   onUpdateActualCost={onUpdateActualCost}
                   onUpdateSafeguard={handleUpdateSafeguard}
+                  onSaveEquipment={onSaveEquipment}
+                  onSaveAdditionalEquipment={onSaveAdditionalEquipment}
                 />
               ) : (
                 <Card>
@@ -650,6 +771,18 @@ export function EnhancedEquipmentManager({
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Potential Calculator Tab */}
+            <TabsContent value="potential" className="mt-6">
+              <PotentialCalculator
+                characterId={characterId}
+                characterName={characterName}
+                equipment={equipment}
+                additionalEquipment={additionalEquipment}
+                onSaveEquipment={onSaveEquipment}
+                onSaveAdditionalEquipment={onSaveAdditionalEquipment}
+              />
             </TabsContent>
 
             {/* Smart Planner Tab */}

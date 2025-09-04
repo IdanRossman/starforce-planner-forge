@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Equipment, StarForceCalculation } from '../../types';
 import { 
   calculateBulkStarforce, 
@@ -46,6 +46,12 @@ export interface EquipmentCalculation {
     p75SpareCost: number;
   };
   
+  // Transfer fields
+  transferredTo?: string; // ID of equipment that was transferred to (for transfer sources)
+  transferredFrom?: string; // ID of equipment that was transferred from (for transfer targets)
+  transferredStars?: number; // Number of stars transferred
+  isTransferSource?: boolean; // Flag indicating this equipment will be destroyed after transfer
+  
   // UI-specific pre-calculated data
   spareStatus: string;
   spareClassName: string;
@@ -86,6 +92,7 @@ export interface UseStarForceCalculationOptions {
   sortField: SortField | null;
   sortDirection: SortDirection;
   initialCalculation?: StarForceCalculation;
+  manualMode?: boolean;
 }
 
 export interface UseSortingReturn {
@@ -104,7 +111,8 @@ export function useStarForceCalculation({
   itemIncluded,
   sortField,
   sortDirection,
-  initialCalculation
+  initialCalculation,
+  manualMode = false
 }: UseStarForceCalculationOptions) {
   
   // Calculation state
@@ -112,9 +120,14 @@ export function useStarForceCalculation({
     initialCalculation || null
   );
   const [isCalculating, setIsCalculating] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
   const [calculationError, setCalculationError] = useState<string | null>(null);
   const [recalculationTrigger, setRecalculationTrigger] = useState(0);
   const [equipmentCalculations, setEquipmentCalculations] = useState<EquipmentCalculation[]>([]);
+  const hasInitiallyCalculated = useRef(false);
+  const shouldCalculate = useRef(true); // Control flag for calculations
+  const lastRecalculationTrigger = useRef(0); // Track last manual trigger value
+  const isInitializing = useRef(true); // Track if we're still in initialization phase
 
   // Combine all equipment for table mode - memoized to prevent recalculation
   const pendingEquipment = useMemo(() => {
@@ -262,6 +275,12 @@ export function useStarForceCalculation({
               p75SpareCost
             },
             
+            // Transfer fields
+            transferredTo: equipment.transferredTo,
+            transferredFrom: equipment.transferredFrom,
+            transferredStars: equipment.transferredStars,
+            isTransferSource: equipment.isTransferSource,
+            
             // Pre-calculate spare status and related UI data
             spareStatus: (() => {
               const spares = itemSpares[equipment.id] || 0;
@@ -364,6 +383,11 @@ export function useStarForceCalculation({
         }
 
         setEquipmentCalculations(calculations);
+        
+        // Mark initialization as complete after first successful calculation
+        if (isInitializing.current) {
+          isInitializing.current = false;
+        }
       } catch (error) {
         console.error('Failed to calculate equipment costs:', error);
         setCalculationError(error instanceof Error ? error.message : 'Failed to calculate costs');
@@ -371,6 +395,28 @@ export function useStarForceCalculation({
       } finally {
         setIsCalculating(false);
       }
+    }
+
+    // In manual mode, allow initial calculation and manual triggers, but block equipment-specific auto-calcs
+    const isManualTrigger = recalculationTrigger > lastRecalculationTrigger.current;
+    
+    if (manualMode && hasInitiallyCalculated.current && !isManualTrigger) {
+      // Only set hasChanges for actual user changes, not during initialization
+      if (!isInitializing.current) {
+        setHasChanges(true);
+      }
+      // Skip equipment-related changes in manual mode after initial calculation
+      return;
+    }
+
+    // Update the last trigger value
+    lastRecalculationTrigger.current = recalculationTrigger;
+
+    shouldCalculate.current = true;
+
+    // Mark that we've done the initial calculation
+    if (pendingEquipment.length > 0) {
+      hasInitiallyCalculated.current = true;
     }
 
     calculateEquipmentCosts();
@@ -383,7 +429,8 @@ export function useStarForceCalculation({
     itemSpares,
     sortField,
     sortDirection,
-    recalculationTrigger
+    recalculationTrigger,
+    manualMode
   ]);
 
   // Aggregate statistics calculation
@@ -453,8 +500,11 @@ export function useStarForceCalculation({
 
   // Manual recalculation trigger
   const triggerRecalculation = useCallback(() => {
+    if (manualMode) {
+      setHasChanges(false);
+    }
     setRecalculationTrigger(prev => prev + 1);
-  }, []);
+  }, [manualMode]);
 
   return {
     // State
@@ -464,6 +514,7 @@ export function useStarForceCalculation({
     equipmentCalculations,
     pendingEquipment,
     aggregateStats,
+    hasChanges,
     
     // Actions
     setCalculation,

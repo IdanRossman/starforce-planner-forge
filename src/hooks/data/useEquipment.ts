@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { Equipment } from '../../types';
+import { Equipment, EquipmentSlot } from '../../types';
 import { useCharacterContext } from '../useCharacterContext';
 
 export interface StarForceAdjustable {
@@ -24,14 +24,15 @@ export interface EquipmentOperations {
   addEquipment: (equipment: Omit<Equipment, 'id'>) => void;
   updateEquipment: (equipmentId: string, updates: Partial<Equipment>) => void;
   removeEquipment: (equipmentId: string) => void;
+  clearEquipmentSlot: (slot: EquipmentSlot) => void;
   clearAllEquipment: () => void;
   
   // Bulk operations
   bulkUpdateStarForce: (updates: Array<{ id: string; current: number; target: number }>) => void;
   bulkUpdateSafeguard: (equipmentIds: string[], safeguard: boolean) => void;
   
-  // Transfer operations
-  transferStarForce: (sourceEquipment: Equipment, targetEquipment: Equipment) => void;
+  // Transfer operations - Enhanced to match EquipmentForm logic
+  transferStarForce: (sourceEquipment: Equipment, targetEquipment: Equipment, targetCurrentStars?: number, targetTargetStars?: number, existingEquipment?: Equipment[], onTransfer?: (source: Equipment, target: Equipment) => void) => void;
   
   // Advanced transfer operations
   prepareTransfer: (sourceEquipmentId: string, targetEquipmentId: string) => void;
@@ -126,6 +127,15 @@ export function useEquipment(): EquipmentOperations {
     updateCharacterEquipment(selectedCharacter.id, []);
   }, [selectedCharacter, updateCharacterEquipment]);
 
+  const clearEquipmentSlot = useCallback((slot: EquipmentSlot) => {
+    if (!selectedCharacter) return;
+    // Find equipment in this slot and remove it
+    const equipmentToRemove = selectedCharacter.equipment.find(eq => eq.slot === slot);
+    if (equipmentToRemove) {
+      removeEquipmentFromCharacter(selectedCharacter.id, equipmentToRemove.id);
+    }
+  }, [selectedCharacter, removeEquipmentFromCharacter]);
+
   // Bulk operations
   const bulkUpdateStarForce = useCallback((updates: Array<{ id: string; current: number; target: number }>) => {
     if (!selectedCharacter) return;
@@ -155,37 +165,170 @@ export function useEquipment(): EquipmentOperations {
     updateCharacterEquipment(selectedCharacter.id, updatedEquipment);
   }, [selectedCharacter, updateCharacterEquipment]);
 
-  // Transfer operations
-  const transferStarForce = useCallback((sourceEquipment: Equipment, targetEquipment: Equipment) => {
-    if (!selectedCharacter) return;
-
-    const transferredStars = sourceEquipment.currentStarForce || 0;
-    
-    // Update both equipments
-    const updatedEquipment = selectedCharacter.equipment.map(eq => {
-      if (eq.id === sourceEquipment.id) {
-        // Source loses stars and is marked for destruction
-        return {
-          ...eq,
-          currentStarForce: 0,
-          transferredTo: targetEquipment.id,
-          transferredStars,
-          isTransferSource: true,
-          transferTargetId: targetEquipment.id
-        };
-      } else if (eq.id === targetEquipment.id) {
-        // Target gets the stars
-        return {
-          ...eq,
-          currentStarForce: transferredStars,
-          transferredFrom: sourceEquipment.id,
-          transferredStars
-        };
-      }
-      return eq;
+  // Transfer operations - Enhanced to match EquipmentForm logic
+  const transferStarForce = useCallback((
+    sourceEquipment: Equipment, 
+    targetEquipment: Equipment, 
+    targetCurrentStars?: number, 
+    targetTargetStars?: number,
+    existingEquipment: Equipment[] = [],
+    onTransfer?: (source: Equipment, target: Equipment) => void
+  ) => {
+    console.log('🔄 transferStarForce called with:', {
+      sourceEquipment: { id: sourceEquipment.id, name: sourceEquipment.name, slot: sourceEquipment.slot },
+      targetEquipment: { id: targetEquipment.id, name: targetEquipment.name, slot: targetEquipment.slot },
+      targetCurrentStars,
+      targetTargetStars,
+      hasOnTransfer: !!onTransfer,
+      selectedCharacterId: selectedCharacter?.id
     });
 
-    updateCharacterEquipment(selectedCharacter.id, updatedEquipment);
+    // For backward compatibility, use simple logic if optional params not provided
+    if (targetCurrentStars === undefined || targetTargetStars === undefined) {
+      console.log('⚠️ Using backward compatibility mode');
+      if (!selectedCharacter) return;
+
+      const transferredStars = sourceEquipment.currentStarForce || 0;
+      
+      // Update both equipments with simple logic
+      const updatedEquipment = selectedCharacter.equipment.map(eq => {
+        if (eq.id === sourceEquipment.id) {
+          return {
+            ...eq,
+            currentStarForce: 0,
+            transferredTo: targetEquipment.id,
+            transferredStars,
+            isTransferSource: true,
+            transferTargetId: targetEquipment.id
+          };
+        } else if (eq.id === targetEquipment.id) {
+          return {
+            ...eq,
+            currentStarForce: transferredStars,
+            transferredFrom: sourceEquipment.id,
+            transferredStars
+          };
+        }
+        return eq;
+      });
+
+      console.log('📝 Updating equipment (simple mode):', updatedEquipment.filter(eq => eq.id === sourceEquipment.id || eq.id === targetEquipment.id));
+      updateCharacterEquipment(selectedCharacter.id, updatedEquipment);
+      return;
+    }
+
+    console.log('✅ Using enhanced mode with specific star values');
+    // Enhanced logic that matches EquipmentForm handleTransfer exactly
+    // Calculate the actual transferred star amount (source target - 1 for penalty)
+    const transferredStarAmount = Math.max(0, sourceEquipment.targetStarForce - 1);
+    
+    // Ensure we have the correct image for the target equipment
+    const targetImage = targetEquipment.image || '';
+    
+    // Determine the correct specific slot for the target equipment
+    // If target has a generic slot (pendant, ring), find an available specific slot
+    let targetSlot: EquipmentSlot = targetEquipment.slot;
+    const sourceSlot = sourceEquipment.slot;
+    
+    // Handle multi-slot types (rings, pendants) - check the string value of the slot
+    const targetSlotString = targetEquipment.slot as string;
+    if (targetSlotString === 'pendant' || targetSlotString === 'ring') {
+      // Find an available specific slot for this type
+      const possibleSlots: EquipmentSlot[] = targetSlotString === 'pendant' 
+        ? ['pendant1', 'pendant2'] 
+        : ['ring1', 'ring2', 'ring3', 'ring4'];
+      
+      // Find first available slot or use the source slot if it's the same type
+      const availableSlot = possibleSlots.find(slot => {
+        const existing = existingEquipment?.find(eq => eq.slot === slot && eq.id !== sourceEquipment.id);
+        return !existing;
+      });
+      
+      targetSlot = availableSlot || sourceSlot; // Fallback to source slot if no available slot found
+    }
+    
+    // Create the updated target equipment with transferred stars
+    const updatedTargetEquipment: Equipment = {
+      ...targetEquipment,
+      slot: targetSlot, // Use the determined specific slot
+      currentStarForce: targetCurrentStars,
+      targetStarForce: targetTargetStars,
+      transferredFrom: sourceEquipment.id, // Mark as transfer target
+      transferredStars: transferredStarAmount, // Track the actual transferred star amount as minimum
+      image: targetImage, // Explicitly ensure the image is preserved
+    };
+
+    // Create the source equipment for the table (with transfer indicator)
+    const sourceForTable: Equipment = {
+      ...sourceEquipment,
+      transferredTo: targetEquipment.id, // Mark as transfer source
+    };
+
+    // Always update the equipment directly first
+    if (selectedCharacter) {
+      // Check if target equipment already exists in character's equipment
+      const targetExistsInCharacter = selectedCharacter.equipment.some(eq => eq.id === targetEquipment.id);
+      console.log('🔍 Target equipment exists in character?', { exists: targetExistsInCharacter, targetId: targetEquipment.id });
+      
+      let updatedEquipment;
+      
+      if (targetExistsInCharacter) {
+        // Target exists - update both source and target
+        updatedEquipment = selectedCharacter.equipment.map(eq => {
+          if (eq.id === sourceEquipment.id) {
+            console.log('🔄 Updating existing source equipment:', { id: eq.id, name: eq.name, newState: 'transferred' });
+            return sourceForTable;
+          } else if (eq.id === targetEquipment.id) {
+            console.log('🔄 Updating existing target equipment:', { id: eq.id, name: eq.name, slot: targetSlot, currentStars: targetCurrentStars, targetStars: targetTargetStars });
+            return updatedTargetEquipment;
+          }
+          return eq;
+        });
+      } else {
+        // Target doesn't exist - we need to add target and potentially source
+        const sourceExistsInCharacter = selectedCharacter.equipment.some(eq => eq.id === sourceEquipment.id);
+        console.log('🔍 Source equipment exists in character?', { exists: sourceExistsInCharacter, sourceId: sourceEquipment.id });
+        
+        if (sourceExistsInCharacter) {
+          // Source exists, target doesn't - update source and add target
+          updatedEquipment = [
+            ...selectedCharacter.equipment.map(eq => {
+              if (eq.id === sourceEquipment.id) {
+                console.log('🔄 Updating existing source equipment:', { id: eq.id, name: eq.name, newState: 'transferred' });
+                return sourceForTable;
+              }
+              return eq;
+            }),
+            updatedTargetEquipment // Add the target equipment as new item
+          ];
+          console.log('➕ Adding new target equipment:', { id: updatedTargetEquipment.id, name: updatedTargetEquipment.name, slot: targetSlot });
+        } else {
+          // Neither source nor target exist - add both
+          updatedEquipment = [
+            ...selectedCharacter.equipment,
+            sourceForTable, // Add the source equipment
+            updatedTargetEquipment // Add the target equipment as new item
+          ];
+          console.log('➕ Adding new source equipment:', { id: sourceForTable.id, name: sourceForTable.name });
+          console.log('➕ Adding new target equipment:', { id: updatedTargetEquipment.id, name: updatedTargetEquipment.name, slot: targetSlot });
+        }
+      }
+      
+      console.log('📝 About to update character equipment. Character ID:', selectedCharacter.id);
+      console.log('📝 Updated equipment items:', updatedEquipment.filter(eq => eq.id === sourceEquipment.id || eq.id === targetEquipment.id));
+      updateCharacterEquipment(selectedCharacter.id, updatedEquipment);
+      console.log('✅ Equipment update completed');
+    } else {
+      console.log('❌ No selectedCharacter found!');
+    }
+
+    // Then call the transfer callback if available (for additional processing like toasts)
+    if (onTransfer) {
+      console.log('📞 Calling onTransfer callback');
+      onTransfer(sourceForTable, updatedTargetEquipment);
+    } else {
+      console.log('⚠️ No onTransfer callback provided');
+    }
   }, [selectedCharacter, updateCharacterEquipment]);
 
   // Advanced transfer operations
@@ -236,14 +379,33 @@ export function useEquipment(): EquipmentOperations {
   }, []);
 
   const canTransfer = useCallback((sourceEquipment: Equipment, targetEquipment: Equipment): { canTransfer: boolean; reason?: string } => {
-    // Check if source has stars to transfer
-    if ((sourceEquipment.currentStarForce || 0) === 0) {
-      return { canTransfer: false, reason: 'Source equipment has no stars to transfer' };
-    }
-
-    // Check if equipment is in same slot
+    // Same slot requirement
     if (sourceEquipment.slot !== targetEquipment.slot) {
       return { canTransfer: false, reason: 'Equipment must be in the same slot' };
+    }
+    
+    // Target level must be within 10 levels ABOVE the source (can only transfer up)
+    const levelDiff = targetEquipment.level - sourceEquipment.level;
+    if (levelDiff < 0 || levelDiff > 10) {
+      return { canTransfer: false, reason: 'Target level must be within 10 levels above source level' };
+    }
+    
+    // Source must have StarForce target and be starforceable
+    if (!sourceEquipment.starforceable || (sourceEquipment.targetStarForce || 0) === 0) {
+      return { canTransfer: false, reason: 'Source equipment must have target StarForce and be starforceable' };
+    }
+    
+    // Target must be starforceable
+    if (!targetEquipment.starforceable) {
+      return { canTransfer: false, reason: 'Target equipment must be starforceable' };
+    }
+    
+    // Can't transfer to the same equipment (check by ID, name, and level)
+    if (sourceEquipment.id === targetEquipment.id) {
+      return { canTransfer: false, reason: 'Cannot transfer to the same equipment' };
+    }
+    if (sourceEquipment.name === targetEquipment.name && sourceEquipment.level === targetEquipment.level) {
+      return { canTransfer: false, reason: 'Cannot transfer to identical equipment' };
     }
 
     // Check if target already has stars (would lose them)
@@ -260,7 +422,7 @@ export function useEquipment(): EquipmentOperations {
     if (targetEquipment.transferredFrom) {
       return { canTransfer: false, reason: 'Target equipment already received a transfer' };
     }
-
+    
     return { canTransfer: true };
   }, []);
 
@@ -341,6 +503,7 @@ export function useEquipment(): EquipmentOperations {
     addEquipment,
     updateEquipment,
     removeEquipment,
+    clearEquipmentSlot,
     clearAllEquipment,
     bulkUpdateStarForce,
     bulkUpdateSafeguard,

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Character, Equipment, EquipmentSlot, EquipmentType } from "@/types";
 import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterForm } from "@/components/CharacterForm";
+import { CharacterOverview } from "@/components/CharacterOverview";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
 import { GameAssistant } from "@/components/GameAssistant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +53,8 @@ export default function CharacterDashboard() {
     transferStarForce: transferEquipment,
     updateEquipment: saveEquipment,
     addEquipment,
-    removeEquipment: clearEquipmentSlot
+    removeEquipment,
+    clearEquipmentSlot
   } = useEquipment();
   
   // Local state for UI components only
@@ -387,6 +389,12 @@ export default function CharacterDashboard() {
       });
     } else {
       // Create new character
+      console.log('📝 Creating character with equipment:', {
+        name: newCharacter.name,
+        equipmentCount: newCharacter.equipment?.length || 0,
+        equipment: newCharacter.equipment?.map(eq => ({ id: eq.id, name: eq.name, slot: eq.slot })) || []
+      });
+      
       createCharacter(newCharacter);
       
       // Track character creation
@@ -469,7 +477,8 @@ export default function CharacterDashboard() {
   };
 
   const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
-    transferEquipment(sourceEquipment, targetEquipment);
+    // Don't call transferEquipment here - it's already been called by the EquipmentForm
+    // This callback is just for additional processing like showing toasts
     
     toast({
       title: "Transfer Planned",
@@ -611,142 +620,13 @@ export default function CharacterDashboard() {
                   )}
                 </div>
 
-                {/* Character Selection & Display */}
-                <div className="flex items-center gap-8">
-                  {/* Character Selector */}
-                  <div className="flex-1">
-                    <Select
-                      value={selectedCharacter?.id || ""}
-                      onValueChange={(value) => {
-                        const character = characters.find(char => char.id === value);
-                        if (character) handleSelectCharacter(character);
-                      }}
-                    >
-                      <SelectTrigger className="w-full h-16 bg-background/80 text-left font-maplestory">
-                        <SelectValue placeholder="Select a character to get started">
-                          {selectedCharacter ? (
-                            <div className="flex items-center gap-4">
-                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                <Crown className="w-6 h-6 text-primary" />
-                              </div>
-                              <div>
-                                <div className="font-medium text-lg font-maplestory">{selectedCharacter.name}</div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-maplestory">
-                                  <Badge variant="outline" className="text-xs font-maplestory">
-                                    {selectedCharacter.class}
-                                  </Badge>
-                                  <span>Level {selectedCharacter.level}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ) : null}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {characters.map((character) => {
-                          const stats = getCharacterSummary(character.id);
-                          return (
-                            <SelectItem key={character.id} value={character.id}>
-                              <div className="flex items-center gap-4 py-2">
-                                {character.image ? (
-                                  <img 
-                                    src={character.image} 
-                                    alt={character.name}
-                                    className="w-10 h-10 rounded-full object-cover border border-primary/20"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-primary/20">
-                                    <Users className="w-5 h-5 text-muted-foreground" />
-                                  </div>
-                                )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-medium font-maplestory">{character.name}</span>
-                                    <Badge variant="outline" className="text-xs font-maplestory">
-                                      {character.class}
-                                    </Badge>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground font-maplestory">
-                                    Lv.{character.level} • {stats?.totalEquipment || 0} items • {(stats?.starforceItems || 0) - (stats?.completedItems || 0)} pending
-                                  </div>
-                                </div>
-                              </div>
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Large Character Display */}
-                  {selectedCharacter && (
-                    <div className="flex items-center gap-6">
-                      {/* Character Portrait */}
-                      <div className="relative">
-                        {selectedCharacter.image ? (
-                          <img 
-                            src={selectedCharacter.image} 
-                            alt={selectedCharacter.name}
-                            className="w-32 h-32 rounded-full object-cover border-4 border-primary/30 shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center border-4 border-primary/30 shadow-lg">
-                            <Users className="w-12 h-12 text-primary" />
-                          </div>
-                        )}
-                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                          <Crown className="w-4 h-4 text-primary-foreground" />
-                        </div>
-                      </div>
-
-                      {/* Character Stats */}
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-2xl font-bold text-foreground font-maplestory">{selectedCharacter.name}</h3>
-                          <div className="flex items-center gap-3 mt-1">
-                            <Badge variant="secondary" className="px-3 py-1 font-maplestory">
-                              {selectedCharacter.class}
-                            </Badge>
-                            <span className="text-muted-foreground font-maplestory">Level {selectedCharacter.level}</span>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-4">
-                          {(() => {
-                            const stats = getCharacterSummary(selectedCharacter.id);
-                            return (
-                              <>
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center gap-1 mb-1">
-                                    <Target className="w-4 h-4 text-primary" />
-                                    <span className="text-sm font-medium font-maplestory">{stats?.totalEquipment || 0}</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground font-maplestory">Equipment</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center gap-1 mb-1">
-                                    <Calculator className="w-4 h-4 text-orange-500" />
-                                    <span className="text-sm font-medium text-orange-500 font-maplestory">{(stats?.starforceItems || 0) - (stats?.completedItems || 0)}</span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground font-maplestory">Pending</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center gap-1 mb-1">
-                                    <Sparkles className="w-4 h-4 text-green-500" />
-                                    <span className="text-sm font-medium text-green-500 font-maplestory">
-                                      {stats?.starforceItems ? Math.round((stats.completedItems / stats.starforceItems) * 100) : 0}%
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-muted-foreground font-maplestory">Progress</div>
-                                </div>
-                              </>
-                            );
-                          })()}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+                {/* Character Overview */}
+                <CharacterOverview
+                  selectedCharacter={selectedCharacter}
+                  characters={characters}
+                  onSelectCharacter={handleSelectCharacter}
+                  getCharacterSummary={getCharacterSummary}
+                />
               </div>
             </CardContent>
           </Card>
