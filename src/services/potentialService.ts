@@ -38,7 +38,7 @@ export interface PotentialBulkItem {
   itemType: string;
   itemLevel: number;
   selectedOption: string;
-  cubeType: 'red' | 'black';
+  cubeType: 'red' | 'black' | null; // null for smart cube optimization
   isDMT?: boolean; // Always false
   itemName?: string;
 }
