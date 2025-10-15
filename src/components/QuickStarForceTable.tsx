@@ -248,10 +248,10 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
         </div>
       </div>
 
-      {/* Calculation Table - Simplified */}
-      <div className="rounded-md border bg-card">
+      {/* Calculation Table - Simplified with max height and scroll */}
+      <div className="rounded-md border bg-card max-h-[400px] overflow-y-auto">
         <Table>
-          <TableHeader>
+          <TableHeader className="sticky top-0 bg-card z-10">
             <TableRow>
               <TableHead className="font-maplestory">Equipment</TableHead>
               <TableHead className="text-center font-maplestory">Current ★</TableHead>

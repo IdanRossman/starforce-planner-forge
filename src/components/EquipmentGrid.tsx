@@ -119,34 +119,34 @@ const getSlotIcon = (slot: string) => {
   return <IconComponent className="w-4 h-4" />;
 };
 
-// Component to handle equipment display with image state
+// Component to handle equipment display with image state - Ultra compact version
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
   const [hasImage, setHasImage] = useState(false);
   
   return (
-    <div className="space-y-2">
+    <div className="flex items-center justify-center">
       {equipment.image ? (
-        // Image-centered layout: image with centered StarForce below
-        <div className="flex flex-col items-center justify-center space-y-1">
+        // Image-centered layout: larger image with minimal spacing
+        <div className="flex flex-col items-center gap-0.5 w-fit">
           <EquipmentImage
             src={equipment.image}
             alt={equipment.name || equipment.set || "Equipment"}
-            size="lg"
+            size="md"
             fallbackIcon={() => getSlotIcon(slot)}
             onImageStatusChange={setHasImage}
             className="shrink-0"
           />
-          {/* StarForce display - centered below image */}
+          {/* Ultra-compact StarForce display */}
           {equipment.starforceable && (
-            <div className="flex items-center justify-center gap-0.5 text-xs">
-              <Star className="w-2.5 h-2.5 text-yellow-400" />
-              <span className="text-yellow-400 font-medium text-xs font-maplestory">
+            <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+              <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
+              <span className="text-white font-semibold text-[8px]">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-muted-foreground text-xs font-maplestory">→</span>
-                  <span className="text-primary font-medium text-xs font-maplestory">
+                  <span className="text-white/50 text-[8px]">→</span>
+                  <span className="text-primary font-semibold text-[8px]">
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -155,32 +155,32 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           )}
         </div>
       ) : (
-        // Text layout: no image, show equipment details with slot icon
-        <div className="space-y-2">
-          <div className="flex items-start gap-2">
-            <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded shrink-0">
+        // Text layout: minimal text with tiny icon
+        <div className="space-y-0.5">
+          <div className="flex items-start gap-0.5">
+            <div className="flex items-center justify-center w-4 h-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded shrink-0">
               {getSlotIcon(slot)}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-foreground truncate font-maplestory">
-                {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
+              <p className="text-[8px] font-medium text-white truncate leading-tight">
+                {equipment.name || equipment.set || `Lv.${equipment.level}`}
               </p>
-              <p className="text-xs text-muted-foreground truncate font-maplestory">
+              <p className="text-[7px] text-muted-foreground truncate leading-tight">
                 {label}
               </p>
             </div>
           </div>
-          {/* StarForce display - normal layout for text mode */}
+          {/* Ultra-compact StarForce display for text mode */}
           {equipment.starforceable && (
-            <div className="flex items-center gap-1 text-xs">
-              <Star className="w-3 h-3 text-yellow-400" />
-              <span className="text-yellow-400 font-medium font-maplestory">
+            <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-fit">
+              <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
+              <span className="text-white font-semibold text-[8px]">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-muted-foreground font-maplestory">→</span>
-                  <span className="text-primary font-medium font-maplestory">
+                  <span className="text-white/50 text-[8px]">→</span>
+                  <span className="text-primary font-semibold text-[8px]">
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -254,13 +254,13 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           }
         }}
       >
-        <CardContent className="p-3 h-full flex flex-col justify-between">
+        <CardContent className="p-1 h-full flex flex-col justify-between min-h-[60px]">
           {equipment ? (
             <>
-              <div className="space-y-2">
-                <div className="flex items-start justify-between gap-1">
+              <div className="space-y-0.5">
+                <div className="flex items-start justify-between gap-0.5">
                   {equipment.tier && (
-                    <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
+                    <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-[7px] px-0.5 py-0 shrink-0`}>
                       {equipment.tier.charAt(0).toUpperCase()}
                     </Badge>
                   )}
@@ -274,7 +274,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                         onClearEquipment(equipment.slot);
                       }}
                     >
-                      <X className="w-2.5 h-2.5" />
+                      <X className="w-2 h-2" />
                     </Button>
                   </div>
                 </div>
@@ -287,9 +287,9 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
               </div>
             </>
           ) : (
-            <div className="h-full w-full flex flex-col gap-2 items-center justify-center text-muted-foreground">
-              <Plus className="w-4 h-4" />
-              <span className="text-xs font-maplestory">{label}</span>
+            <div className="h-full w-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground min-h-[60px]">
+              <Plus className="w-2.5 h-2.5" />
+              <span className="text-[7px]">{label}</span>
             </div>
           )}
         </CardContent>
@@ -304,7 +304,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
       <div className="space-y-6">
         {/* Desktop Grid Layout */}
         <div className="hidden lg:block">
-          <div className="grid grid-cols-5 grid-rows-6 gap-3 p-6 bg-card/30 rounded-lg border border-border/50">
+          <div className="grid grid-cols-5 grid-rows-6 gap-1 p-2 bg-card/30 rounded-lg border border-border/50 max-w-[450px] mx-auto">
             {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
           </div>
         </div>
@@ -412,23 +412,6 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
             </div>
           ))}
         </div>
-        
-        {/* Calculator Button */}
-        {hasIncompleteStarForce && onOpenCalculator && (
-          <div className="flex flex-col items-center text-center">
-            <Button 
-              onClick={onOpenCalculator}
-              className="flex items-center gap-2"
-              size="lg"
-            >
-              <Calculator className="w-5 h-5" />
-              Calculate StarForce Costs
-            </Button>
-            <p className="text-sm text-muted-foreground mt-2">
-              Plan your upgrades and estimate costs for incomplete equipment
-            </p>
-          </div>
-        )}
       </div>
     </TooltipProvider>
   );
