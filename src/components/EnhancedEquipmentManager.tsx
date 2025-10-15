@@ -310,95 +310,66 @@ export function EnhancedEquipmentManager({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Main Content with Tabs */}
-      <Card>
-        <CardContent className="pt-6">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 border border-border/50">
-              <TabsTrigger value="equipment" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-blue-300 data-[state=active]:bg-blue-50/50">
-                {/* Animated highlight background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400/30 via-indigo-400/40 to-blue-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-400/15 to-transparent animate-pulse" />
-                
-                {/* Tab content */}
-                <div className="relative flex items-center gap-2">
-                  <Package className="w-4 h-4 animate-pulse text-blue-600" />
-                  <span className="text-blue-700 font-medium">Equipment Setup</span>
-                </div>
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
+          <TabsTrigger 
+            value="equipment" 
+            className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+          >
+            <Package className="w-4 h-4" />
+            <span>Equipment</span>
+          </TabsTrigger>
+              <TabsTrigger 
+                value="calculator" 
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+              >
+                <Calculator className="w-4 h-4" />
+                <span>Calculator</span>
+                {pendingEquipment.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
+                    {pendingEquipment.length}
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="calculator" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-green-300 data-[state=active]:bg-green-50/50">
-                {/* Animated highlight background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-green-400/30 via-emerald-400/40 to-green-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-green-400/15 to-transparent animate-pulse" />
-                
-                {/* Tab content */}
-                <div className="relative flex items-center gap-2">
-                  <Calculator className="w-4 h-4 animate-pulse text-green-600" />
-                  <span className="text-green-700 font-medium">StarForce Calculator</span>
-                  {pendingEquipment.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-400 font-maplestory">
-                      {pendingEquipment.length}
-                    </Badge>
-                  )}
-                </div>
+              <TabsTrigger 
+                value="potential" 
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+              >
+                <Zap className="w-4 h-4" />
+                <span>Potential</span>
+                <Badge variant="secondary" className="ml-1 rounded-full bg-purple-500 text-white text-[10px] px-1.5 py-0 h-4 font-bold">
+                  NEW
+                </Badge>
+                {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
+                  <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
+                    {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="potential" className="flex items-center gap-2 font-maplestory relative overflow-hidden group border-r border-border/50 data-[state=active]:border-purple-300 data-[state=active]:bg-purple-50/50">
-                {/* Animated highlight background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-400/30 via-violet-400/40 to-purple-400/30 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-400/15 to-transparent animate-pulse" />
-                
-                {/* Tab content */}
-                <div className="relative flex items-center gap-2">
-                  <Zap className="w-4 h-4 animate-pulse text-purple-600" />
-                  <span className="flex items-center gap-1.5">
-                    <span className="text-purple-700 font-medium">Potential Calculator</span>
-                    {/* "NEW" indicator positioned to the side */}
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-full animate-bounce">
-                      NEW
-                    </span>
-                  </span>
-                  {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
-                    <Badge variant="secondary" className="ml-1 bg-purple-500/20 text-purple-400 font-maplestory">
-                      {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
-                    </Badge>
-                  )}
-                </div>
-              </TabsTrigger>
-              <TabsTrigger value="optimizer" className="flex items-center gap-2 font-maplestory relative overflow-hidden group data-[state=active]:border-orange-300 data-[state=active]:bg-gray-900/20">
-                {/* Animated highlight background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-gray-800/40 via-gray-700/50 to-gray-800/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                
-                {/* Subtle glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent animate-pulse" />
-                
-                {/* Tab content */}
-                <div className="relative flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 animate-pulse text-orange-600" />
-                  <span className="text-orange-700 font-medium">Smart Planner</span>
-                  {pendingEquipment.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 bg-orange-500/20 text-orange-600 border-orange-500/30 font-maplestory">
-                      BETA
-                    </Badge>
-                  )}
-                </div>
+              <TabsTrigger 
+                value="optimizer" 
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Optimizer</span>
+                {pendingEquipment.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 rounded-full bg-orange-500/20 text-orange-600 border-orange-500/30 text-xs px-1.5 py-0 h-5 font-maplestory">
+                    BETA
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
             {/* Equipment Setup Tab */}
-            <TabsContent value="equipment" className="mt-6">
-              <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+            <TabsContent value="equipment" className="mt-4">
+              <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
                 {/* Equipment Grid - Left Side */}
-                <Card className="xl:col-span-2">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 font-maplestory">
-                      <Target className="w-5 h-5 text-primary" />
+                <Card className="xl:col-span-2 bg-white/5 backdrop-blur-md border-border/50">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 font-maplestory text-base">
+                      <Target className="w-4 h-4 text-primary" />
                       Equipment Slots
                     </CardTitle>
                   </CardHeader>
@@ -414,21 +385,21 @@ export function EnhancedEquipmentManager({
                 </Card>
 
                 {/* Equipment Table - Right Side */}
-                <Card className="xl:col-span-3">
-                  <CardHeader>
+                <Card className="xl:col-span-3 bg-white/5 backdrop-blur-md border-border/50">
+                  <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 font-maplestory">
-                        <Package className="w-5 h-5 text-primary" />
+                      <CardTitle className="flex items-center gap-2 font-maplestory text-base">
+                        <Package className="w-4 h-4 text-primary" />
                         Equipment Details
                       </CardTitle>
                       
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         {/* Add Additional Equipment Button */}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={handleAddAdditionalEquipment}
-                          className="flex items-center gap-2 font-maplestory"
+                          className="flex items-center gap-2 font-maplestory rounded-full h-8"
                         >
                           <Plus className="w-4 h-4" />
                           Add Item
@@ -436,11 +407,11 @@ export function EnhancedEquipmentManager({
                         
                         {/* Filter Tabs */}
                         <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="w-auto">
-                          <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="all" className="text-xs font-maplestory">All ({allEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="starforceable" className="text-xs font-maplestory">SF ({starforceableEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="pending" className="text-xs font-maplestory">Pending ({pendingEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="completed" className="text-xs font-maplestory">Done ({completedEquipment.length})</TabsTrigger>
+                          <TabsList className="h-8 p-0.5 bg-muted/30">
+                            <TabsTrigger value="all" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">All ({allEquipment.length})</TabsTrigger>
+                            <TabsTrigger value="starforceable" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">SF ({starforceableEquipment.length})</TabsTrigger>
+                            <TabsTrigger value="pending" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">Pending ({pendingEquipment.length})</TabsTrigger>
+                            <TabsTrigger value="completed" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">Done ({completedEquipment.length})</TabsTrigger>
                           </TabsList>
                         </Tabs>
                       </div>
@@ -448,26 +419,26 @@ export function EnhancedEquipmentManager({
                   </CardHeader>
                   <CardContent>
                     {getFilteredEquipment().length === 0 ? (
-                      <div className="text-center py-8">
-                        <Package className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="font-semibold text-lg mb-2 font-maplestory">No Equipment Found</h3>
-                        <p className="text-muted-foreground mb-4 font-maplestory">
+                      <div className="text-center py-12">
+                        <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                        <h3 className="font-semibold text-base mb-1 font-maplestory">No Equipment Found</h3>
+                        <p className="text-sm text-muted-foreground mb-4 font-maplestory">
                           {filter === "all" 
                             ? "Click on equipment slots to add new items"
                             : `No ${filter} equipment found`
                           }
                         </p>
                         {filter !== "all" && (
-                          <Button variant="outline" onClick={() => setFilter("all")} className="font-maplestory">
+                          <Button variant="outline" size="sm" onClick={() => setFilter("all")} className="font-maplestory rounded-full">
                             View All Equipment
                           </Button>
                         )}
                       </div>
                     ) : (
-                      <div className="space-y-2 max-h-[750px] overflow-y-auto">
+                      <div className="space-y-2 max-h-[600px] overflow-y-auto">
                         <Table>
-                          <TableHeader className="sticky top-0 bg-background z-10 border-b">
-                            <TableRow>
+                          <TableHeader className="sticky top-0 bg-card z-10">
+                            <TableRow className="border-b">
                               <TableHead className="w-12"></TableHead>
                               <TableHead className="font-maplestory">Item</TableHead>
                               <TableHead className="text-center font-maplestory">Current SF</TableHead>
@@ -729,7 +700,7 @@ export function EnhancedEquipmentManager({
             </TabsContent>
 
             {/* StarForce Calculator Tab */}
-            <TabsContent value="calculator" className="mt-6">
+            <TabsContent value="calculator" className="mt-4">
               {pendingEquipment.length > 0 ? (
                 <StarForceCalculator
                   characterId={characterId}
@@ -743,26 +714,28 @@ export function EnhancedEquipmentManager({
                   onSaveAdditionalEquipment={onSaveAdditionalEquipment}
                 />
               ) : (
-                <Card>
-                  <CardContent className="p-8 text-center">
-                    <Star className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="font-semibold text-xl mb-2 font-maplestory">No Pending StarForce Goals</h3>
-                    <p className="text-muted-foreground mb-4 font-maplestory">
+                <Card className="bg-white/5 backdrop-blur-md border-border/50">
+                  <CardContent className="p-12 text-center">
+                    <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="font-semibold text-lg mb-2 font-maplestory">No Pending StarForce Goals</h3>
+                    <p className="text-sm text-muted-foreground mb-6 font-maplestory">
                       All your equipment is already at target StarForce levels!
                     </p>
-                    <div className="flex gap-4 justify-center">
+                    <div className="flex gap-3 justify-center">
                       <Button 
                         variant="outline" 
+                        size="sm"
                         onClick={() => handleTabChange("equipment")}
-                        className="flex items-center gap-2 font-maplestory"
+                        className="flex items-center gap-2 font-maplestory rounded-full"
                       >
                         <Target className="w-4 h-4" />
                         Manage Equipment
                       </Button>
                       <Button 
                         variant="outline" 
+                        size="sm"
                         onClick={handleAddAdditionalEquipment}
-                        className="flex items-center gap-2 font-maplestory"
+                        className="flex items-center gap-2 font-maplestory rounded-full"
                       >
                         <Plus className="w-4 h-4" />
                         Add StarForce Item
@@ -774,7 +747,7 @@ export function EnhancedEquipmentManager({
             </TabsContent>
 
             {/* Potential Calculator Tab */}
-            <TabsContent value="potential" className="mt-6">
+            <TabsContent value="potential" className="mt-4">
               <PotentialCalculator
                 characterId={characterId}
                 characterName={characterName}
@@ -786,7 +759,7 @@ export function EnhancedEquipmentManager({
             </TabsContent>
 
             {/* Smart Planner Tab */}
-            <TabsContent value="optimizer" className="mt-6">
+            <TabsContent value="optimizer" className="mt-4">
               <StarForceOptimizer
                 equipment={equipment}
                 additionalEquipment={additionalEquipment}
@@ -795,8 +768,6 @@ export function EnhancedEquipmentManager({
               />
             </TabsContent>
           </Tabs>
-        </CardContent>
-      </Card>
 
       {/* Equipment Form Dialog */}
       <EquipmentForm

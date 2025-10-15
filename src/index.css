@@ -2,6 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Vanta.js container */
+.vanta-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.vanta-container canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+.vanta-container > div {
+  position: relative;
+  z-index: 10 !important;
+}
+
 /* MapleStory Font Setup */
 @font-face {
   font-family: 'MapleStory';
@@ -141,5 +163,75 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Low opacity scrollbar */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+}
+
+/* Shiny footer text animation */
+.shiny-footer-text {
+  color: #b5b5b5a4;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0.8) 50%,
+    rgba(255, 255, 255, 0) 60%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  display: inline-block;
+  animation: shine 5s linear infinite;
+}
+
+/* Shiny golden text animation */
+.shiny-golden-text {
+  background: linear-gradient(
+    120deg,
+    hsl(35 91% 55%) 0%,
+    hsl(35 91% 55%) 30%,
+    hsl(45 100% 70%) 45%,
+    hsl(60 100% 90%) 50%,
+    hsl(45 100% 70%) 55%,
+    hsl(35 91% 55%) 70%,
+    hsl(35 91% 55%) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: inline-block;
+  animation: shine 3s linear infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 200% center;
+  }
+  100% {
+    background-position: -200% center;
   }
 }

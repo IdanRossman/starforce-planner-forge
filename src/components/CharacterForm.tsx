@@ -223,17 +223,6 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
 
   return (
     <>
-      {/* Trigger Button */}
-      <MapleButton 
-        variant="blue" 
-        size="md"
-        onClick={() => handleOpenChange(true)}
-        className="gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Add Character
-      </MapleButton>
-
       {/* MapleStory-styled Character Form Dialog */}
       <MapleDialog
         isVisible={isVisible}
