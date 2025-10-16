@@ -75,7 +75,7 @@ export function CategorizedSelect({
             )}
           </>
         )}
-        <span className="text-black font-maplestory">{option.label}</span>
+        <span className="text-white font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -109,7 +109,7 @@ export function CategorizedSelect({
             )}
           </>
         )}
-        <span className="flex-1 text-black font-maplestory">{option.label}</span>
+        <span className="flex-1 text-white font-maplestory">{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -125,23 +125,27 @@ export function CategorizedSelect({
 
   return (
     <Select onValueChange={onValueChange} value={value} disabled={disabled}>
-      <SelectTrigger className={cn(className, "font-maplestory [&>span]:text-black [&_span]:text-black")}>
+      <SelectTrigger className={cn(className, "font-maplestory")}>
         <SelectValue placeholder={placeholder}>
           {selectedOption ? (
             renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption)
           ) : (
-            <span className="text-black font-maplestory">{placeholder}</span>
+            <span className="text-white/40 font-maplestory">{placeholder}</span>
           )}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="bg-white">
+      <SelectContent className="bg-slate-800/95 border-white/20 backdrop-blur-sm">
         {categories.map((category, categoryIndex) => (
           <div key={categoryIndex}>
-            <div className="px-2 py-1.5 text-sm font-semibold text-gray-600 bg-gray-100 border-b font-maplestory">
+            <div className="px-2 py-1.5 text-sm font-semibold text-white/90 bg-slate-700/50 border-b border-white/10 font-maplestory">
               {category.name}
             </div>
             {category.options.map((option) => (
-              <SelectItem key={option.value} value={option.value} className="pl-6 text-black font-maplestory">
+              <SelectItem 
+                key={option.value} 
+                value={option.value} 
+                className="pl-6 text-white font-maplestory hover:bg-slate-700/50 focus:bg-slate-700/70 data-[highlighted]:bg-slate-700/50"
+              >
                 {renderOption ? renderOption(option) : defaultRenderOption(option)}
               </SelectItem>
             ))}

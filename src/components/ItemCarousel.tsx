@@ -229,7 +229,7 @@ export function ItemCarousel({
                 placeholder="0"
               />
               <div className="flex gap-1 flex-wrap">
-                {[0, 12, 17, 22].map((sfValue) => (
+                {[0, 17, 19, 21, 22].map((sfValue) => (
                   <Button
                     key={sfValue}
                     variant="outline"
