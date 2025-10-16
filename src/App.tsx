@@ -7,7 +7,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
-import { AnnouncementBanner } from "@/components/AnnouncementBanner";
 import { SiCurseforge } from 'react-icons/si';
 import Homepage from "./pages/Homepage";
 import CharacterDashboard from "./pages/CharacterDashboard-new";
@@ -95,11 +94,6 @@ function AppContent() {
           brandText=""
           logoIcon={<SiCurseforge className="simple-nav-icon" />}
         />
-        
-        {/* Announcement Banner */}
-        <div className="container mx-auto px-4 pt-2 relative z-50">
-          <AnnouncementBanner />
-        </div>
         
         {/* Main Content */}
         <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-32 min-h-screen relative z-50"}>

@@ -1,252 +1,94 @@
-interface MapleRanksCharacter {
+interface NexonCharacter {
   name: string;
   class: string;
   level: number;
   image: string;
 }
 
-export const fetchCharacterFromMapleRanks = async (characterName: string): Promise<MapleRanksCharacter | null> => {
-  const naUrl = `https://mapleranks.com/u/${encodeURIComponent(characterName)}`;
-  const euUrl = `https://mapleranks.com/u/eu/${encodeURIComponent(characterName)}`;
-  
-  // Try NA server first with corsproxy.io
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(naUrl)}`;
-    
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
-    
-    if (response.ok) {
-      const html = await response.text();
-      
-      if (html && html.length > 100) {
-        const result = parseMapleRanksHTML(html);
-        if (result) {
-          return result;
-        }
-      }
-    }
-  } catch (error) {
-    // Silently continue to EU server
-  }
-  
-  // Try EU server with corsproxy.io as fallback
-  try {
-    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(euUrl)}`;
-    
-    const response = await fetch(proxyUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-      signal: AbortSignal.timeout(10000) // 10 second timeout
-    });
-    
-    if (response.ok) {
-      const html = await response.text();
-      
-      if (html && html.length > 100) {
-        const result = parseMapleRanksHTML(html);
-        if (result) {
-          return result;
-        }
-      }
-    }
-  } catch (error) {
-    // Silently continue to direct access fallback
-  }
-  
-  // If both proxy attempts fail, try direct access as final fallback (try NA first, then EU)
-  try {
-    
-    const response = await fetch(naUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      mode: 'cors',
-      signal: AbortSignal.timeout(8000)
-    });
-    
-    if (response.ok) {
-      const html = await response.text();
-      if (html && html.length > 100) {
-        const result = parseMapleRanksHTML(html);
-        if (result) {
-          return result;
-        }
-      }
-    }
-  } catch (error) {
-    // Silently continue to EU fallback
-  }
-  
-  // Try direct EU access as final fallback
-  try {
-    
-    const response = await fetch(euUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      mode: 'cors',
-      signal: AbortSignal.timeout(8000)
-    });
-    
-    if (response.ok) {
-      const html = await response.text();
-      if (html && html.length > 100) {
-        const result = parseMapleRanksHTML(html);
-        if (result) {
-          return result;
-        }
-      }
-    }
-  } catch (error) {
-    // All methods failed
-  }
-  
-  return null;
-};
+interface NexonAPIResponse {
+  totalCount: number;
+  ranks: Array<{
+    characterID: number;
+    characterName: string;
+    exp: number;
+    gap: number;
+    jobDetail: number;
+    jobID: number;
+    level: number;
+    rank: number;
+    startRank: number;
+    worldID: number;
+    characterImgURL: string;
+    isSearchTarget: boolean;
+    legionLevel: number;
+    raidPower: number;
+    tierID: number;
+    score: number;
+  }>;
+}
 
-const parseMapleRanksHTML = (html: string): MapleRanksCharacter | null => {
+export type Region = 'north-america' | 'europe';
+
+/**
+ * Fetch character data from Nexon's official MapleStory ranking API
+ * @param characterName - The name of the character to search for
+ * @param region - The region to search in: 'north-america' or 'europe'
+ * @returns Character data or null if not found
+ */
+export const fetchCharacterFromMapleRanks = async (
+  characterName: string,
+  region: Region = 'north-america'
+): Promise<NexonCharacter | null> => {
   try {
-    console.log('MapleRanks: Starting HTML parsing, content length:', html?.length || 'undefined');
+    // Map region to API endpoint
+    const regionCode = region === 'europe' ? 'eu' : 'na';
     
-    // Create a DOM parser to parse the HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    // Nexon API endpoint
+    const apiUrl = `https://www.nexon.com/api/maplestory/no-auth/ranking/v2/${regionCode}?type=overall&id=weekly&reboot_index=0&page_index=1&character_name=${encodeURIComponent(characterName)}`;
     
-    console.log('MapleRanks: DOM parsed successfully');
+    // Use CORS proxy to bypass CORS restrictions
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
     
-    // Extract character name from h3.card-title
-    const nameElement = doc.querySelector('h3.card-title');
-    const name = nameElement?.textContent?.trim() || '';
-    console.log('MapleRanks: Found name element:', nameElement?.textContent, '-> parsed as:', name);
+    console.log(`Nexon API: Fetching character "${characterName}" from ${region} (${regionCode})`);
     
-    // Extract level from h5.card-text (format: "Lv. 272 (32.961%)")
-    const levelElement = doc.querySelector('h5.card-text');
-    const levelText = levelElement?.textContent?.trim() || '';
-    const levelMatch = levelText.match(/Lv\.\s*(\d+)/);
-    const level = levelMatch ? parseInt(levelMatch[1]) : 0;
-    console.log('MapleRanks: Found level element:', levelElement?.textContent, '-> parsed as:', level);
+    const response = await fetch(proxyUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+      signal: AbortSignal.timeout(15000) // 15 second timeout
+    });
     
-    // Extract class from p.card-text.mb-0 (format: "Bowmaster in Reboot Hyperion")
-    const classServerElement = doc.querySelector('p.card-text.mb-0');
-    const classServerText = classServerElement?.textContent?.trim() || '';
-    const classServerMatch = classServerText.match(/^(.+?)\s+in\s+(.+)$/);
-    const rawCharacterClass = classServerMatch ? classServerMatch[1] : '';
-    console.log('MapleRanks: Found class element:', classServerElement?.textContent, '-> raw class:', rawCharacterClass);
-    
-    // Normalize the character class name to match our dropdown options
-    const characterClass = normalizeClassName(rawCharacterClass);
-    console.log('MapleRanks: Normalized class from', rawCharacterClass, 'to', characterClass);
-    
-    // Extract character image from img.card-img-top
-    const imageElement = doc.querySelector('img.card-img-top');
-    const image = imageElement?.getAttribute('src') || '';
-    console.log('MapleRanks: Found image element:', imageElement, '-> parsed as:', image);
-    
-    if (!name || !level || !characterClass) {
-      console.warn('Failed to parse character data from MapleRanks:', {
-        name, level, characterClass, image
-      });
+    if (!response.ok) {
+      console.warn(`Nexon API: Request failed with status ${response.status}`);
       return null;
     }
     
-    const result = {
-      name: name.trim(),
-      class: characterClass,
-      level,
-      image
+    const data: NexonAPIResponse = await response.json();
+    
+    console.log('Nexon API: Response received:', data);
+    
+    // Check if any results were found
+    if (!data.ranks || data.ranks.length === 0) {
+      console.warn('Nexon API: No character found with that name');
+      return null;
+    }
+    
+    // Get the first result (should be exact match if isSearchTarget is true)
+    const characterData = data.ranks.find(rank => rank.isSearchTarget) || data.ranks[0];
+    
+    const result: NexonCharacter = {
+      name: characterData.characterName,
+      class: '', // Will need to be set manually by user for now
+      level: characterData.level,
+      image: characterData.characterImgURL
     };
     
-    console.log('MapleRanks: Successfully parsed character:', result);
+    console.log('Nexon API: Successfully parsed character:', result);
     return result;
+    
   } catch (error) {
-    console.error('Error parsing MapleRanks HTML:', error);
+    console.error('Nexon API: Error fetching character:', error);
     return null;
   }
-};
-
-// Function to normalize class names from MapleRanks to match our dropdown options
-const normalizeClassName = (className: string): string => {
-  if (!className) return '';
-  
-  // Mapping of MapleRanks class names to our application's class names
-  const classNameMapping: { [key: string]: string } = {
-    // Handle common variations
-    'Fire/Poison Arch Mage': 'Fire/Poison Mage',
-    'Ice/Lightning Arch Mage': 'Ice/Lightning Mage',
-    'Bishop': 'Bishop',
-    'Bowmaster': 'Bowmaster',
-    'Marksman': 'Marksman',
-    'Pathfinder': 'Pathfinder',
-    'Night Lord': 'Night Lord',
-    'Shadower': 'Shadower',
-    'Dual Blade': 'Dual Blade',
-    'Buccaneer': 'Buccaneer',
-    'Corsair': 'Corsair',
-    'Cannoneer': 'Cannoneer',
-    'Hero': 'Hero',
-    'Paladin': 'Paladin',
-    'Dark Knight': 'Dark Knight',
-    'Dawn Warrior': 'Dawn Warrior',
-    'Blaze Wizard': 'Blaze Wizard',
-    'Wind Archer': 'Wind Archer',
-    'Night Walker': 'Night Walker',
-    'Thunder Breaker': 'Thunder Breaker',
-    'Mihile': 'Mihile',
-    'Aran': 'Aran',
-    'Evan': 'Evan',
-    'Mercedes': 'Mercedes',
-    'Phantom': 'Phantom',
-    'Luminous': 'Luminous',
-    'Shade': 'Shade',
-    'Blaster': 'Blaster',
-    'Battle Mage': 'Battle Mage',
-    'Wild Hunter': 'Wild Hunter',
-    'Mechanic': 'Mechanic',
-    'Xenon': 'Xenon',
-    'Demon Slayer': 'Demon Slayer',
-    'Demon Avenger': 'Demon Avenger',
-    'Kaiser': 'Kaiser',
-    'Angelic Buster': 'Angelic Buster',
-    'Cadena': 'Cadena',
-    'Kain': 'Kain',
-    'Illium': 'Illium',
-    'Ark': 'Ark',
-    'Adele': 'Adele',
-    'Khali': 'Khali',
-    'Lara': 'Lara',
-    'Zero': 'Zero',
-    'Kinesis': 'Kinesis',
-    'Hayato': 'Hayato',
-    'Kanna': 'Kanna',
-    'Beast Tamer': 'Beast Tamer'
-  };
-  
-  // Try exact match first
-  if (classNameMapping[className]) {
-    return classNameMapping[className];
-  }
-  
-  // Try case-insensitive match
-  const lowerClassName = className.toLowerCase();
-  for (const [key, value] of Object.entries(classNameMapping)) {
-    if (key.toLowerCase() === lowerClassName) {
-      return value;
-    }
-  }
-  
-  // If no match found, return the original class name
-  console.warn('MapleRanks: Unknown class name:', className);
-  return className;
 };

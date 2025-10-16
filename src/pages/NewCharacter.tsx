@@ -8,11 +8,13 @@ import { SetQuickSelect } from "@/components/SetQuickSelect";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { CategorizedSelect, SelectCategory } from "@/components/shared/forms";
 import { getJobIcon, getJobColors, getJobCategoryName, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { useCharacter } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
-import { User, Target, FileText, Grid3x3, Sparkles, CheckCircle } from "lucide-react";
+import { fetchCharacterFromMapleRanks, Region } from "@/services/mapleRanksService";
+import { User, Target, FileText, Grid3x3, Sparkles, CheckCircle, Search, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 // Equipment groupings for each step
 const EQUIPMENT_STEPS = [
@@ -71,6 +73,14 @@ export default function NewCharacter() {
   const [selectedJob, setSelectedJob] = useState("");
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   
+  // Nexon API lookup state
+  const [selectedRegion, setSelectedRegion] = useState<Region>('north-america');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'found' | 'not-found' | 'error'>('idle');
+  const [searchMessage, setSearchMessage] = useState<string>('');
+  const [fetchedCharacterImage, setFetchedCharacterImage] = useState<string | null>(null);
+  const [characterLevel, setCharacterLevel] = useState(200);
+  
   // Selected items per slot
   const [selectedItems, setSelectedItems] = useState<Record<EquipmentSlot, Equipment | null>>({} as Record<EquipmentSlot, Equipment | null>);
   
@@ -95,6 +105,38 @@ export default function NewCharacter() {
       }))
     }));
   }, []);
+
+  // Search character on Nexon Rankings
+  const searchCharacter = async () => {
+    if (!characterName.trim()) {
+      setSearchStatus('error');
+      setSearchMessage('Please enter a character name first.');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchStatus('idle');
+    setSearchMessage('');
+    setFetchedCharacterImage(null);
+
+    try {
+      const characterData = await fetchCharacterFromMapleRanks(characterName.trim(), selectedRegion);
+      
+      if (characterData) {
+        setFetchedCharacterImage(characterData.image);
+        setCharacterLevel(characterData.level);
+        
+        setSearchStatus('found');
+        const regionName = selectedRegion === 'north-america' ? 'NA' : 'EU';
+      } else {
+        setSearchStatus('not-found');
+      }
+    } catch (error) {
+      setSearchStatus('error');
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Intro steps
   const introSteps: WizardIntroStep[] = [
@@ -175,8 +217,8 @@ export default function NewCharacter() {
     const newCharacter: Omit<Character, 'id'> = {
       name: characterName,
       class: selectedJob,
-      level: 200,
-      image: './characters/maple-admin.png',
+      level: characterLevel,
+      image: fetchedCharacterImage || './characters/maple-admin.png',
       equipment: equipment,
       starForceItems: []
     };
@@ -225,20 +267,126 @@ export default function NewCharacter() {
             {/* Step 1: Character Info */}
             {currentStep === 1 && (
               <StepContent>
-                <div className="max-w-2xl mx-auto">
+                <div className="max-w-md mx-auto">
                   <Card className="bg-card/20 backdrop-blur-md border-white/20">
                     <CardContent className="p-8 space-y-6">
+                      {/* Character Image Preview with Shadow Effect */}
+                      {fetchedCharacterImage && (
+                        <div className="flex flex-col items-center py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                          {/* Character Image Container */}
+                          <div className="relative">
+                            {/* Character Image */}
+                            <div className="relative animate-in zoom-in duration-700 delay-150 z-10">
+                              <img 
+                                src={fetchedCharacterImage} 
+                                alt={characterName}
+                                className="max-h-64 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
+                                onError={(e) => {
+                                  console.error('Failed to load character image');
+                                  e.currentTarget.src = './characters/maple-admin.png';
+                                }}
+                                style={{
+                                  filter: 'drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px rgba(100, 200, 255, 0.3))'
+                                }}
+                              />
+                            </div>
+                            
+                            {/* Animated Shadow/Glow beneath character */}
+                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-56 h-12 animate-in slide-in-from-bottom-2 duration-500 delay-300">
+                              {/* Main shadow ellipse */}
+                              <div 
+                                className="absolute inset-0 rounded-full blur-lg"
+                                style={{
+                                  background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 40%, transparent 70%)'
+                                }}
+                              ></div>
+                              {/* Animated glow ring */}
+                              <div 
+                                className="absolute inset-0 rounded-full blur-2xl animate-pulse"
+                                style={{
+                                  background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.5) 0%, rgba(168, 85, 247, 0.3) 50%, transparent 70%)'
+                                }}
+                              ></div>
+                              {/* Secondary glow with delayed animation */}
+                              <div 
+                                className="absolute inset-0 rounded-full blur-3xl opacity-60 animate-pulse"
+                                style={{
+                                  background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.4) 0%, rgba(147, 51, 234, 0.2) 50%, transparent 70%)',
+                                  animationDelay: '1s',
+                                  animationDuration: '3s'
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Character Name with Search and Region Toggle */}
                       <div className="space-y-2">
                         <Label htmlFor="name" className="font-maplestory text-white">Character Name</Label>
-                        <Input
-                          id="name"
-                          value={characterName}
-                          onChange={(e) => setCharacterName(e.target.value)}
-                          placeholder="Enter character name..."
-                          className="font-maplestory bg-white/90 text-black"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            id="name"
+                            value={characterName}
+                            onChange={(e) => setCharacterName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !isSearching) {
+                                searchCharacter();
+                              }
+                            }}
+                            placeholder="Enter character name..."
+                            className="font-maplestory bg-slate-800/60 text-white border-white/20 placeholder:text-white/40 flex-1 h-10"
+                          />
+                          {/* Region Toggle */}
+                          <div className="flex items-center gap-0.5 bg-white/10 p-0.5 rounded-lg border border-white/20 h-10">
+                            <button
+                              onClick={() => setSelectedRegion('north-america')}
+                              className={`px-3 h-9 rounded-md font-maplestory text-xs font-semibold transition-all ${
+                                selectedRegion === 'north-america'
+                                  ? 'bg-white text-black shadow-md'
+                                  : 'text-white/70 hover:text-white hover:bg-white/10'
+                              }`}
+                              title="North America"
+                            >
+                              US
+                            </button>
+                            <button
+                              onClick={() => setSelectedRegion('europe')}
+                              className={`px-3 h-9 rounded-md font-maplestory text-xs font-semibold transition-all ${
+                                selectedRegion === 'europe'
+                                  ? 'bg-white text-black shadow-md'
+                                  : 'text-white/70 hover:text-white hover:bg-white/10'
+                              }`}
+                              title="Europe"
+                            >
+                              EU
+                            </button>
+                          </div>
+                          <Button
+                            onClick={searchCharacter}
+                            disabled={!characterName.trim() || isSearching}
+                            className="font-maplestory h-10"
+                            variant="secondary"
+                          >
+                            {isSearching ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Searching...
+                              </>
+                            ) : (
+                              <>
+                                <Search className="h-4 w-4 mr-2" />
+                                Search
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-white/70 font-maplestory">
+                          Auto-lookup from Nexon Rankings
+                        </p>
                       </div>
 
+                      {/* Job Class Selector */}
                       <div className="space-y-2">
                         <Label htmlFor="job" className="font-maplestory text-white">Job Class</Label>
                         <CategorizedSelect
@@ -246,7 +394,7 @@ export default function NewCharacter() {
                           value={selectedJob}
                           onValueChange={setSelectedJob}
                           placeholder="Select your job..."
-                          className="bg-white/90"
+                          className="bg-slate-800/60 border-white/20 text-white"
                         />
                       </div>
                     </CardContent>

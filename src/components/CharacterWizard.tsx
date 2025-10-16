@@ -2,10 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import { Character, Equipment, EquipmentSlot } from "@/types";
 import { Template } from "@/services/api";
 import { getAllTemplates, getTemplateEquipmentForJob } from "@/services/templateService";
-import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
+import { fetchCharacterFromMapleRanks, Region } from "@/services/mapleRanksService";
 import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { MapleDialog, MapleButton } from "@/components/shared";
 import { CategorizedSelect, SelectCategory, MapleInput, WizardStep, WizardFieldset, StatusMessage } from "@/components/shared/forms";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, 
   Sparkles, 
@@ -52,6 +53,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
   const [isSearchingMapleRanks, setIsSearchingMapleRanks] = useState(false);
   const [mapleRanksStatus, setMapleRanksStatus] = useState<'idle' | 'found' | 'not-found' | 'error'>('idle');
   const [mapleRanksMessage, setMapleRanksMessage] = useState<string>('');
+  const [selectedRegion, setSelectedRegion] = useState<Region>('north-america');
+  const [fetchedCharacterImage, setFetchedCharacterImage] = useState<string | null>(null);
   
   // Animation states for MapleDialog
   const [isVisible, setIsVisible] = useState(false);
@@ -120,6 +123,8 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
       setTemplates([]);
       setMapleRanksStatus('idle');
       setMapleRanksMessage('');
+      setFetchedCharacterImage(null);
+      setSelectedRegion('north-america');
     }
     onOpenChange(newOpen);
   };
@@ -135,11 +140,15 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
     setIsSearchingMapleRanks(true);
     setMapleRanksStatus('idle');
     setMapleRanksMessage('');
+    setFetchedCharacterImage(null);
 
     try {
-      const characterData = await fetchCharacterFromMapleRanks(wizardData.name.trim());
+      const characterData = await fetchCharacterFromMapleRanks(wizardData.name.trim(), selectedRegion);
       
       if (characterData) {
+        // Store the fetched image
+        setFetchedCharacterImage(characterData.image);
+        
         setWizardData(prev => ({
           ...prev,
           class: characterData.class || prev.class,
@@ -148,14 +157,15 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
         }));
         
         setMapleRanksStatus('found');
-        setMapleRanksMessage(`Found ${characterData.class} (Lv.${characterData.level}) on MapleRanks!`);
+        const regionName = selectedRegion === 'north-america' ? 'NA' : 'EU';
+        setMapleRanksMessage(`Found Lv.${characterData.level} character on ${regionName} rankings!`);
       } else {
         setMapleRanksStatus('not-found');
-        setMapleRanksMessage('Character not found on MapleRanks. Please enter class and level manually.');
+        setMapleRanksMessage('Character not found. Please check the name and region, or enter details manually.');
       }
     } catch (error) {
       setMapleRanksStatus('error');
-      setMapleRanksMessage('MapleRanks lookup failed. Feature is in beta - please enter details manually.');
+      setMapleRanksMessage('Ranking lookup failed. Please enter details manually.');
     } finally {
       setIsSearchingMapleRanks(false);
     }
@@ -282,6 +292,22 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
             subtitle="Enter your character's basic details"
           >
             <WizardFieldset legend="Character Details">
+              <div className="space-y-2">
+                <label className="text-black font-maplestory font-medium text-sm">Region</label>
+                <Select
+                  value={selectedRegion}
+                  onValueChange={(value: Region) => setSelectedRegion(value)}
+                >
+                  <SelectTrigger className="bg-white border-gray-300 font-maplestory">
+                    <SelectValue placeholder="Select region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="north-america" className="font-maplestory">North America</SelectItem>
+                    <SelectItem value="europe" className="font-maplestory">Europe</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <MapleInput
                 title="Character Name"
                 placeholder="Enter character name"
@@ -291,16 +317,13 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                   icon: <Search className="h-3 w-3" />,
                   onClick: searchMapleRanks,
                   disabled: !wizardData.name.trim() || isSearchingMapleRanks,
-                  title: "Search on MapleRanks",
+                  title: "Search on Nexon Rankings",
                   variant: "orange"
                 }}
                 isLoading={isSearchingMapleRanks}
                 underText={
                   <span className="flex items-center gap-1">
-                    Auto-lookup from MapleRanks 
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      Beta
-                    </span>
+                    Auto-lookup from Nexon Rankings
                   </span>
                 }
               />
@@ -312,6 +335,23 @@ export function CharacterWizard({ open, onOpenChange, onComplete }: CharacterWiz
                 }>
                   {mapleRanksMessage}
                 </StatusMessage>
+              )}
+
+              {fetchedCharacterImage && (
+                <div className="space-y-2">
+                  <label className="text-black font-maplestory font-medium text-sm">Character Image</label>
+                  <div className="bg-white border-2 border-gray-300 rounded-lg p-4 flex justify-center">
+                    <img 
+                      src={fetchedCharacterImage} 
+                      alt={wizardData.name}
+                      className="max-h-48 object-contain"
+                      onError={(e) => {
+                        console.error('Failed to load character image');
+                        e.currentTarget.src = './characters/maple-admin.png';
+                      }}
+                    />
+                  </div>
+                </div>
               )}
 
               <div className="space-y-2">

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Character, Equipment, EquipmentSlot } from "@/types";
-import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterForm } from "@/components/CharacterForm";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,7 +52,6 @@ export default function CharacterDashboard() {
   } = useEquipment();
   
   // Local state for UI components only
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar state
@@ -452,13 +450,6 @@ export default function CharacterDashboard() {
           )}
         </div>
       </div>
-
-      {/* Character Creation Wizard */}
-      <CharacterWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        onComplete={handleCreateCharacter}
-      />
 
       {/* Character Edit Form */}
       <CharacterForm 

@@ -1,10 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Character, Equipment, EquipmentSlot, EquipmentType } from "@/types";
-import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterForm } from "@/components/CharacterForm";
 import { CharacterOverview } from "@/components/CharacterOverview";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
-import { GameAssistant } from "@/components/GameAssistant";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +36,8 @@ import {
 } from "lucide-react";
 
 export default function CharacterDashboard() {
+  const navigate = useNavigate();
+  
   // Use Character Context and Operations
   const { selectedCharacter, characters } = useCharacterContext();
   const { 
@@ -58,7 +59,6 @@ export default function CharacterDashboard() {
   } = useEquipment();
   
   // Local state for UI components only
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -539,7 +539,7 @@ export default function CharacterDashboard() {
           </Button>
           
           <Button 
-            onClick={() => setWizardOpen(true)}
+            onClick={() => navigate('/character/new')}
             className="flex items-center gap-2 font-maplestory"
           >
             <Plus className="w-4 h-4" />
@@ -561,7 +561,7 @@ export default function CharacterDashboard() {
             </p>
             <div className="flex items-center gap-4 justify-center">
               <Button 
-                onClick={() => setWizardOpen(true)}
+                onClick={() => navigate('/character/new')}
                 size="lg"
                 className="flex items-center gap-2 font-maplestory"
               >
@@ -678,13 +678,6 @@ export default function CharacterDashboard() {
         </div>
       )}
 
-      {/* Character Creation Wizard */}
-      <CharacterWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        onComplete={handleCreateCharacter}
-      />
-
       {/* Character Edit Form */}
       <CharacterForm 
         open={characterFormOpen}
@@ -790,8 +783,6 @@ export default function CharacterDashboard() {
           </div>
         </DialogContent>
       </Dialog>
-      
-      <GameAssistant pageContext="character-dashboard" />
     </div>
   );
 }
