@@ -334,7 +334,7 @@ export default function NewCharacter() {
                                 searchCharacter();
                               }
                             }}
-                            placeholder="Enter character name..."
+                            placeholder="Enter your name..."
                             className="font-maplestory bg-slate-800/60 text-white border-white/20 placeholder:text-white/40 flex-1 h-10"
                           />
                           {/* Region Toggle */}
@@ -395,6 +395,7 @@ export default function NewCharacter() {
                           onValueChange={setSelectedJob}
                           placeholder="Select your job..."
                           className="bg-slate-800/60 border-white/20 text-white"
+                          variant="dark"
                         />
                       </div>
                     </CardContent>

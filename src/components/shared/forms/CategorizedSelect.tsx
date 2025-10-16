@@ -38,6 +38,7 @@ export interface CategorizedSelectProps {
   disabled?: boolean;
   renderSelectedValue?: (option: SelectOption) => ReactNode;
   renderOption?: (option: SelectOption) => ReactNode;
+  variant?: 'light' | 'dark';
 }
 
 export function CategorizedSelect({
@@ -49,11 +50,16 @@ export function CategorizedSelect({
   disabled,
   renderSelectedValue,
   renderOption,
+  variant = 'light',
 }: CategorizedSelectProps) {
   // Find the selected option across all categories
   const selectedOption = categories
     .flatMap(category => category.options)
     .find(option => option.value === value);
+
+  // Theme-based text colors
+  const textColor = variant === 'dark' ? 'text-white' : 'text-black';
+  const placeholderColor = variant === 'dark' ? 'text-white/40' : 'text-muted-foreground';
 
   const defaultRenderSelectedValue = (option: SelectOption) => {
     const Icon = option.icon;
@@ -75,7 +81,7 @@ export function CategorizedSelect({
             )}
           </>
         )}
-        <span className="text-white font-maplestory">{option.label}</span>
+        <span className={`${textColor} font-maplestory`}>{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -109,7 +115,7 @@ export function CategorizedSelect({
             )}
           </>
         )}
-        <span className="flex-1 text-white font-maplestory">{option.label}</span>
+        <span className={`flex-1 ${textColor} font-maplestory`}>{option.label}</span>
         {option.badges && option.badges.length > 0 && (
           <div className="flex gap-1">
             {option.badges.map((badge, index) => (
@@ -123,6 +129,19 @@ export function CategorizedSelect({
     );
   };
 
+  // Variant-based styling
+  const contentBgClass = variant === 'dark' 
+    ? 'bg-slate-800/95 border-white/20 backdrop-blur-sm' 
+    : 'bg-white border-gray-200';
+  
+  const categoryHeaderClass = variant === 'dark'
+    ? 'px-2 py-1.5 text-sm font-semibold text-white/90 bg-slate-700/50 border-b border-white/10 font-maplestory'
+    : 'px-2 py-1.5 text-sm font-semibold text-gray-600 bg-gray-100 border-b font-maplestory';
+  
+  const itemClass = variant === 'dark'
+    ? 'pl-6 font-maplestory hover:bg-slate-700/50 focus:bg-slate-700/70 data-[highlighted]:bg-slate-700/50'
+    : 'pl-6 font-maplestory';
+
   return (
     <Select onValueChange={onValueChange} value={value} disabled={disabled}>
       <SelectTrigger className={cn(className, "font-maplestory")}>
@@ -130,21 +149,21 @@ export function CategorizedSelect({
           {selectedOption ? (
             renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption)
           ) : (
-            <span className="text-white/40 font-maplestory">{placeholder}</span>
+            <span className={`${placeholderColor} font-maplestory`}>{placeholder}</span>
           )}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent className="bg-slate-800/95 border-white/20 backdrop-blur-sm">
+      <SelectContent className={contentBgClass}>
         {categories.map((category, categoryIndex) => (
           <div key={categoryIndex}>
-            <div className="px-2 py-1.5 text-sm font-semibold text-white/90 bg-slate-700/50 border-b border-white/10 font-maplestory">
+            <div className={categoryHeaderClass}>
               {category.name}
             </div>
             {category.options.map((option) => (
               <SelectItem 
                 key={option.value} 
                 value={option.value} 
-                className="pl-6 text-white font-maplestory hover:bg-slate-700/50 focus:bg-slate-700/70 data-[highlighted]:bg-slate-700/50"
+                className={itemClass}
               >
                 {renderOption ? renderOption(option) : defaultRenderOption(option)}
               </SelectItem>
