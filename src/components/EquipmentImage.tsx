@@ -32,6 +32,7 @@ export const EquipmentImage = ({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [currentSrc, setCurrentSrc] = useState(src);
+  const [imageKey, setImageKey] = useState(0); // Force re-render of img tag
 
   // Reset image state when src changes
   useEffect(() => {
@@ -39,6 +40,7 @@ export const EquipmentImage = ({
     setImageLoaded(false);
     setRetryCount(0);
     setCurrentSrc(src);
+    setImageKey(prev => prev + 1); // Force img tag to remount
   }, [src]);
 
   // Retry logic for failed images
@@ -95,6 +97,7 @@ export const EquipmentImage = ({
              title={`Retrying... (${retryCount}/${maxRetries})`} />
       )}
       <img
+        key={imageKey}
         src={currentSrc}
         alt={alt || "Equipment"}
         className={`${sizeClass} object-contain rounded ${imageLoaded ? 'opacity-100' : 'opacity-0'} transition-opacity duration-200`}

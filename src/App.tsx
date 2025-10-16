@@ -12,6 +12,7 @@ import { SiCurseforge } from 'react-icons/si';
 import Homepage from "./pages/Homepage";
 import CharacterDashboard from "./pages/CharacterDashboard-new";
 import { QuickPlanning } from "./pages/QuickPlanning";
+import NewCharacter from "./pages/NewCharacter";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -135,6 +136,17 @@ function AppContent() {
                   exit="exit"
                 >
                   <QuickPlanningWrapper />
+                </motion.div>
+              } />
+              <Route path="/character/new" element={
+                <motion.div
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  <NewCharacter />
                 </motion.div>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

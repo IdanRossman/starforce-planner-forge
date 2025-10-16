@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Character, Equipment, EquipmentSlot } from "@/types";
 import { CharacterWizard } from "@/components/CharacterWizard";
 import { CharacterForm } from "@/components/CharacterForm";
@@ -30,6 +31,8 @@ import {
 } from "lucide-react";
 
 export default function CharacterDashboard() {
+  const navigate = useNavigate();
+  
   // Use Character Context and Operations
   const { selectedCharacter, characters } = useCharacterContext();
   const { 
@@ -226,7 +229,7 @@ export default function CharacterDashboard() {
                   </p>
                   <Button
                     size="sm"
-                    onClick={() => setWizardOpen(true)}
+                    onClick={() => navigate('/character/new')}
                     className="w-full font-maplestory"
                   >
                     <Plus className="w-4 h-4 mr-2" />
@@ -236,7 +239,7 @@ export default function CharacterDashboard() {
               ) : (
                 <Button
                   size="sm"
-                  onClick={() => setWizardOpen(true)}
+                  onClick={() => navigate('/character/new')}
                   className="w-full h-10 p-0"
                 >
                   <Plus className="w-4 h-4" />
@@ -377,7 +380,7 @@ export default function CharacterDashboard() {
         {sidebarOpen && (
           <div className="p-4 border-t border-border/50 space-y-2">
             <Button
-              onClick={() => setWizardOpen(true)}
+              onClick={() => navigate('/character/new')}
               className="w-full font-maplestory bg-primary hover:bg-primary/90"
               size="sm"
             >

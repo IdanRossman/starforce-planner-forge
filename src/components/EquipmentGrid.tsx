@@ -280,6 +280,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                 </div>
                 
                 <EquipmentDisplay 
+                  key={`${equipment.id}-${equipment.image}-${equipment.currentStarForce}`}
                   equipment={equipment}
                   slot={slot}
                   label={label}
