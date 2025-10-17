@@ -17,6 +17,7 @@ interface VantaWavesProps {
   waveHeight?: number;
   waveSpeed?: number;
   zoom?: number;
+  enableMovement?: boolean;
 }
 
 export default function VantaWaves({
@@ -25,7 +26,8 @@ export default function VantaWaves({
   shininess = 30,
   waveHeight = 15,
   waveSpeed = 0.5,
-  zoom = 1.0
+  zoom = 1.0,
+  enableMovement = true
 }: VantaWavesProps) {
   const vantaRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -39,8 +41,8 @@ export default function VantaWaves({
           vantaEffect.current = window.VANTA.WAVES({
             el: vantaRef.current,
             THREE: window.THREE,
-            mouseControls: true,
-            touchControls: true,
+            mouseControls: enableMovement,
+            touchControls: enableMovement,
             gyroControls: false,
             minHeight: 200.00,
             minWidth: 200.00,
@@ -49,7 +51,7 @@ export default function VantaWaves({
             color: color,
             shininess: shininess,
             waveHeight: waveHeight,
-            waveSpeed: waveSpeed,
+            waveSpeed: enableMovement ? waveSpeed : 0,
             zoom: zoom
           });
         }
@@ -77,7 +79,7 @@ export default function VantaWaves({
         vantaEffect.current = null;
       }
     };
-  }, [color, shininess, waveHeight, waveSpeed, zoom]);
+  }, [color, shininess, waveHeight, waveSpeed, zoom, enableMovement]);
 
   return (
     <div ref={vantaRef} className="vanta-container">

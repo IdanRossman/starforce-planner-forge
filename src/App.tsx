@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
 import { SiCurseforge } from 'react-icons/si';
@@ -30,6 +30,25 @@ function AppContent() {
   const isHomepage = location.pathname === '/';
   const isQuickPlanning = location.pathname === '/quick-planning';
   const previousPathRef = useRef(location.pathname);
+  const [waveMovementEnabled, setWaveMovementEnabled] = useState(() => {
+    // Load preference from localStorage, default to false (disabled)
+    const saved = localStorage.getItem('waveMovementEnabled');
+    return saved !== null ? JSON.parse(saved) : false;
+  });
+
+  // Save preference to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('waveMovementEnabled', JSON.stringify(waveMovementEnabled));
+  }, [waveMovementEnabled]);
+
+  // Handle clearing localStorage
+  const handleClearStorage = () => {
+    if (confirm('Are you sure you want to clear all local storage? This will reset all your preferences and data.')) {
+      localStorage.clear();
+      // Reload the page to reset state
+      window.location.reload();
+    }
+  };
 
   // Determine slide direction based on route order
   const getSlideDirection = () => {
@@ -85,6 +104,7 @@ function AppContent() {
       waveSpeed={0.75}
       shininess={40}
       zoom={0.9}
+      enableMovement={waveMovementEnabled}
     >
       <div className={`w-full relative z-50 ${isHomepage || isQuickPlanning ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
         {/* Simple Clean Navigation */}
@@ -93,6 +113,9 @@ function AppContent() {
           activeHref={location.pathname}
           brandText=""
           logoIcon={<SiCurseforge className="simple-nav-icon" />}
+          waveMovementEnabled={waveMovementEnabled}
+          onWaveMovementToggle={setWaveMovementEnabled}
+          onClearStorage={handleClearStorage}
         />
         
         {/* Main Content */}
