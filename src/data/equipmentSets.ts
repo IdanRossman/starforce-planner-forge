@@ -1,2 +1,0 @@
-// Re-export the equipment database for backward compatibility
-export { EQUIPMENT_DATABASE as EQUIPMENT_BY_SLOT, getEquipmentBySlot, findEquipmentByName, getEquipmentBySet } from './equipmentDatabase';

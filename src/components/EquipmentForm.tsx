@@ -12,10 +12,7 @@ import { usePotential } from '@/hooks/game/usePotential';
 import { useEquipment } from '@/hooks/data/useEquipment';
 import { useEquipmentFormValidation, type EquipmentFormData } from '@/hooks/utils/useEquipmentFormValidation';
 import { useStarForceUtils } from '@/hooks/starforce/useStarForceUtils';
-import { EquipmentFormCards } from './EquipmentForm/EquipmentFormCards';
-import { CompactEquipmentForm } from './EquipmentForm/CompactEquipmentForm';
 import { SlimEquipmentFormCards } from './EquipmentForm/SlimEquipmentFormCards';
-import { EnhancedStarForceConfigurationSection } from '@/components/EquipmentForm/EnhancedStarForceConfigurationSection';
 import {
   Form,
 } from '@/components/ui/form';

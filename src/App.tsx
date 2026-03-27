@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -9,12 +8,11 @@ import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
 import { SiCurseforge } from 'react-icons/si';
 import Homepage from "./pages/Homepage";
-import CharacterDashboard from "./pages/CharacterDashboard-new";
+import CharacterDashboard from "./pages/CharacterDashboard";
 import { QuickPlanning } from "./pages/QuickPlanning";
 import NewCharacter from "./pages/NewCharacter";
 import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
+import AuthPage from "./pages/AuthPage";
 
 function QuickPlanningWrapper() {
   const navigate = useNavigate();
@@ -122,6 +120,17 @@ function AppContent() {
         <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-32 min-h-screen relative z-50"}>
           <AnimatePresence mode="wait" custom={direction}>
             <Routes location={location} key={location.pathname}>
+              <Route path="/auth" element={
+                <motion.div
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  <AuthPage />
+                </motion.div>
+              } />
               <Route path="/" element={
                 <motion.div
                   custom={direction}
@@ -196,15 +205,13 @@ function AppContent() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <HashRouter>
-        <AppContent />
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <TooltipProvider>
+    <Toaster />
+    <Sonner />
+    <HashRouter>
+      <AppContent />
+    </HashRouter>
+  </TooltipProvider>
 );
 
 export default App;

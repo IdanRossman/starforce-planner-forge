@@ -1,7 +1,9 @@
-import { Link } from 'react-router-dom';
-import { Star, Waves, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Star, Waves, Trash2, LogOut, LogIn } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 import './simple-nav.css';
 
 interface NavItem {
@@ -19,15 +21,19 @@ interface SimpleNavProps {
   onClearStorage?: () => void;
 }
 
-export default function SimpleNav({ 
-  items, 
-  activeHref, 
+export default function SimpleNav({
+  items,
+  activeHref,
   brandText = "React Bits",
   logoIcon,
   waveMovementEnabled = true,
   onWaveMovementToggle,
   onClearStorage
 }: SimpleNavProps) {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const userInitial = user?.email?.[0]?.toUpperCase() ?? '?';
+
   return (
     <div className="simple-nav-wrapper">
       <nav className="simple-nav-island">
@@ -85,6 +91,52 @@ export default function SimpleNav({
               <p>Clear local storage</p>
             </TooltipContent>
           </Tooltip>
+        )}
+
+        {!user && (
+          <>
+            <div className="simple-nav-divider" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate('/auth')}
+                  className="simple-nav-clear-btn"
+                  aria-label="Sign in"
+                >
+                  <LogIn className="simple-nav-toggle-icon" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sign In</p>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
+
+        {user && (
+          <>
+            <div className="simple-nav-divider" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="simple-nav-user-btn" aria-label="User menu">
+                  {userInitial}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48 bg-black/80 backdrop-blur-md border-white/20">
+                <DropdownMenuLabel className="text-white/60 font-normal text-xs truncate">
+                  {user.email}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem
+                  onClick={signOut}
+                  className="text-red-400 focus:text-red-400 focus:bg-red-400/10 cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </>
         )}
       </nav>
     </div>

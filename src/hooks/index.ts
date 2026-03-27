@@ -18,14 +18,6 @@ export type {
   DangerLevel 
 } from './display/useFormatting';
 
-// Game-specific hooks - StarForce settings and calculations
-export { useSettings } from './game/useSettings';
-export type { 
-  GlobalSettings, 
-  ItemSettings, 
-  SettingsOperations 
-} from './game/useSettings';
-
 // Utility hooks - table operations, UI helpers
 export { useTable } from './utils/useTable';
 export { useEquipmentFormValidation } from './utils/useEquipmentFormValidation';
