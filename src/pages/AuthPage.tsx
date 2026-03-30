@@ -12,13 +12,15 @@ import { SiCurseforge } from 'react-icons/si'
 import { Loader2, Mail } from 'lucide-react'
 
 export default function AuthPage() {
-  const { user, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord } = useAuth()
+  const { user, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord, resetPasswordForEmail } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [emailSent, setEmailSent] = useState(false)
+  const [forgotPassword, setForgotPassword] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
     if (user) navigate('/', { replace: true })
@@ -62,6 +64,18 @@ export default function AuthPage() {
     if (error) toast.error(error.message)
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    const { error } = await resetPasswordForEmail(email)
+    setLoading(false)
+    if (error) {
+      toast.error(error.message)
+    } else {
+      setResetSent(true)
+    }
+  }
+
   if (emailSent) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
@@ -88,7 +102,7 @@ export default function AuthPage() {
         <div className="flex items-center justify-center gap-3 mb-8">
           <SiCurseforge className="w-8 h-8 text-primary" />
           <span className="text-2xl font-bold" style={{ fontFamily: "'Maplestory OTF Bold', sans-serif" }}>
-            Starforce Planner
+            Maple Forge
           </span>
         </div>
 
@@ -104,35 +118,78 @@ export default function AuthPage() {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="bg-white/5 border-white/20 focus:border-white/40"
-                  />
+              {resetSent ? (
+                <div className="text-center flex flex-col items-center gap-4 py-2">
+                  <Mail className="w-10 h-10 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Reset link sent</p>
+                    <p className="text-xs text-white/50 mt-1">Check <span className="text-white/80">{email}</span> for a password reset link.</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="bg-white/5 border-white/20" onClick={() => { setResetSent(false); setForgotPassword(false) }}>
+                    Back to Sign In
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    required
-                    className="bg-white/5 border-white/20 focus:border-white/40"
-                  />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
-                </Button>
-              </form>
+              ) : forgotPassword ? (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-white">Reset your password</p>
+                    <p className="text-xs text-white/50">We'll send a reset link to your email.</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      className="bg-white/5 border-white/20 focus:border-white/40"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Reset Link'}
+                  </Button>
+                  <button type="button" onClick={() => setForgotPassword(false)} className="w-full text-xs text-white/40 hover:text-white/70 transition-colors">
+                    Back to Sign In
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      className="bg-white/5 border-white/20 focus:border-white/40"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="signin-password">Password</Label>
+                      <button type="button" onClick={() => setForgotPassword(true)} className="text-xs text-white/40 hover:text-white/70 transition-colors">
+                        Forgot password?
+                      </button>
+                    </div>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={e => setPassword(e.target.value)}
+                      required
+                      className="bg-white/5 border-white/20 focus:border-white/40"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign In'}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">

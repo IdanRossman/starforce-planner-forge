@@ -73,8 +73,8 @@ export function useEquipment(): EquipmentOperations {
   // StarForce operations
   const updateStarForce = useCallback((equipmentId: string, current: number, target: number) => {
     updateEquipment(equipmentId, {
-      currentStarForce: Math.max(0, Math.min(25, current)),
-      targetStarForce: Math.max(0, Math.min(25, target))
+      currentStarForce: Math.max(0, Math.min(30, current)),
+      targetStarForce: Math.max(0, Math.min(30, target))
     });
   }, [updateEquipment]);
 
@@ -83,10 +83,10 @@ export function useEquipment(): EquipmentOperations {
     const target = equipment.targetStarForce || 0;
     
     if (type === 'current') {
-      const newCurrent = Math.max(0, Math.min(25, current + delta));
+      const newCurrent = Math.max(0, Math.min(30, current + delta));
       updateStarForce(equipment.id, newCurrent, target);
     } else {
-      const newTarget = Math.max(0, Math.min(25, target + delta));
+      const newTarget = Math.max(0, Math.min(30, target + delta));
       updateStarForce(equipment.id, current, newTarget);
     }
   }, [updateStarForce]);
@@ -145,8 +145,8 @@ export function useEquipment(): EquipmentOperations {
       if (update) {
         return {
           ...eq,
-          currentStarForce: Math.max(0, Math.min(25, update.current)),
-          targetStarForce: Math.max(0, Math.min(25, update.target))
+          currentStarForce: Math.max(0, Math.min(30, update.current)),
+          targetStarForce: Math.max(0, Math.min(30, update.target))
         };
       }
       return eq;

@@ -13,7 +13,10 @@ import { CategorizedSelect, SelectCategory } from "@/components/shared/forms";
 import { getJobIcon, getJobColors, getJobCategoryName, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { useCharacter } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { fetchCharacterFromMapleRanks, Region } from "@/services/mapleRanksService";
+import { apiService } from "@/services/api";
+import { SLOT_TO_BACKEND_NAME } from "@/services/equipmentService";
 import { User, Target, FileText, Grid3x3, Sparkles, CheckCircle, Search, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 
 // Equipment groupings for each step
@@ -66,6 +69,7 @@ export default function NewCharacter() {
   const navigate = useNavigate();
   const { createCharacter } = useCharacter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   
   // Character data
@@ -213,25 +217,58 @@ export default function NewCharacter() {
     });
   };
 
-  const handleComplete = () => {
-    const newCharacter: Omit<Character, 'id'> = {
-      name: characterName,
-      class: selectedJob,
-      level: characterLevel,
-      image: fetchedCharacterImage || './characters/maple-admin.png',
-      equipment: equipment,
-      starForceItems: []
-    };
-    
-    // Create the character using the hook
-    createCharacter(newCharacter);
-    
-    toast({
-      title: "Character Created!",
-      description: `${characterName} has been added to your roster.`,
-    });
-    
-    navigate('/characters');
+  const handleComplete = async () => {
+    if (!user) return;
+
+    try {
+      // 1. Create the character record
+      const created = await apiService.createCharacter({
+        userId: user.id,
+        name: characterName,
+        job: selectedJob,
+        level: characterLevel,
+      });
+
+      // 2. Bulk upsert equipment slots
+      const equipmentPayload = (Object.entries(selectedItems) as [EquipmentSlot, Equipment | null][])
+        .filter(([, item]) => item !== null)
+        .map(([slot, item]) => ({
+          equipmentSlot: SLOT_TO_BACKEND_NAME[slot] ?? slot,
+          equipmentId: item!.id,
+          currentStarforce: currentStarForces[slot] ?? 0,
+          targetStarforce: item!.targetStarForce ?? 0,
+          currentPotential: '',
+          targetPotential: '',
+        }));
+
+      if (equipmentPayload.length > 0) {
+        await apiService.upsertCharacterEquipment(created.id, equipmentPayload);
+      }
+
+      // 3. Keep in localStorage until full migration — use server ID so they stay in sync
+      createCharacter({
+        name: characterName,
+        class: selectedJob,
+        level: characterLevel,
+        image: fetchedCharacterImage || './characters/maple-admin.png',
+        equipment,
+        starForceItems: [],
+      }, created.id);
+
+      toast({ title: "Character Created!", description: `${characterName} has been added to your roster.` });
+      navigate('/characters');
+    } catch (error: any) {
+      console.error('Failed to create character:', error);
+      if (error.status === 429) {
+        toast({
+          title: "Character Slot Full",
+          description: "You can have at most 6 active characters. Deleted characters free up their slot after 1 hour.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Error", description: "Failed to create character. Please try again.", variant: "destructive" });
+      }
+    }
   };
 
   const canProceedFromInfo = characterName.trim() !== "" && selectedJob !== "";
@@ -258,9 +295,9 @@ export default function NewCharacter() {
             onStepChange={(step) => setCurrentStep(step + 1)}
             canGoNext={currentStep === 1 ? canProceedFromInfo : true}
             nextLabel={currentStep === wizardSteps.length ? "Complete" : "Next"}
-            onNext={() => {
+            onNext={async () => {
               if (currentStep === wizardSteps.length) {
-                handleComplete();
+                await handleComplete();
               }
             }}
           >

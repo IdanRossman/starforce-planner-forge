@@ -5,7 +5,7 @@ import { fetchCharacterFromMapleRanks } from '../../services/mapleRanksService';
 
 export interface CharacterOperations {
   // Character CRUD operations
-  createCharacter: (characterData: Omit<Character, 'id'>) => void;
+  createCharacter: (characterData: Omit<Character, 'id'>, serverId?: string) => void;
   updateCharacter: (characterId: string, updates: Partial<Character>) => void;
   deleteCharacter: (characterId: string) => void;
   duplicateCharacter: (characterId: string) => void;
@@ -58,22 +58,15 @@ export function useCharacter(): CharacterOperations {
   } = useCharacterContext();
 
   // Character CRUD operations
-  const createCharacter = useCallback((characterData: Omit<Character, 'id'>) => {
+  const createCharacter = useCallback((characterData: Omit<Character, 'id'>, serverId?: string) => {
     const character = {
       ...characterData,
-      equipment: characterData.equipment || [], // Use provided equipment or empty array
+      equipment: characterData.equipment || [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    
-    addCharacter(character);
-    
-    // Auto-select if it's the first character
-    if (characters.length === 0) {
-      // Note: We can't get the new character ID from addCharacter since it returns void
-      // The context will handle auto-selection logic internally
-    }
-  }, [addCharacter, characters.length]);
+    addCharacter(character, serverId);
+  }, [addCharacter]);
 
   const updateCharacter = useCallback((characterId: string, updates: Partial<Character>) => {
     const updatedData = {
@@ -123,7 +116,6 @@ export function useCharacter(): CharacterOperations {
       if (mapleRanksData) {
         updateCharacter(characterId, {
           level: mapleRanksData.level,
-          class: mapleRanksData.class,
           image: mapleRanksData.image
         });
         return mapleRanksData;

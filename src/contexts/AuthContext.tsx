@@ -6,11 +6,15 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
+  isPasswordRecovery: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; needsEmailConfirmation: boolean }>
   signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signInWithDiscord: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
+  resetPasswordForEmail: (email: string) => Promise<{ error: AuthError | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: AuthError | null }>
+  clearPasswordRecovery: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -19,6 +23,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -28,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true)
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
@@ -66,8 +72,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut()
   }
 
+  const resetPasswordForEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/',
+    })
+    return { error }
+  }
+
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    return { error }
+  }
+
+  const clearPasswordRecovery = () => setIsPasswordRecovery(false)
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord, signOut, resetPasswordForEmail, updatePassword, clearPasswordRecovery }}>
       {children}
     </AuthContext.Provider>
   )

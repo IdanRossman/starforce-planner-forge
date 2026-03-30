@@ -1,17 +1,38 @@
+export interface StorageItem {
+  id: string;           // backend UUID (used for PUT/DELETE)
+  catalogId: string;    // equipment catalog ID
+  name?: string;
+  set?: string;
+  image?: string;
+  level: number;
+  starforceable: boolean;
+  currentStarForce: number;
+  targetStarForce: number;
+  currentPotential?: string;
+  targetPotential?: string;
+  itemType?: string;
+  type: EquipmentType;
+}
+
 export interface Character {
   id: string;
   name: string;
   class: string;
   level: number;
   equipment: Equipment[];
-  starForceItems?: Equipment[]; // Character-specific StarForce calculator items
-  image?: string; // Character image from MapleRanks
-  createdAt?: string; // When the character was created
-  updatedAt?: string; // When the character was last updated
+  storageItems?: StorageItem[];
+  starForceItems?: Equipment[];
+  image?: string;
+  callingCardHash?: string | null;
+  cardGenerationDate?: string | null;
+  cardGenerationCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Equipment {
   id: string;
+  catalogId?: string; // Original catalog item ID, used to sync with backend
   name?: string; // Equipment name (e.g., "Aquatic Letter Eye Accessory")
   slot: EquipmentSlot;
   type: EquipmentType;
@@ -70,7 +91,7 @@ export interface PotentialCalculation {
   recommendations: string[];
 }
 
-export type EquipmentSlot = 
+export type EquipmentSlot =
   | 'weapon'
   | 'secondary'
   | 'emblem'
@@ -95,7 +116,8 @@ export type EquipmentSlot =
   | 'pocket'
   | 'heart'
   | 'badge'
-  | 'medal';
+  | 'medal'
+  | 'android';
 
 export type EquipmentType = 
   | 'armor'
@@ -157,116 +179,3 @@ export interface GameAssistantProps {
   debugMode?: boolean; // Controls whether tip persists for debugging
 }
 
-// StarForce Optimization Types
-export interface StarforceOptimizationRequestDto {
-  items: Array<{
-    itemLevel: number;
-    fromStar: number;
-    toStar: number;
-    safeguardEnabled?: boolean;
-    spareCount?: number;
-    spareCost?: number;
-    itemName?: string;
-    itemType?: string; // e.g., 'weapon', 'secondary', 'gloves', 'helm', 'top', 'bottom', etc.
-    base_attack?: number; // Required for weapons to calculate 2% visible ATT gains
-  }>;
-  availableMeso: number;
-  isInteractive?: boolean;
-  events?: {
-    thirtyOff?: boolean;
-    fiveTenFifteen?: boolean;
-    starCatching?: boolean;
-    mvpDiscount?: boolean;
-  };
-}
-
-export interface StarforceOptimizationResponseDto {
-  budget: {
-    available: number;
-    used: number;
-    remaining: number;
-  };
-  starsGained: {
-    total: number;
-    byItem: Array<{
-      itemName: string;
-      originalTarget: number;
-      starsGained: number;
-      finalStar: number;
-      stepsCompleted: number;
-      totalCost: number;
-    }>;
-  };
-  actionPlan: Array<{
-    step: number;
-    action: string;
-    fromStar: number;
-    toStar: number;
-    expectedCost: number;
-    expectedBooms: number;
-    riskLevel: string;
-    efficiency: number;
-    cumulativeCost: number;
-    remainingBudget: number;
-    specialNote?: string;
-    statGains: {
-      jobStat: number;
-      visibleAtt: number;
-      attack: number;
-      magicAtt: number;
-      weaponAtt: number;
-      hp: number;
-      mp: number;
-      def: number;
-      totalValue: number;
-    };
-  }>;
-  achievableTargets: Array<{
-    itemIndex: number;
-    itemName: string;
-    originalTarget: number;
-    achievableTarget: number;
-    starsGained: number;
-    starsShortfall: number;
-  }>;
-  originalTargets: Array<{
-    itemName: string;
-    fromStar: number;
-    requestedTarget: number;
-    achievableTarget: number;
-    starsShortfall: number;
-  }>;
-  analysis: {
-    starsMetrics: {
-      requested: number;
-      achievable: number;
-      shortfall: number;
-      completionRate: number;
-    };
-    budgetMetrics: {
-      efficiency: number;
-      utilizationRate: number;
-      costPerStar: number;
-    };
-    itemsStatus: {
-      fullyAchievable: number;
-      partiallyAchievable: number;
-      notAchievable: number;
-    };
-    riskAssessment: {
-      highRiskSteps: number;
-      mediumRiskSteps: number;
-      overallRisk: string;
-    };
-    eventBenefits?: {
-      guaranteedSuccesses: number;
-      mesoSaved: number;
-      riskReduced: string;
-    };
-  };
-  recommendations: Array<{
-    type: string;
-    priority: string;
-    message: string;
-  }>;
-}

@@ -6,23 +6,23 @@ import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trackCharacterCreation, trackCharacterDeletion } from "@/lib/analytics";
 import { useToast } from "@/hooks/use-toast";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { useEquipment, useCharacter } from "@/hooks";
+import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
+import CharacterCallingCard from "@/components/CharacterCallingCard";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Users, 
-  Plus, 
+import {
+  Users,
+  Plus,
   Target,
   Edit,
   Trash2,
   RefreshCw,
   Download,
-  Upload,
   Star,
   TrendingUp,
   Package,
@@ -42,8 +42,7 @@ export default function CharacterDashboard() {
     getCharacterSummary
   } = useCharacter();
   const { 
-    updateStarForce: updateEquipmentStarForce, 
-    updateActualCost: updateEquipmentActualCost, 
+    updateStarForce: updateEquipmentStarForce,
     transferStarForce: transferEquipment,
     updateEquipment: saveEquipment,
     addEquipment,
@@ -55,13 +54,19 @@ export default function CharacterDashboard() {
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar state
-  
-  // Import/Export state
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [importText, setImportText] = useState("");
-  const [exportText, setExportText] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [characterSprite, setCharacterSprite] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedCharacter) { setCharacterSprite(null); return; }
+    const name = selectedCharacter.name;
+    let cancelled = false;
+    fetchCharacterFromMapleRanks(name).then(data => {
+      if (!cancelled) setCharacterSprite(data?.image ?? null);
+    });
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCharacter?.id, selectedCharacter?.name]);
   
   const { toast } = useToast();
 
@@ -97,15 +102,21 @@ export default function CharacterDashboard() {
   };
 
   const handleDeleteCharacter = (id: string) => {
-    const characterToDelete = characters.find(char => char.id === id);
+    setDeleteConfirmId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmId) return;
+    const characterToDelete = characters.find(char => char.id === deleteConfirmId);
     if (characterToDelete) {
-      deleteCharacter(id);
+      deleteCharacter(deleteConfirmId);
       trackCharacterDeletion(characterToDelete.class);
       toast({
         title: "Character Deleted",
         description: "Character has been removed from your roster.",
       });
     }
+    setDeleteConfirmId(null);
   };
 
   // Equipment handlers
@@ -141,10 +152,6 @@ export default function CharacterDashboard() {
 
   const handleUpdateStarforce = (equipmentId: string, current: number, target: number) => {
     updateEquipmentStarForce(equipmentId, current, target);
-  };
-
-  const handleUpdateActualCost = (equipmentId: string, actualCost: number) => {
-    updateEquipmentActualCost(equipmentId, actualCost);
   };
 
   const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
@@ -197,22 +204,51 @@ export default function CharacterDashboard() {
               <h2 className="font-semibold font-maplestory text-foreground">Characters</h2>
             </motion.div>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="h-8 w-8 p-0 rounded-full"
-          >
-            {sidebarOpen ? (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
+          <div className="flex items-center gap-1">
+            {sidebarOpen && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        onClick={() => navigate('/character/new')}
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        disabled={characters.length >= 6}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {characters.length >= 6 ? (
+                    <TooltipContent className="font-maplestory max-w-[200px] text-center">
+                      Character slots full (6/6). Delete a character and wait 1 hour to free a slot.
+                    </TooltipContent>
+                  ) : (
+                    <TooltipContent className="font-maplestory">
+                      New Character
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
-          </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="h-8 w-8 p-0 rounded-full"
+            >
+              {sidebarOpen ? (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Character List */}
@@ -248,115 +284,38 @@ export default function CharacterDashboard() {
             <TooltipProvider>
               <div className="space-y-2">
                 {characters.map((character) => {
-                  const stats = getCharacterStats(character);
                   const isSelected = selectedCharacter?.id === character.id;
-                
-                return (
-                  <motion.div
-                    key={character.id}
-                    layout
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div
-                      className={`rounded-lg p-2 cursor-pointer transition-all ${
-                        sidebarOpen
-                          ? isSelected
-                            ? 'bg-primary/20 border border-primary'
-                            : 'bg-card/50 border border-transparent hover:bg-card hover:border-primary/30'
-                          : isSelected
-                            ? 'bg-primary/20'
-                            : 'bg-card/50 hover:bg-card'
-                      }`}
-                      onClick={() => handleSelectCharacter(character)}
-                    >
+
+                  return (
+                    <motion.div key={character.id} layout whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
                       {sidebarOpen ? (
-                        <div className="space-y-2">
-                          {/* Character Info */}
-                          <div className="flex items-center gap-3">
-                            {character.image ? (
-                              <img
-                                src={character.image}
-                                alt={character.name}
-                                className="w-10 h-10 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                                <Users className="w-5 h-5 text-primary" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-sm font-maplestory truncate">
-                                {character.name}
-                              </h3>
-                              <p className="text-xs text-muted-foreground font-maplestory truncate">
-                                Lv. {character.level} {character.class}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Quick Stats */}
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <div className="bg-background/50 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border/30">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                                <span className="text-xs font-semibold font-maplestory">{stats.totalCurrentStars}</span>
-                              </div>
-                            </div>
-                            <div className="bg-background/50 backdrop-blur-sm rounded-full px-3 py-1.5 border border-border/30">
-                              <div className="flex items-center justify-center gap-1.5">
-                                <Target className="w-3 h-3 text-primary" />
-                                <span className="text-xs font-semibold font-maplestory">{stats.totalTargetStars}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Action Buttons */}
-                          <div className="flex gap-1.5">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 flex-1 text-xs rounded-full hover:bg-primary/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditCharacter(character);
-                              }}
-                            >
-                              <Edit className="w-3 h-3 mr-1.5" />
-                              Edit
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteCharacter(character.id);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        </div>
+                        <CharacterCallingCard
+                          character={character}
+                          isSelected={isSelected}
+                          onClick={() => handleSelectCharacter(character)}
+                          onEdit={(e) => { e.stopPropagation(); handleEditCharacter(character); }}
+                          onDelete={(e) => { e.stopPropagation(); handleDeleteCharacter(character.id); }}
+                        />
                       ) : (
                         // Collapsed view - just avatar
                         <Tooltip delayDuration={300}>
                           <TooltipTrigger asChild>
-                            <div className="relative">
-                              {character.image ? (
+                            <div
+                              className={`relative w-10 h-10 rounded-full overflow-hidden cursor-pointer ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-white/10'}`}
+                              onClick={() => handleSelectCharacter(character)}
+                            >
+                              {character.callingCardHash ? (
                                 <img
-                                  src={character.image}
+                                  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/calling-cards/${character.callingCardHash}.png`}
                                   alt={character.name}
-                                  className="w-10 h-10 rounded-full object-cover"
+                                  className="w-full h-full object-cover object-center"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
                                   <Users className="w-5 h-5 text-primary" />
                                 </div>
                               )}
-                              {isSelected && (
-                                <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card" />
-                              )}
+                              {isSelected && <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card" />}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="right" sideOffset={15} className="font-maplestory z-50">
@@ -365,37 +324,13 @@ export default function CharacterDashboard() {
                           </TooltipContent>
                         </Tooltip>
                       )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    </motion.div>
+                  );
+                })}
               </div>
             </TooltipProvider>
           )}
         </div>
-
-        {/* Sidebar Footer - Actions */}
-        {sidebarOpen && (
-          <div className="p-4 border-t border-border/50 space-y-2">
-            <Button
-              onClick={() => navigate('/character/new')}
-              className="w-full font-maplestory bg-primary hover:bg-primary/90"
-              size="sm"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Character
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setImportDialogOpen(true)}
-              className="w-full font-maplestory"
-              size="sm"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Import
-            </Button>
-          </div>
-        )}
       </motion.aside>
 
       {/* Main Content Area */}
@@ -425,12 +360,12 @@ export default function CharacterDashboard() {
                     onAddEquipment={handleAddEquipment}
                     onClearEquipment={handleClearEquipment}
                     onUpdateStarforce={handleUpdateStarforce}
-                    onUpdateActualCost={handleUpdateActualCost}
                     onSaveEquipment={handleSaveEquipment}
                     onTransfer={handleTransferEquipment}
                     selectedJob={selectedCharacter.class}
                     characterId={selectedCharacter.id}
                     characterName={selectedCharacter.name}
+                    characterImage={characterSprite ?? undefined}
                   />
                 </CardContent>
               </Card>
@@ -460,28 +395,29 @@ export default function CharacterDashboard() {
         onEditingChange={setEditingCharacter}
       />
 
-      {/* Import Dialog */}
-      <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-maplestory">Import Characters</DialogTitle>
+            <DialogTitle className="font-maplestory">Delete Character?</DialogTitle>
+            <DialogDescription className="font-maplestory space-y-2 pt-1">
+              <span className="block">
+                {deleteConfirmId && characters.find(c => c.id === deleteConfirmId)?.name} will be permanently deleted.
+              </span>
+              <span className="block text-yellow-400/90">
+                Note: the character slot stays occupied for 1 hour after deletion. You won't be able to create a new character until then.
+              </span>
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <Textarea
-              placeholder="Paste your exported character data here..."
-              value={importText}
-              onChange={(e) => setImportText(e.target.value)}
-              className="min-h-[200px] font-mono text-xs"
-            />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => {/* handleImport */}} className="font-maplestory">
-                Import
-              </Button>
-            </div>
-          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="font-maplestory">
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} className="font-maplestory">
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

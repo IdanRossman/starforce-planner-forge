@@ -1,26 +1,28 @@
 import { apiService } from './api';
 
+export type MvpDiscount = 'None' | 'Mvp3Percent' | 'Mvp5Percent' | 'Mvp10Percent';
+
 // Request DTOs (matching your backend)
 export interface BulkItemCalculationDto {
   itemLevel: number;
   fromStar: number;
   toStar: number;
-  safeguardEnabled?: boolean;
+  starCatching?: boolean;
+  safeguard?: boolean;
+  itemName?: string;
   spareCount?: number;
   spareCost?: number;
   actualCost?: number;
-  itemName?: string;
 }
 
 export interface BulkEnhancedStarforceRequestDto {
-  isInteractive: boolean;
-  events?: {
-    thirtyOff?: boolean;
-    fiveTenFifteen?: boolean;
-    starCatching?: boolean;
-    mvpDiscount?: number;
-  };
   items: BulkItemCalculationDto[];
+  trials?: number;
+  events?: {
+    thirtyPercentMesoReduction?: boolean;
+    thirtyPercentBoomReduction?: boolean;
+    mvpDiscount?: MvpDiscount;
+  };
 }
 
 // Response DTOs (matching your backend)
@@ -35,36 +37,30 @@ export interface LuckAnalysisDto {
 }
 
 export interface EnhancedStarforceCostResponseDto {
+  itemName?: string | null;
   fromStar: number;
   toStar: number;
-  itemLevel: number;
-  isInteractive: boolean;
   averageCost: number;
   medianCost: number;
   percentile75Cost: number;
-  trials: number;
-  costDistribution: {
-    min: number;
-    max: number;
-    standardDeviation: number;
-  };
-  averageSpareCount?: number;
-  medianSpareCount?: number;
-  percentile75SpareCount?: number;
-  totalInvestment?: number;
-  luckAnalysis?: LuckAnalysisDto;
+  minCost?: number;
+  maxCost?: number;
+  standardDeviation?: number;
+  trials?: number;
+  averageBooms?: number;
+  medianBooms?: number;
+  percentile75Booms?: number;
 }
 
 export interface BulkEnhancedStarforceResponseDto {
   results: EnhancedStarforceCostResponseDto[];
   summary: {
-    totalExpectedCost: number;
+    totalAverageCost: number;
     totalMedianCost: number;
     totalConservativeCost: number;
-    totalExpectedBooms: number;
-    totalCalculations: number;
-    worstCaseScenario: number;
-    bestCaseScenario: number;
+    totalAverageBooms: number;
+    bestCase: number;
+    worstCase: number;
   };
 }
 
@@ -84,7 +80,7 @@ export async function calculateBulkStarforce(
 
   try {
     const response = await apiService.post<BulkEnhancedStarforceResponseDto>(
-      '/Starforce/calculate-bulk', 
+      '/api/starforce/calculate/batch',
       request
     );
     

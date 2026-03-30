@@ -90,14 +90,14 @@ export const getMaxStarForce = (level: number): number => {
   if (level <= 117) return 10;
   if (level <= 127) return 15;
   if (level <= 137) return 20;
-  return 23; // 138 and above (adjusted to current system max of 23)
+  return 30; // 138 and above
 };
 
 // Helper function to get default target star force (22 for level 140+, max otherwise)
 export const getDefaultTargetStarForce = (level: number): number => {
   const maxStars = getMaxStarForce(level);
-  // For level 140+ items, default to 22 instead of max (23)
-  if (level > 140 && maxStars === 23) {
+  // For level 140+ items, default to 22 instead of max (30)
+  if (level > 140 && maxStars === 30) {
     return 22;
   }
   return maxStars;
@@ -106,7 +106,7 @@ export const getDefaultTargetStarForce = (level: number): number => {
 interface CharacterStarForceSettings {
   enhancedSettings?: {
     thirtyPercentOff: boolean;
-    fiveTenFifteenEvent: boolean;
+    thirtyPercentBoomReduction: boolean;
     isInteractive: boolean;
     spareCount: number;
     sparePrice: number;

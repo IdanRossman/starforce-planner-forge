@@ -1,50 +1,38 @@
 import { useState, useEffect } from "react";
-import { Equipment, EquipmentSlot } from "@/types";
+import { Equipment, EquipmentSlot, StorageItem } from "@/types";
+import { StoragePanel } from "@/components/StoragePanel";
+import { useCharacterContext } from "@/hooks/useCharacterContext";
+import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
-import { EquipmentImage } from "@/components/EquipmentImage";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { StarForceCalculator } from "@/components/StarForceCalculator";
-import { StarForceOptimizer } from "@/components/StarForceOptimizer";
 import { PotentialCalculator } from "@/components/PotentialCalculator";
 import { usePotential } from "@/hooks/game/usePotential";
-import { 
-  trackEquipmentAdded, 
-  trackStarForceCalculation, 
-  trackStarForceCompletion, 
-  trackTabSwitch, 
-  trackEquipmentTransfer 
+import {
+  trackEquipmentAdded,
+  trackStarForceCalculation,
+  trackTabSwitch,
+  trackEquipmentTransfer
 } from "@/lib/analytics";
-import { 
-  Target, 
-  Calculator, 
-  Sparkles, 
-  Edit, 
-  Trash2, 
+import {
+  Target,
+  Calculator,
   Plus,
   Star,
   TrendingUp,
   AlertCircle,
-  CheckCircle2,
   Filter,
   Package,
-  X,
   Minus,
-  ChevronUp,
-  ChevronDown,
   DollarSign,
-  ArrowRightLeft,
   Zap,
   Crown,
-  Eye,
-  EyeOff
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -53,7 +41,6 @@ interface EnhancedEquipmentManagerProps {
   onAddEquipment: (slot: EquipmentSlot) => void;
   onClearEquipment: (slot: EquipmentSlot) => void;
   onUpdateStarforce?: (equipmentId: string, current: number, target: number) => void;
-  onUpdateActualCost?: (equipmentId: string, actualCost: number) => void;
   onSaveEquipment?: (equipment: Equipment) => void;
   onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void;
   selectedJob?: string;
@@ -62,9 +49,9 @@ interface EnhancedEquipmentManagerProps {
   onDeleteAdditionalEquipment?: (equipmentId: string) => void;
   characterId?: string; // For per-character localStorage
   characterName?: string; // Fallback for characters without ID
+  characterImage?: string;
 }
 
-type FilterType = "all" | "pending" | "completed" | "starforceable";
 
 export function EnhancedEquipmentManager({
   equipment,
@@ -72,23 +59,17 @@ export function EnhancedEquipmentManager({
   onAddEquipment,
   onClearEquipment,
   onUpdateStarforce,
-  onUpdateActualCost,
   onSaveEquipment,
   onTransfer,
   selectedJob,
-  additionalEquipment = [],
-  onSaveAdditionalEquipment,
-  onDeleteAdditionalEquipment,
   characterId,
-  characterName
+  characterName,
+  characterImage
 }: EnhancedEquipmentManagerProps) {
-  const [filter, setFilter] = useState<FilterType>("all");
-  const [editingStarforce, setEditingStarforce] = useState<string | null>(null);
-  const [tempValues, setTempValues] = useState<{ current: number; target: number }>({ current: 0, target: 0 });
+  const { isEquipmentLoading, selectedCharacter } = useCharacterContext();
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
-  const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("equipment");
 
   // Use the potential hook
@@ -102,8 +83,27 @@ export function EnhancedEquipmentManager({
     }
   };
 
-  // Calculate stats including additional equipment
-  const allEquipment = [...equipment, ...additionalEquipment];
+  // Convert storage items to Equipment shape for calculator/potential tabs
+  const storageItems = selectedCharacter?.storageItems ?? [];
+  const storageAsEquipment: Equipment[] = storageItems.map((item: StorageItem) => ({
+    id: `storage-${item.id}`,
+    catalogId: item.catalogId,
+    name: item.name,
+    set: item.set,
+    slot: (item.itemType ?? 'medal') as EquipmentSlot,
+    type: item.type,
+    level: item.level,
+    starforceable: item.starforceable,
+    currentStarForce: item.currentStarForce,
+    targetStarForce: item.targetStarForce,
+    currentPotentialValue: item.currentPotential,
+    targetPotentialValue: item.targetPotential,
+    image: item.image,
+    itemType: item.itemType,
+  }));
+
+  // Calculate stats including storage items
+  const allEquipment = [...equipment, ...storageAsEquipment];
   const starforceableEquipment = allEquipment.filter(eq => eq.starforceable);
   const pendingEquipment = starforceableEquipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
   const completedEquipment = starforceableEquipment.filter(eq => eq.currentStarForce >= eq.targetStarForce);
@@ -121,74 +121,6 @@ export function EnhancedEquipmentManager({
     }
   }, [activeTab, pendingEquipment.length]);
 
-  // Filter equipment based on selected filter
-  const getFilteredEquipment = () => {
-    switch (filter) {
-      case "pending":
-        return pendingEquipment;
-      case "completed":
-        return completedEquipment;
-      case "starforceable":
-        return starforceableEquipment;
-      default:
-        return allEquipment;
-    }
-  };
-
-  const handleStartEdit = (equipment: Equipment) => {
-    setEditingStarforce(equipment.id);
-    setTempValues({
-      current: equipment.currentStarForce || 0,
-      target: equipment.targetStarForce || 0
-    });
-  };
-
-  const handleSaveEdit = (equipment: Equipment) => {
-    if (onUpdateStarforce) {
-      onUpdateStarforce(equipment.id, tempValues.current, tempValues.target);
-    }
-    setEditingStarforce(null);
-  };
-
-  const handleCancelEdit = () => {
-    setEditingStarforce(null);
-    setTempValues({ current: 0, target: 0 });
-  };
-
-  const handleQuickAdjust = (equipment: Equipment, type: 'current' | 'target', delta: number) => {
-    if (!onUpdateStarforce) return;
-    
-    const current = equipment.currentStarForce || 0;
-    const target = equipment.targetStarForce || 0;
-    
-    if (type === 'current') {
-      const newCurrent = Math.max(0, Math.min(25, current + delta));
-      onUpdateStarforce(equipment.id, newCurrent, target);
-    } else {
-      const newTarget = Math.max(0, Math.min(25, target + delta));
-      onUpdateStarforce(equipment.id, current, newTarget);
-    }
-  };
-
-  const handleCompleteStarforce = (equipment: Equipment) => {
-    if (!onUpdateStarforce || !equipment.starforceable) return;
-    
-    const target = equipment.targetStarForce || 0;
-    onUpdateStarforce(equipment.id, target, target);
-    
-    // Track StarForce completion
-    trackStarForceCompletion(equipment.name, target);
-  };
-
-  const handleAddAdditionalEquipment = () => {
-    setEditingEquipment(null);
-    setDefaultSlot(null);
-    setEquipmentFormOpen(true);
-  };
-
-  const isAdditionalEquipment = (item: Equipment) => {
-    return additionalEquipment.some(eq => eq.id === item.id);
-  };
 
   const handleOpenEquipmentForm = (equipment?: Equipment, slot?: EquipmentSlot) => {
     setEditingEquipment(equipment || null);
@@ -203,60 +135,26 @@ export function EnhancedEquipmentManager({
   };
 
   const handleSaveEquipmentForm = (equipment: Equipment) => {
-    // If we're editing an existing piece of equipment, check if it was originally additional
-    const isEditingAdditional = editingEquipment && isAdditionalEquipment(editingEquipment);
-    
-    // If we're adding new equipment without a slot, or editing existing additional equipment
-    const isAdditional = !equipment.slot || isEditingAdditional;
-    
-    // Track equipment addition (only for new equipment, not edits)
     if (!editingEquipment) {
       trackEquipmentAdded(equipment.slot || 'additional', equipment.name);
     }
-    
-    if (isAdditional && onSaveAdditionalEquipment) {
-      onSaveAdditionalEquipment(equipment);
-    } else if (onSaveEquipment) {
+    if (onSaveEquipment) {
       onSaveEquipment(equipment);
     }
     handleCloseEquipmentForm();
   };
 
   const handleUpdateSafeguard = (equipmentId: string, safeguard: boolean) => {
-    // Find the equipment and update its safeguard setting
-    const allEquipment = [...equipment, ...additionalEquipment];
-    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
-    
-    if (targetEquipment) {
-      const updatedEquipment = { ...targetEquipment, safeguard };
-      
-      // Check if it's additional equipment or main equipment
-      const isAdditional = isAdditionalEquipment(targetEquipment);
-      
-      if (isAdditional && onSaveAdditionalEquipment) {
-        onSaveAdditionalEquipment(updatedEquipment);
-      } else if (onSaveEquipment) {
-        onSaveEquipment(updatedEquipment);
-      }
+    const targetEquipment = equipment.find(eq => eq.id === equipmentId);
+    if (targetEquipment && onSaveEquipment) {
+      onSaveEquipment({ ...targetEquipment, safeguard });
     }
   };
 
   const handleUpdateIncludeInCalculations = (equipmentId: string, includeInCalculations: boolean) => {
-    // Find the equipment and update its includeInCalculations setting
-    const allEquipment = [...equipment, ...additionalEquipment];
-    const targetEquipment = allEquipment.find(eq => eq.id === equipmentId);
-    
-    if (targetEquipment) {
-      const updatedEquipment = { ...targetEquipment, includeInCalculations };
-      
-      // Check if it's additional equipment or main equipment
-      const isAdditional = isAdditionalEquipment(targetEquipment);
-      
-      if (isAdditional && onSaveAdditionalEquipment) {
-        onSaveAdditionalEquipment(updatedEquipment);
-      } else if (onSaveEquipment) {
-        onSaveEquipment(updatedEquipment);
-      }
+    const targetEquipment = equipment.find(eq => eq.id === equipmentId);
+    if (targetEquipment && onSaveEquipment) {
+      onSaveEquipment({ ...targetEquipment, includeInCalculations });
     }
   };
 
@@ -348,18 +246,6 @@ export function EnhancedEquipmentManager({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="optimizer" 
-                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>Optimizer</span>
-                {pendingEquipment.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 rounded-full bg-orange-500/20 text-orange-600 border-orange-500/30 text-xs px-1.5 py-0 h-5 font-maplestory">
-                    BETA
-                  </Badge>
-                )}
-              </TabsTrigger>
             </TabsList>
 
             {/* Equipment Setup Tab */}
@@ -373,329 +259,34 @@ export function EnhancedEquipmentManager({
                       Equipment Slots
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="relative">
+                    {isEquipmentLoading && (
+                      <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/60 backdrop-blur-sm">
+                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                      </div>
+                    )}
                     <EquipmentGrid
                       equipment={equipment}
                       onEditEquipment={(equipment) => handleOpenEquipmentForm(equipment)}
                       onAddEquipment={(slot) => handleOpenEquipmentForm(undefined, slot)}
                       onClearEquipment={onClearEquipment}
                       onOpenCalculator={() => handleTabChange("calculator")}
+                      characterImage={characterImage}
                     />
                   </CardContent>
                 </Card>
 
-                {/* Equipment Table - Right Side */}
+                {/* Storage Panel - Right Side */}
                 <Card className="xl:col-span-3 bg-white/5 backdrop-blur-md border-border/50">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="flex items-center gap-2 font-maplestory text-base">
-                        <Package className="w-4 h-4 text-primary" />
-                        Equipment Details
-                      </CardTitle>
-                      
-                      <div className="flex items-center gap-3">
-                        {/* Add Additional Equipment Button */}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleAddAdditionalEquipment}
-                          className="flex items-center gap-2 font-maplestory rounded-full h-8"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Add Item
-                        </Button>
-                        
-                        {/* Filter Tabs */}
-                        <Tabs value={filter} onValueChange={(value) => setFilter(value as FilterType)} className="w-auto">
-                          <TabsList className="h-8 p-0.5 bg-muted/30">
-                            <TabsTrigger value="all" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">All ({allEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="starforceable" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">SF ({starforceableEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="pending" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">Pending ({pendingEquipment.length})</TabsTrigger>
-                            <TabsTrigger value="completed" className="text-xs font-maplestory h-7 px-3 rounded-full data-[state=active]:bg-background">Done ({completedEquipment.length})</TabsTrigger>
-                          </TabsList>
-                        </Tabs>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {getFilteredEquipment().length === 0 ? (
-                      <div className="text-center py-12">
-                        <Package className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                        <h3 className="font-semibold text-base mb-1 font-maplestory">No Equipment Found</h3>
-                        <p className="text-sm text-muted-foreground mb-4 font-maplestory">
-                          {filter === "all" 
-                            ? "Click on equipment slots to add new items"
-                            : `No ${filter} equipment found`
-                          }
-                        </p>
-                        {filter !== "all" && (
-                          <Button variant="outline" size="sm" onClick={() => setFilter("all")} className="font-maplestory rounded-full">
-                            View All Equipment
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-[600px] overflow-y-auto">
-                        <Table>
-                          <TableHeader className="sticky top-0 bg-card z-10">
-                            <TableRow className="border-b">
-                              <TableHead className="w-12"></TableHead>
-                              <TableHead className="font-maplestory">Item</TableHead>
-                              <TableHead className="text-center font-maplestory">Current SF</TableHead>
-                              <TableHead className="text-center font-maplestory">Target SF</TableHead>
-                              <TableHead className="text-center font-maplestory">Current Potential</TableHead>
-                              <TableHead className="text-center font-maplestory">Target Potential</TableHead>
-                              <TableHead className="text-center font-maplestory">Status</TableHead>
-                              <TableHead className="text-center font-maplestory">Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {getFilteredEquipment().map((item) => (
-                              <TableRow 
-                                key={item.id}
-                                onMouseEnter={() => setHoveredRow(item.id)}
-                                onMouseLeave={() => setHoveredRow(null)}
-                                className={`group transition-opacity ${item.includeInCalculations !== false ? '' : 'opacity-50 bg-muted/30'}`}
-                              >
-                                <TableCell>
-                                  <div className="relative flex-shrink-0">
-                                    <EquipmentImage
-                                      src={item.image}
-                                      alt={item.name}
-                                      size="md"
-                                      maxRetries={2}
-                                      showFallback={true}
-                                    />
-                                    {item.includeInCalculations === false && (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
-                                        <EyeOff className="w-3 h-3 text-white" />
-                                      </div>
-                                    )}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div>
-                                    <div className="font-medium flex items-center gap-2 font-maplestory">
-                                      {item.name}
-                                      {isAdditionalEquipment(item) && (
-                                        <Badge variant="secondary" className="text-xs font-maplestory">Additional</Badge>
-                                      )}
-                                      {item.transferredFrom && (
-                                        <Badge variant="outline" className="text-xs font-maplestory bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
-                                          <ArrowRightLeft className="w-3 h-3 mr-1" />
-                                          Transferred
-                                        </Badge>
-                                      )}
-                                      {item.isTransferSource && (
-                                        <Badge variant="outline" className="text-xs font-maplestory bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950 dark:text-orange-300 dark:border-orange-800">
-                                          <ArrowRightLeft className="w-3 h-3 mr-1" />
-                                          Source (will be destroyed)
-                                        </Badge>
-                                      )}
-                                    </div>
-                                    <div className="text-sm text-muted-foreground font-maplestory">
-                                      {item.slot || 'No Slot'}
-                                      {item.transferredFrom && item.transferredStars && (
-                                        <span className="ml-2 text-blue-600 dark:text-blue-400">
-                                          • {item.transferredStars}★ transferred
-                                        </span>
-                                      )}
-                                      {item.isTransferSource && (
-                                        <span className="ml-2 text-orange-600 dark:text-orange-400">
-                                          • Will transfer {item.targetStarForce}★ and be destroyed
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {editingStarforce === item.id ? (
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="25"
-                                      value={tempValues.current}
-                                      onChange={(e) => setTempValues(prev => ({ ...prev, current: parseInt(e.target.value) || 0 }))}
-                                      className="w-16 h-8 text-center font-maplestory"
-                                    />
-                                  ) : (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Star className={`w-3 h-3 ${item.transferredFrom ? 'text-blue-500' : item.isTransferSource ? 'text-orange-500' : 'text-yellow-500'}`} />
-                                      <span className={`font-medium font-maplestory ${item.transferredFrom ? 'text-blue-600 dark:text-blue-400' : item.isTransferSource ? 'text-orange-600 dark:text-orange-400' : ''}`}>
-                                        {item.currentStarForce || 0}
-                                        {item.isTransferSource && (
-                                          <span className="text-xs ml-1 opacity-75">
-                                            (→{item.targetStarForce})
-                                          </span>
-                                        )}
-                                      </span>
-                                      {/* Quick Adjust Buttons - Current SF */}
-                                      {hoveredRow === item.id && item.starforceable && (
-                                        <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleQuickAdjust(item, 'current', 1)}
-                                            className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                          >
-                                            <ChevronUp className="w-2 h-2 text-green-600" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleQuickAdjust(item, 'current', -1)}
-                                            className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                          >
-                                            <ChevronDown className="w-2 h-2 text-red-600" />
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {editingStarforce === item.id ? (
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      max="25"
-                                      value={tempValues.target}
-                                      onChange={(e) => setTempValues(prev => ({ ...prev, target: parseInt(e.target.value) || 0 }))}
-                                      className="w-16 h-8 text-center font-maplestory"
-                                    />
-                                  ) : (
-                                    <div className="flex items-center justify-center gap-1">
-                                      <Target className="w-3 h-3 text-primary" />
-                                      <span className="font-medium font-maplestory">{item.targetStarForce || 0}</span>
-                                      {/* Quick Adjust Buttons - Target SF */}
-                                      {hoveredRow === item.id && item.starforceable && (
-                                        <div className="flex flex-col ml-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleQuickAdjust(item, 'target', 1)}
-                                            className="h-3 w-4 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                          >
-                                            <ChevronUp className="w-2 h-2 text-green-600" />
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleQuickAdjust(item, 'target', -1)}
-                                            className="h-3 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                          >
-                                            <ChevronDown className="w-2 h-2 text-red-600" />
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Zap className="w-3 h-3 text-blue-500" />
-                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getCurrentPotentialSummary(item)}>
-                                      {getCurrentPotentialSummary(item)}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <div className="flex items-center justify-center gap-1">
-                                    <Zap className="w-3 h-3 text-purple-500" />
-                                    <span className="text-xs font-maplestory text-muted-foreground max-w-[120px] truncate" title={getTargetPotentialSummary(item)}>
-                                      {getTargetPotentialSummary(item)}
-                                    </span>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  {getStatusBadge(item)}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                  <div className="flex items-center justify-center gap-1">
-                                    {editingStarforce === item.id ? (
-                                      <>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => handleSaveEdit(item)}
-                                          className="h-8 w-8 p-0"
-                                        >
-                                          <CheckCircle2 className="w-4 h-4 text-green-500" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={handleCancelEdit}
-                                          className="h-8 w-8 p-0"
-                                        >
-                                          <X className="w-4 h-4 text-red-500" />
-                                        </Button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        {/* Eye toggle button */}
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => handleUpdateIncludeInCalculations(item.id, !(item.includeInCalculations !== false))}
-                                          className="h-8 w-8 p-0"
-                                          title={item.includeInCalculations !== false ? "Exclude from calculations" : "Include in calculations"}
-                                        >
-                                          {item.includeInCalculations !== false ? (
-                                            <Eye className="w-4 h-4 text-blue-500" />
-                                          ) : (
-                                            <EyeOff className="w-4 h-4 text-muted-foreground" />
-                                          )}
-                                        </Button>
-                                        {item.starforceable && (
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleStartEdit(item)}
-                                            className="h-8 w-8 p-0"
-                                          >
-                                            <Edit className="w-4 h-4" />
-                                          </Button>
-                                        )}
-                                        {item.starforceable && item.currentStarForce < item.targetStarForce && (
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => handleCompleteStarforce(item)}
-                                            className="h-8 w-8 p-0 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                            title="Complete StarForce (set current = target)"
-                                          >
-                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                          </Button>
-                                        )}
-                                        {/* Delete button for all equipment */}
-                                        <Button
-                                          size="sm"
-                                          variant="ghost"
-                                          onClick={() => {
-                                            if (isAdditionalEquipment(item) && onDeleteAdditionalEquipment) {
-                                              onDeleteAdditionalEquipment(item.id);
-                                            } else if (item.slot && onClearEquipment) {
-                                              onClearEquipment(item.slot);
-                                            }
-                                          }}
-                                          className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/20"
-                                          title={isAdditionalEquipment(item) ? "Delete additional equipment" : "Clear equipment slot"}
-                                        >
-                                          <Trash2 className="w-4 h-4 text-red-600" />
-                                        </Button>
-                                      </>
-                                    )}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    )}
+                  <CardContent className="p-4">
+                    <StoragePanel
+                      characterId={characterId}
+                      selectedJob={selectedJob}
+                      equippedCount={equipment.length}
+                    />
                   </CardContent>
                 </Card>
+
               </div>
             </TabsContent>
 
@@ -706,12 +297,10 @@ export function EnhancedEquipmentManager({
                   characterId={characterId}
                   characterName={characterName}
                   equipment={equipment}
-                  additionalEquipment={additionalEquipment}
+                  additionalEquipment={storageAsEquipment}
                   onUpdateStarforce={onUpdateStarforce}
-                  onUpdateActualCost={onUpdateActualCost}
                   onUpdateSafeguard={handleUpdateSafeguard}
                   onSaveEquipment={onSaveEquipment}
-                  onSaveAdditionalEquipment={onSaveAdditionalEquipment}
                 />
               ) : (
                 <Card className="bg-white/5 backdrop-blur-md border-border/50">
@@ -731,14 +320,14 @@ export function EnhancedEquipmentManager({
                         <Target className="w-4 h-4" />
                         Manage Equipment
                       </Button>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
-                        onClick={handleAddAdditionalEquipment}
+                        onClick={() => handleTabChange("equipment")}
                         className="flex items-center gap-2 font-maplestory rounded-full"
                       >
                         <Plus className="w-4 h-4" />
-                        Add StarForce Item
+                        Add Storage Item
                       </Button>
                     </div>
                   </CardContent>
@@ -748,25 +337,9 @@ export function EnhancedEquipmentManager({
 
             {/* Potential Calculator Tab */}
             <TabsContent value="potential" className="mt-4">
-              <PotentialCalculator
-                characterId={characterId}
-                characterName={characterName}
-                equipment={equipment}
-                additionalEquipment={additionalEquipment}
-                onSaveEquipment={onSaveEquipment}
-                onSaveAdditionalEquipment={onSaveAdditionalEquipment}
-              />
+              <PotentialCalculator />
             </TabsContent>
 
-            {/* Smart Planner Tab */}
-            <TabsContent value="optimizer" className="mt-4">
-              <StarForceOptimizer
-                equipment={equipment}
-                additionalEquipment={additionalEquipment}
-                characterId={characterId}
-                characterName={characterName}
-              />
-            </TabsContent>
           </Tabs>
 
       {/* Equipment Form Dialog */}

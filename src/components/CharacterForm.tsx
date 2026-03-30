@@ -116,7 +116,6 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       const mapleRanksData = await fetchCharacterFromMapleRanks(characterName);
       if (mapleRanksData) {
         // Auto-populate fields with MapleRanks data
-        form.setValue('class', mapleRanksData.class);
         form.setValue('level', mapleRanksData.level);
         form.setValue('image', mapleRanksData.image);
         setCharacterNotFound(false);

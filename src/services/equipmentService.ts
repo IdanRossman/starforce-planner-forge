@@ -1,9 +1,27 @@
-import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier } from '@/types';
+import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier, StorageItem } from '@/types';
 import { EQUIPMENT_DATABASE } from '@/data/equipmentDatabase';
 import { getJobDatabaseString } from '@/lib/jobIcons';
 import { apiService } from './api';
 
-// Map equipment slots to API equipment types
+// ── Slot name maps shared with the backend ──────────────────────────────────
+// Maps frontend EquipmentSlot → backend equipmentSlot string
+export const SLOT_TO_BACKEND_NAME: Record<EquipmentSlot, string> = {
+  hat: 'Hat', top: 'Top', bottom: 'Bottom', overall: 'Overall',
+  weapon: 'Weapon', secondary: 'Secondary', emblem: 'Emblem',
+  face: 'Face', eye: 'Eye', earring: 'Earrings',
+  ring1: 'Ring1', ring2: 'Ring2', ring3: 'Ring3', ring4: 'Ring4',
+  pendant1: 'Pendant1', pendant2: 'Pendant2',
+  belt: 'Belt', gloves: 'Gloves', shoes: 'Shoes',
+  cape: 'Cape', shoulder: 'Shoulder',
+  heart: 'Heart', pocket: 'Pocket', badge: 'Badge', medal: 'Medal',
+};
+
+// Maps backend equipmentSlot string → frontend EquipmentSlot
+export const BACKEND_NAME_TO_SLOT: Record<string, EquipmentSlot> = Object.fromEntries(
+  Object.entries(SLOT_TO_BACKEND_NAME).map(([k, v]) => [v, k as EquipmentSlot])
+);
+
+// Map slot type for API equipment types
 const SLOT_TO_TYPE_MAP: Record<EquipmentSlot, string> = {
   weapon: 'weapon',
   secondary: 'secondary',
@@ -65,10 +83,10 @@ interface ApiEquipment {
   job?: string;
   class?: string;
   level: number;
-  base_attack?: number;
+  baseAttack?: number;
   starforceable: boolean;
-  maplestory_io_id?: string;
-  storage_url?: string;
+  mapleStoryIoId?: string;
+  storageUrl?: string;
 }
 
 // Cache for API data
@@ -96,18 +114,19 @@ function transformApiEquipment(apiEquipment: ApiEquipment, targetSlot?: Equipmen
 
   return {
     id: apiEquipment.id.toString(),
-    name: apiEquipment.name, // Store the actual equipment name
-    slot: getInternalSlot(apiEquipment.type, targetSlot), // Use context-aware mapping
+    catalogId: apiEquipment.id.toString(),
+    name: apiEquipment.name,
+    slot: getInternalSlot(apiEquipment.type, targetSlot),
     type: getEquipmentType(apiEquipment.type),
     level: apiEquipment.level,
-    set: apiEquipment.set, // Store the set name separately
+    set: apiEquipment.set,
     currentStarForce: 0,
     targetStarForce: 0,
     tier: null,
     starforceable: apiEquipment.starforceable,
-    image: apiEquipment.storage_url,
-    itemType: apiEquipment.type, // Store the specific database type
-    base_attack: apiEquipment.base_attack, // Store base attack for weapons
+    image: apiEquipment.storageUrl,
+    itemType: apiEquipment.type,
+    base_attack: apiEquipment.baseAttack,
   };
 }
 
@@ -124,7 +143,7 @@ export async function getEquipmentBySlotAndJob(slot: EquipmentSlot, job: string)
     const equipmentType = SLOT_TO_TYPE_MAP[slot];
     const dbJobString = getJobDatabaseString(job);
     
-    const apiData = await apiService.get<ApiEquipment[]>(`/Equipment/type/${equipmentType}/job/${dbJobString}`);
+    const apiData = await apiService.get<ApiEquipment[]>(`/api/equipment/equipment-by-job?job=${dbJobString}&type=${equipmentType}`);
     
     const equipment = apiData.map(item => transformApiEquipment(item, slot));
     
@@ -154,7 +173,7 @@ export async function getEquipmentBySlot(slot: EquipmentSlot): Promise<{ equipme
 
   try {
     const equipmentType = SLOT_TO_TYPE_MAP[slot];
-    const apiData = await apiService.get<ApiEquipment[]>(`/Equipment?type=${equipmentType}`);
+    const apiData = await apiService.get<ApiEquipment[]>(`/api/equipment/equipment-by-job?type=${equipmentType}`);
     
     const equipment = apiData.map(item => transformApiEquipment(item, slot));
     
@@ -199,7 +218,7 @@ export async function getAllEquipment(): Promise<{ equipment: Equipment[]; sourc
   }
 
   try {
-    const apiData = await apiService.get<ApiEquipment[]>('/Equipment');
+    const apiData = await apiService.get<ApiEquipment[]>('/api/equipment/equipments');
     const equipment = apiData.map(item => transformApiEquipment(item)); // No target slot for "all equipment"
     
     equipmentCache.set(cacheKey, {
@@ -235,6 +254,71 @@ export async function getAllEquipment(): Promise<{ equipment: Equipment[]; sourc
     
     return { equipment: localEquipment, source: 'local' };
   }
+}
+
+/**
+ * Given the raw slots returned by GET /api/character/{id}/equipment, look up
+ * each catalog item and return fully-formed equipped + storage items.
+ * equipmentSlot === null → storage item; non-null → equipped item.
+ */
+export async function buildEquipmentFromSlots(
+  backendSlots: Array<{
+    id: string;
+    equipmentSlot: string | null;
+    equipmentId: number | null;
+    currentStarforce: number;
+    targetStarforce: number;
+    currentPotential: string;
+    targetPotential: string;
+  }>
+): Promise<{ equipped: Equipment[]; storage: StorageItem[] }> {
+  const filledSlots = backendSlots.filter(s => s.equipmentId !== null);
+  if (filledSlots.length === 0) return { equipped: [], storage: [] };
+
+  const { equipment: catalog } = await getAllEquipment();
+  const catalogMap = new Map(catalog.map(eq => [eq.id, eq]));
+
+  const equipped: Equipment[] = [];
+  const storage: StorageItem[] = [];
+
+  for (const slot of filledSlots) {
+    const catalogItem = catalogMap.get(String(slot.equipmentId!));
+    if (!catalogItem) continue;
+
+    if (slot.equipmentSlot !== null) {
+      // Equipped item
+      const frontendSlot = BACKEND_NAME_TO_SLOT[slot.equipmentSlot];
+      if (!frontendSlot) continue;
+      equipped.push({
+        ...catalogItem,
+        id: `${frontendSlot}-${crypto.randomUUID()}`,
+        slot: frontendSlot,
+        currentStarForce: slot.currentStarforce,
+        targetStarForce: slot.targetStarforce,
+        currentPotentialValue: slot.currentPotential || undefined,
+        targetPotentialValue: slot.targetPotential || undefined,
+      });
+    } else {
+      // Storage item
+      storage.push({
+        id: slot.id,
+        catalogId: String(slot.equipmentId!),
+        name: catalogItem.name,
+        set: catalogItem.set,
+        image: catalogItem.image,
+        level: catalogItem.level,
+        starforceable: catalogItem.starforceable,
+        currentStarForce: slot.currentStarforce,
+        targetStarForce: slot.targetStarforce,
+        currentPotential: slot.currentPotential || undefined,
+        targetPotential: slot.targetPotential || undefined,
+        itemType: catalogItem.itemType,
+        type: catalogItem.type,
+      });
+    }
+  }
+
+  return { equipped, storage };
 }
 
 export async function testApiConnection(): Promise<boolean> {

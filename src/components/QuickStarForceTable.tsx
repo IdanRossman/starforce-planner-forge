@@ -39,7 +39,7 @@ interface QuickStarForceTableProps {
 }
 
 interface StarForceEvents {
-  fiveTenFifteen: boolean;
+  thirtyPercentBoomReduction: boolean;
   thirtyPercentOff: boolean;
   starCatching: boolean;
 }
@@ -109,7 +109,7 @@ const getDangerColor = (currentStars: number) => {
 export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
   // Event states with global star catching
   const [events, setEvents] = useState<StarForceEvents>({
-    fiveTenFifteen: false,
+    thirtyPercentBoomReduction: false,
     thirtyPercentOff: false,
     starCatching: true, // Default enabled for quick calculator
   });
@@ -127,31 +127,32 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
       try {
         // Prepare bulk API request
         const request = {
-          isInteractive: false, // Regular server for quick calculations
           events: {
-            thirtyOff: events.thirtyPercentOff,
-            fiveTenFifteen: events.fiveTenFifteen,
-            starCatching: events.starCatching,
+            thirtyPercentMesoReduction: events.thirtyPercentOff,
+            thirtyPercentBoomReduction: events.thirtyPercentBoomReduction,
+            mvpDiscount: 'None' as const,
           },
           items: equipment.map(eq => ({
             itemLevel: eq.level || 150,
             fromStar: eq.currentStarForce,
             toStar: eq.targetStarForce,
-            safeguardEnabled: false, // Simplified for quick calculator
-            spareCount: 0,
-            spareCost: 0,
-            actualCost: 0,
-            itemName: eq.name || `${eq.slot} Level ${eq.level}`
+            starCatching: events.starCatching,
+            safeguard: false,
+            itemName: eq.name || `${eq.slot} Level ${eq.level}`,
           }))
         };
 
         const { response } = await calculateBulkStarforce(request);
         
-        const newCalculations = equipment.map((eq, index) => ({
-          equipment: eq,
-          expectedCost: response.results[index]?.averageCost || 0,
-          isCalculated: true,
-        }));
+        const newCalculations = equipment.map((eq, index) => {
+          const result = response.results.find(r => r.itemName != null && r.itemName === eq.name)
+            ?? response.results[index];
+          return {
+            equipment: eq,
+            expectedCost: result?.averageCost || 0,
+            isCalculated: true,
+          };
+        });
         
         setCalculations(newCalculations);
       } catch (error) {
@@ -222,14 +223,14 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
           
           <div className="flex items-center space-x-2 p-3 bg-muted/30 rounded-lg">
             <Switch
-              id="fiveTenFifteen"
-              checked={events.fiveTenFifteen}
-              onCheckedChange={(checked) => 
-                setEvents(prev => ({ ...prev, fiveTenFifteen: checked }))
+              id="thirtyPercentBoomReduction"
+              checked={events.thirtyPercentBoomReduction}
+              onCheckedChange={(checked) =>
+                setEvents(prev => ({ ...prev, thirtyPercentBoomReduction: checked }))
               }
             />
-            <Label htmlFor="fiveTenFifteen" className="text-sm font-medium font-maplestory">
-              5/10/15 Event
+            <Label htmlFor="thirtyPercentBoomReduction" className="text-sm font-medium font-maplestory">
+              30% Boom Reduction
             </Label>
           </div>
           

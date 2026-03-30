@@ -1,4 +1,4 @@
-import { apiService } from './api';
+import { railwayApiService as apiService } from './api';
 import { PotentialCalculation, EquipmentTier, PotentialLine } from '@/types';
 
 export interface PotentialEnhancementRequest {

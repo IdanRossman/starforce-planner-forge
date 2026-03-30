@@ -1,6 +1,4 @@
-const API_BASE_URL = 'https://forge-service-production.up.railway.app';
-
-import { StarforceOptimizationRequestDto, StarforceOptimizationResponseDto } from '@/types';
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'https://forge-service-production.up.railway.app';
 
 export interface ApiResponse<T> {
   data: T;
@@ -44,9 +42,10 @@ class ApiService {
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    const isBodyRequest = options.method && options.method !== 'GET' && options.method !== 'HEAD';
     const config: RequestInit = {
       headers: {
-        'Content-Type': 'application/json',
+        ...(isBodyRequest ? { 'Content-Type': 'application/json' } : {}),
         ...options.headers,
       },
       ...options,
@@ -56,9 +55,15 @@ class ApiService {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const err = new Error(`HTTP error! status: ${response.status}`) as Error & { status: number };
+        err.status = response.status;
+        throw err;
       }
 
+      const contentType = response.headers.get('content-type');
+      if (response.status === 204 || !contentType || !contentType.includes('application/json')) {
+        return undefined as T;
+      }
       const data = await response.json();
       return data;
     } catch (error) {
@@ -91,7 +96,7 @@ class ApiService {
 
   async testConnection(): Promise<boolean> {
     try {
-      await this.get('/Equipment');
+      await this.get('/api/equipment/equipments');
       return true;
     } catch {
       return false;
@@ -105,11 +110,6 @@ class ApiService {
 
   async getTemplateEquipment(templateId: number, job: string): Promise<TemplateEquipmentResponse[]> {
     return this.get<TemplateEquipmentResponse[]>(`/Templates/${templateId}/equipment?job=${encodeURIComponent(job)}`);
-  }
-
-  // StarForce Optimization method
-  async optimizeStarforce(request: StarforceOptimizationRequestDto): Promise<StarforceOptimizationResponseDto> {
-    return this.post<StarforceOptimizationResponseDto>('/Starforce/optimize', request);
   }
 
   // Potential management methods
@@ -129,6 +129,85 @@ class ApiService {
   async enhancePotential(equipmentId: number, enhancementData: any): Promise<any> {
     return this.post(`/Potential/enhance/${equipmentId}`, enhancementData);
   }
+
+  // Character endpoints
+  async createCharacter(data: { userId: string; name: string; job: string; level: number }): Promise<{ id: string; userId: string; name: string; job: string; level: number }> {
+    return this.post('/api/character', {
+      ...data,
+      createdAt: '0001-01-01T00:00:00',
+      updatedAt: '0001-01-01T00:00:00',
+    });
+  }
+
+  async upsertCharacterEquipment(characterId: string, slots: Array<{
+    equipmentSlot: string;
+    equipmentId: number | null;
+    currentStarforce: number;
+    targetStarforce: number;
+    currentPotential: string;
+    targetPotential: string;
+  }>): Promise<void> {
+    return this.post(`/api/character/${characterId}/equipment`, slots);
+  }
+
+  async getCharactersByUser(userId: string): Promise<Array<{ id: string; userId: string; name: string; job: string; level: number; callingCardHash: string | null; cardGenerationDate: string | null; cardGenerationCount: number }>> {
+    return this.get(`/api/character/by-user/${userId}`);
+  }
+
+  async getCharacterEquipment(characterId: string): Promise<Array<{ id: string; characterId: string; equipmentSlot: string | null; equipmentId: number | null; currentStarforce: number; targetStarforce: number; currentPotential: string; targetPotential: string }>> {
+    return this.get(`/api/character/${characterId}/equipment`);
+  }
+
+  async addStorageItem(characterId: string, data: { equipmentId: number; currentStarforce: number; targetStarforce: number; currentPotential: string; targetPotential: string }): Promise<{ id: string; characterId: string; equipmentSlot: null; equipmentId: number; currentStarforce: number; targetStarforce: number; currentPotential: string; targetPotential: string }> {
+    return this.post(`/api/character/${characterId}/storage`, data);
+  }
+
+  async updateStorageItem(characterId: string, itemId: string, data: { equipmentId: number; currentStarforce: number; targetStarforce: number; currentPotential: string; targetPotential: string }): Promise<void> {
+    return this.put(`/api/character/${characterId}/storage/${itemId}`, data);
+  }
+
+  async deleteStorageItem(characterId: string, itemId: string): Promise<void> {
+    return this.delete(`/api/character/${characterId}/storage/${itemId}`);
+  }
+
+  async updateCharacter(id: string, data: { userId: string; name: string; job: string; level: number }): Promise<void> {
+    return this.put(`/api/character/${id}`, {
+      ...data,
+      createdAt: '0001-01-01T00:00:00',
+      updatedAt: '0001-01-01T00:00:00',
+    });
+  }
+
+  async deleteCharacter(id: string): Promise<void> {
+    return this.delete(`/api/character/${id}`);
+  }
+
+  async getCallingCard(characterId: string): Promise<{ hash: string; url: string } | null> {
+    try {
+      return await this.get(`/api/callingcard/${characterId}`);
+    } catch (err) {
+      if ((err as { status?: number }).status === 404) return null;
+      throw err;
+    }
+  }
+
+  async regenerateCallingCard(characterId: string): Promise<{ hash: string; url: string }> {
+    return this.post(`/api/callingcard/${characterId}`, {});
+  }
+
+  async getPartyImage(userId: string): Promise<{ hash: string; url: string } | null> {
+    try {
+      return await this.get(`/api/partyimage/${userId}`);
+    } catch (err) {
+      if ((err as { status?: number }).status === 404) return null;
+      throw err;
+    }
+  }
+
+  async generatePartyImage(userId: string): Promise<{ hash: string; url: string }> {
+    return this.post(`/api/partyimage/${userId}/generate`, {});
+  }
 }
 
 export const apiService = new ApiService();
+export const railwayApiService = new ApiService('https://forge-service-production.up.railway.app');

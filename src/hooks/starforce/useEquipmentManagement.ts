@@ -38,10 +38,10 @@ export function useEquipmentManagement({
     const target = equipment.targetStarForce || 0;
     
     if (type === 'current') {
-      const newCurrent = Math.max(0, Math.min(25, current + delta));
+      const newCurrent = Math.max(0, Math.min(30, current + delta));
       onUpdateStarforce(equipment.id, newCurrent, target);
     } else {
-      const newTarget = Math.max(0, Math.min(25, target + delta));
+      const newTarget = Math.max(0, Math.min(30, target + delta));
       onUpdateStarforce(equipment.id, current, newTarget);
     }
   }, [onUpdateStarforce]);

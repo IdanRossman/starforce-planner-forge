@@ -41,48 +41,54 @@ interface EquipmentGridProps {
   onAddEquipment: (slot: EquipmentSlot) => void;
   onClearEquipment: (slot: EquipmentSlot) => void;
   onOpenCalculator?: () => void;
+  characterImage?: string;
 }
 
-const EQUIPMENT_SLOTS: { 
-  slot: EquipmentSlot; 
-  label: string; 
+const EQUIPMENT_SLOTS: {
+  slot: EquipmentSlot;
+  label: string;
   position: string;
   mobileOrder: number;
   category: string;
 }[] = [
-  // Weapons & Secondary
-  { slot: 'weapon', label: 'Weapon', position: 'col-start-2 row-start-4', mobileOrder: 1, category: 'Weapons' },
-  { slot: 'secondary', label: 'Secondary', position: 'col-start-5 row-start-4', mobileOrder: 2, category: 'Weapons' },
-  
-  // Armor
-  { slot: 'hat', label: 'Hat', position: 'col-start-3 row-start-1', mobileOrder: 3, category: 'Armor' },
-  { slot: 'top', label: 'Top', position: 'col-start-3 row-start-4', mobileOrder: 4, category: 'Armor' },
-  { slot: 'bottom', label: 'Bottom', position: 'col-start-3 row-start-5', mobileOrder: 5, category: 'Armor' },
-  { slot: 'shoes', label: 'Shoes', position: 'col-start-3 row-start-6', mobileOrder: 6, category: 'Armor' },
-  { slot: 'gloves', label: 'Gloves', position: 'col-start-4 row-start-5', mobileOrder: 7, category: 'Armor' },
-  { slot: 'cape', label: 'Cape', position: 'col-start-5 row-start-5', mobileOrder: 8, category: 'Armor' },
-  { slot: 'belt', label: 'Belt', position: 'col-start-2 row-start-5', mobileOrder: 9, category: 'Armor' },
-  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-4 row-start-4', mobileOrder: 10, category: 'Armor' },
-  
-  // Accessories
-  { slot: 'face', label: 'Face', position: 'col-start-3 row-start-2', mobileOrder: 11, category: 'Accessories' },
-  { slot: 'eye', label: 'Eye', position: 'col-start-3 row-start-3', mobileOrder: 12, category: 'Accessories' },
-  { slot: 'earring', label: 'Earring', position: 'col-start-4 row-start-3', mobileOrder: 13, category: 'Accessories' },
-  
-  // Jewelry
-  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-2', mobileOrder: 14, category: 'Jewelry' },
-  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-3', mobileOrder: 15, category: 'Jewelry' },
-  { slot: 'ring1', label: 'Ring 1', position: 'col-start-1 row-start-1', mobileOrder: 16, category: 'Jewelry' },
-  { slot: 'ring2', label: 'Ring 2', position: 'col-start-1 row-start-2', mobileOrder: 17, category: 'Jewelry' },
-  { slot: 'ring3', label: 'Ring 3', position: 'col-start-1 row-start-3', mobileOrder: 18, category: 'Jewelry' },
-  { slot: 'ring4', label: 'Ring 4', position: 'col-start-1 row-start-4', mobileOrder: 19, category: 'Jewelry' },
-  
-  // Special Items
-  { slot: 'emblem', label: 'Emblem', position: 'col-start-5 row-start-1', mobileOrder: 20, category: 'Special' },
-  { slot: 'badge', label: 'Badge', position: 'col-start-5 row-start-2', mobileOrder: 21, category: 'Special' },
-  { slot: 'medal', label: 'Medal', position: 'col-start-5 row-start-3', mobileOrder: 22, category: 'Special' },
-  { slot: 'heart', label: 'Heart', position: 'col-start-5 row-start-6', mobileOrder: 23, category: 'Special' },
-  { slot: 'pocket', label: 'Pocket', position: 'col-start-1 row-start-5', mobileOrder: 24, category: 'Special' },
+  // Column 1 - Rings & Pocket
+  { slot: 'ring1', label: 'Ring 1', position: 'col-start-1 row-start-1', mobileOrder: 1, category: 'Jewelry' },
+  { slot: 'ring2', label: 'Ring 2', position: 'col-start-1 row-start-2', mobileOrder: 2, category: 'Jewelry' },
+  { slot: 'ring3', label: 'Ring 3', position: 'col-start-1 row-start-3', mobileOrder: 3, category: 'Jewelry' },
+  { slot: 'ring4', label: 'Ring 4', position: 'col-start-1 row-start-4', mobileOrder: 4, category: 'Jewelry' },
+  { slot: 'belt', label: 'Belt', position: 'col-start-1 row-start-5', mobileOrder: 5, category: 'Armor' },
+  { slot: 'pocket', label: 'Pocket', position: 'col-start-1 row-start-6', mobileOrder: 6, category: 'Special' },
+
+  // Column 2 - Face, Eye, Earrings, Pendants
+  { slot: 'face', label: 'Face', position: 'col-start-2 row-start-1', mobileOrder: 7, category: 'Accessories' },
+  { slot: 'eye', label: 'Eye', position: 'col-start-2 row-start-2', mobileOrder: 8, category: 'Accessories' },
+  { slot: 'earring', label: 'Earring', position: 'col-start-2 row-start-3', mobileOrder: 9, category: 'Accessories' },
+  { slot: 'pendant1', label: 'Pendant 1', position: 'col-start-2 row-start-4', mobileOrder: 10, category: 'Jewelry' },
+  { slot: 'pendant2', label: 'Pendant 2', position: 'col-start-2 row-start-5', mobileOrder: 11, category: 'Jewelry' },
+
+  // Column 3 - Weapon
+  { slot: 'weapon', label: 'Weapon', position: 'col-start-3 row-start-5', mobileOrder: 12, category: 'Weapons' },
+
+  // Column 4 - Secondary
+  { slot: 'secondary', label: 'Secondary', position: 'col-start-4 row-start-5', mobileOrder: 13, category: 'Weapons' },
+
+  // Column 5 - Emblem
+  { slot: 'emblem', label: 'Emblem', position: 'col-start-5 row-start-5', mobileOrder: 14, category: 'Special' },
+
+  // Column 6 - Hat, Top, Bottom, Shoulder, Android
+  { slot: 'hat', label: 'Hat', position: 'col-start-6 row-start-1', mobileOrder: 15, category: 'Armor' },
+  { slot: 'top', label: 'Top', position: 'col-start-6 row-start-2', mobileOrder: 16, category: 'Armor' },
+  { slot: 'bottom', label: 'Bottom', position: 'col-start-6 row-start-3', mobileOrder: 17, category: 'Armor' },
+  { slot: 'shoulder', label: 'Shoulder', position: 'col-start-6 row-start-4', mobileOrder: 18, category: 'Armor' },
+  { slot: 'android', label: 'Android', position: 'col-start-6 row-start-5', mobileOrder: 19, category: 'Special' },
+
+  // Column 7 - Cape, Gloves, Shoes, Medal, Heart, Badge
+  { slot: 'cape', label: 'Cape', position: 'col-start-7 row-start-1', mobileOrder: 20, category: 'Armor' },
+  { slot: 'gloves', label: 'Gloves', position: 'col-start-7 row-start-2', mobileOrder: 21, category: 'Armor' },
+  { slot: 'shoes', label: 'Shoes', position: 'col-start-7 row-start-3', mobileOrder: 22, category: 'Armor' },
+  { slot: 'medal', label: 'Medal', position: 'col-start-7 row-start-4', mobileOrder: 23, category: 'Special' },
+  { slot: 'heart', label: 'Heart', position: 'col-start-7 row-start-5', mobileOrder: 24, category: 'Special' },
+  { slot: 'badge', label: 'Badge', position: 'col-start-7 row-start-6', mobileOrder: 25, category: 'Special' },
 ];
 
 // Equipment slot icons mapping
@@ -113,8 +119,9 @@ const getSlotIcon = (slot: string) => {
     heart: Heart,
     badge: Star,
     medal: Star,
+    android: Package,
   };
-  
+
   const IconComponent = iconMap[slot] || Package;
   return <IconComponent className="w-4 h-4" />;
 };
@@ -122,12 +129,12 @@ const getSlotIcon = (slot: string) => {
 // Component to handle equipment display with image state - Ultra compact version
 const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
   const [hasImage, setHasImage] = useState(false);
-  
+
   return (
-    <div className="flex items-center justify-center">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
       {equipment.image ? (
         // Image-centered layout: larger image with minimal spacing
-        <div className="flex flex-col items-center gap-0.5 w-fit">
+        <>
           <EquipmentImage
             src={equipment.image}
             alt={equipment.name || equipment.set || "Equipment"}
@@ -140,47 +147,45 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           {equipment.starforceable && (
             <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
               <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
-              <span className="text-white font-semibold text-[8px]">
+              <span className="text-white font-semibold text-[10px]">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-white/50 text-[8px]">→</span>
-                  <span className="text-primary font-semibold text-[8px]">
+                  <span className="text-white/50 text-[10px]">→</span>
+                  <span className="text-primary font-semibold text-[10px]">
                     {equipment.targetStarForce}
                   </span>
                 </>
               )}
             </div>
           )}
-        </div>
+        </>
       ) : (
-        // Text layout: minimal text with tiny icon
-        <div className="space-y-0.5">
-          <div className="flex items-start gap-0.5">
-            <div className="flex items-center justify-center w-4 h-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded shrink-0">
-              {getSlotIcon(slot)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[8px] font-medium text-white truncate leading-tight">
-                {equipment.name || equipment.set || `Lv.${equipment.level}`}
-              </p>
-              <p className="text-[7px] text-muted-foreground truncate leading-tight">
-                {label}
-              </p>
-            </div>
+        // Text layout: centered text with tiny icon
+        <div className="flex flex-col items-center justify-center gap-0.5">
+          <div className="flex items-center justify-center w-4 h-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded shrink-0">
+            {getSlotIcon(slot)}
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-[10px] font-medium text-white truncate leading-tight text-center">
+              {equipment.name || equipment.set || `Lv.${equipment.level}`}
+            </p>
+            <p className="text-[9px] text-muted-foreground truncate leading-tight text-center">
+              {label}
+            </p>
           </div>
           {/* Ultra-compact StarForce display for text mode */}
           {equipment.starforceable && (
-            <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 w-fit">
+            <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
               <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
-              <span className="text-white font-semibold text-[8px]">
+              <span className="text-white font-semibold text-[10px]">
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-white/50 text-[8px]">→</span>
-                  <span className="text-primary font-semibold text-[8px]">
+                  <span className="text-white/50 text-[10px]">→</span>
+                  <span className="text-primary font-semibold text-[10px]">
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -193,7 +198,7 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
   );
 };
 
-export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator }: EquipmentGridProps) {
+export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator, characterImage }: EquipmentGridProps) {
   // Create equipment mapping, prioritizing target equipment over source equipment for display
   const equipmentBySlot = equipment.reduce((acc, item) => {
     const existingItem = acc[item.slot];
@@ -237,16 +242,20 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
   const renderEquipmentSlot = (slotData: typeof EQUIPMENT_SLOTS[0]) => {
     const { slot, label, position } = slotData;
     const equipment = equipmentBySlot[slot];
-    
+    const isDisabled = slot === 'android';
+
     const cardContent = (
-      <Card 
-        key={slot} 
+      <Card
+        key={slot}
         className={`relative transition-all duration-200 group ${position} ${
-          equipment 
-            ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
-            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
+          isDisabled
+            ? "bg-muted/20 border-muted/50 cursor-not-allowed opacity-50"
+            : equipment
+              ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md"
+              : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
         }`}
         onClick={() => {
+          if (isDisabled) return;
           if (equipment) {
             onEditEquipment(equipment);
           } else {
@@ -254,43 +263,41 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           }
         }}
       >
-        <CardContent className="p-1 h-full flex flex-col justify-between min-h-[60px]">
+        <CardContent className="p-0 h-[74px] w-full flex items-center justify-center relative">
           {equipment ? (
-            <>
-              <div className="space-y-0.5">
-                <div className="flex items-start justify-between gap-0.5">
-                  {equipment.tier && (
-                    <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-[7px] px-0.5 py-0 shrink-0`}>
-                      {equipment.tier.charAt(0).toUpperCase()}
-                    </Badge>
-                  )}
-                  <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onClearEquipment(equipment.slot);
-                      }}
-                    >
-                      <X className="w-2 h-2" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <EquipmentDisplay 
-                  key={`${equipment.id}-${equipment.image}-${equipment.currentStarForce}`}
-                  equipment={equipment}
-                  slot={slot}
-                  label={label}
-                />
-              </div>
-            </>
+            <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+              <EquipmentDisplay
+                key={`${equipment.id}-${equipment.image}-${equipment.currentStarForce}`}
+                equipment={equipment}
+                slot={slot}
+                label={label}
+              />
+            </div>
+          ) : isDisabled ? (
+            <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
+              <span className="text-[9px]">{label}</span>
+              <span className="text-[8px] text-muted-foreground/60">(Coming Soon)</span>
+            </div>
           ) : (
-            <div className="h-full w-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground min-h-[60px]">
+            <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
               <Plus className="w-2.5 h-2.5" />
-              <span className="text-[7px]">{label}</span>
+              <span className="text-[9px]">{label}</span>
+            </div>
+          )}
+          {/* Delete button on hover */}
+          {equipment && (
+            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClearEquipment(equipment.slot);
+                }}
+              >
+                <X className="w-2 h-2" />
+              </Button>
             </div>
           )}
         </CardContent>
@@ -305,8 +312,20 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
       <div className="space-y-6">
         {/* Desktop Grid Layout */}
         <div className="hidden lg:block">
-          <div className="grid grid-cols-5 grid-rows-6 gap-1 p-2 bg-card/30 rounded-lg border border-border/50 max-w-[450px] mx-auto">
+          <div className="grid grid-cols-7 grid-rows-6 gap-1 p-2 bg-card/30 rounded-lg border border-border/50 max-w-[600px] mx-auto">
             {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
+            {/* Character sprite — spans the empty cols 3-5, rows 1-4 */}
+            <div className="col-start-3 col-end-6 row-start-1 row-end-5 flex items-center justify-center rounded-md overflow-hidden bg-white/5 border border-white/10">
+              {characterImage ? (
+                <img
+                  src={characterImage}
+                  alt="Character"
+                  className="w-2/3 h-2/3 object-contain drop-shadow-lg"
+                />
+              ) : (
+                <div className="text-muted-foreground/30 text-[9px] text-center px-2">Character</div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -326,16 +345,20 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                 {slots.map((slotData) => {
                   const { slot, label } = slotData;
                   const equipment = equipmentBySlot[slot];
-                  
+                  const isDisabled = slot === 'android';
+
                   return (
-                    <Card 
-                      key={slot} 
+                    <Card
+                      key={slot}
                       className={`relative transition-all duration-200 group ${
-                        equipment 
-                          ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md" 
-                          : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
+                        isDisabled
+                          ? "bg-muted/20 border-muted/50 cursor-not-allowed opacity-50"
+                          : equipment
+                            ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md"
+                            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
                       }`}
                       onClick={() => {
+                        if (isDisabled) return;
                         if (equipment) {
                           onEditEquipment(equipment);
                         } else {
@@ -343,66 +366,40 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                         }
                       }}
                     >
-                      <CardContent className="p-3 h-full flex flex-col justify-between min-h-[100px]">
+                      <CardContent className="p-0 h-[74px] w-full flex items-center justify-center relative">
                         {equipment ? (
-                          <>
-                            <div className="space-y-2">
-                              <div className="flex items-start justify-between gap-1">
-                                {equipment.tier && (
-                                  <Badge variant="outline" className={`${getTierColor(equipment.tier)} text-xs px-1.5 py-0.5 shrink-0`}>
-                                    {equipment.tier.charAt(0).toUpperCase()}
-                                  </Badge>
-                                )}
-                                <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onClearEquipment(equipment.slot);
-                                    }}
-                                  >
-                                    <X className="w-2.5 h-2.5" />
-                                  </Button>
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-start gap-2">
-                                {getSlotIcon(slot)}
-                                <div className="min-w-0 flex-1">
-                                  <p className="text-xs font-medium text-foreground truncate font-maplestory">
-                                    {equipment.name || equipment.set || `Lv.${equipment.level} Equipment`}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground truncate font-maplestory">
-                                    {label}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* StarForce display - only show if starforceable */}
-                            {equipment.starforceable && (
-                              <div className="flex items-center gap-1 text-xs">
-                                <Star className="w-3 h-3 text-yellow-400" />
-                                <span className="text-yellow-400 font-medium">
-                                  {equipment.currentStarForce}
-                                </span>
-                                {equipment.targetStarForce > equipment.currentStarForce && (
-                                  <>
-                                    <span className="text-muted-foreground">→</span>
-                                    <span className="text-primary font-medium">
-                                      {equipment.targetStarForce}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </>
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
+                            <EquipmentDisplay
+                              equipment={equipment}
+                              slot={slot}
+                              label={label}
+                            />
+                          </div>
+                        ) : isDisabled ? (
+                          <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
+                            <span className="text-[9px]">{label}</span>
+                            <span className="text-[8px] text-muted-foreground/60">(Coming Soon)</span>
+                          </div>
                         ) : (
-                          <div className="h-full w-full flex flex-col gap-2 items-center justify-center text-muted-foreground">
-                            <Plus className="w-4 h-4" />
-                            <span className="text-xs">{label}</span>
+                          <div className="w-full h-full flex flex-col gap-1 items-center justify-center text-muted-foreground">
+                            <Plus className="w-2.5 h-2.5" />
+                            <span className="text-[9px]">{label}</span>
+                          </div>
+                        )}
+                        {/* Delete button on hover */}
+                        {equipment && (
+                          <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onClearEquipment(equipment.slot);
+                              }}
+                            >
+                              <X className="w-2.5 h-2.5" />
+                            </Button>
                           </div>
                         )}
                       </CardContent>

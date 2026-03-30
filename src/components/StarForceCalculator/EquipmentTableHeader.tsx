@@ -78,12 +78,6 @@ export const EquipmentTableHeader: React.FC<EquipmentTableHeaderProps> = ({
         <TableHead className="text-center">
           <SortableButton field="p75Booms">75th % Booms</SortableButton>
         </TableHead>
-        <TableHead className="text-center">
-          <SortableButton field="actualCost">Actual Cost</SortableButton>
-        </TableHead>
-        <TableHead className="text-center">
-          <SortableButton field="luckPercentage">Luck</SortableButton>
-        </TableHead>
         <TableHead className="text-center font-maplestory">Actions</TableHead>
       </TableRow>
     </TableHeader>

@@ -23,6 +23,7 @@ interface SlimEquipmentFormCardsProps {
   // Equipment Selection props
   slotCategories: SelectCategory[];
   allowSlotEdit: boolean;
+  storageMode?: boolean;
   defaultSlot?: string;
   availableEquipment: Equipment[];
   equipmentLoading: boolean;
@@ -54,6 +55,7 @@ export function SlimEquipmentFormCards({
   isEditing,
   slotCategories,
   allowSlotEdit,
+  storageMode = false,
   defaultSlot,
   availableEquipment,
   equipmentLoading,
@@ -74,7 +76,7 @@ export function SlimEquipmentFormCards({
 }: SlimEquipmentFormCardsProps) {
   const { getMaxStars } = useStarForceUtils();
   const hasStarForceCapability = watchStarforceable && watchLevel >= 95;
-  const maxStars = watchLevel ? getMaxStars(watchLevel) : 25;
+  const maxStars = watchLevel ? getMaxStars(watchLevel) : 30;
   
   // Watch for equipment selection to conditionally show sections
   const selectedEquipmentSet = form.watch('set');
@@ -94,6 +96,7 @@ export function SlimEquipmentFormCards({
           <EquipmentSelectionSection
             slotCategories={slotCategories}
             allowSlotEdit={allowSlotEdit}
+            storageMode={storageMode}
             defaultSlot={defaultSlot}
             isEditing={isEditing}
             availableEquipment={availableEquipment}

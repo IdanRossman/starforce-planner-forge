@@ -97,6 +97,7 @@ export function useStarForceUtils() {
       if (maxStars >= 20) commonTargets.push(20);
       if (maxStars >= 22) commonTargets.push(22);
       if (maxStars >= 25) commonTargets.push(25);
+      if (maxStars >= 30) commonTargets.push(30);
 
       return {
         maxStars,

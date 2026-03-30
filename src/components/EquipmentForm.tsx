@@ -18,16 +18,34 @@ import {
 } from '@/components/ui/form';
 import { getSlotIcon } from '@/lib/utils';
 
+export interface StorageSaveData {
+  catalogId: string;
+  currentStarForce: number;
+  targetStarForce: number;
+  currentPotential?: string;
+  targetPotential?: string;
+  // Catalog metadata for optimistic UI update
+  name?: string;
+  set?: string;
+  image?: string;
+  level?: number;
+  starforceable?: boolean;
+  itemType?: string;
+  type?: string;
+}
+
 interface EquipmentFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   equipment?: Equipment;
   defaultSlot?: EquipmentSlot;
   onSave: (equipment: Omit<Equipment, 'id'> | Equipment) => void;
-  onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void; // New transfer callback
+  onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void;
   allowSlotEdit?: boolean;
   selectedJob?: string;
-  existingEquipment?: Equipment[]; // Add this for transfer functionality
+  existingEquipment?: Equipment[];
+  storageMode?: boolean;
+  onSaveStorage?: (data: StorageSaveData) => void;
 }
 
 const EQUIPMENT_SLOTS = [
@@ -143,7 +161,9 @@ export function EquipmentForm({
   onTransfer,
   allowSlotEdit = false,
   selectedJob,
-  existingEquipment = []
+  existingEquipment = [],
+  storageMode = false,
+  onSaveStorage,
 }: EquipmentFormProps) {
   const isEditing = !!equipment;
 
@@ -661,6 +681,26 @@ export function EquipmentForm({
   }, [equipment]);
 
   const onSubmit = (data: EquipmentFormData) => {
+    // Storage mode: route to onSaveStorage instead of onSave
+    if (storageMode && onSaveStorage) {
+      const selectedEquipment = availableEquipment.find(eq => eq.name === data.set);
+      onSaveStorage({
+        catalogId: selectedEquipment?.id || selectedEquipment?.catalogId || '',
+        currentStarForce: data.currentStarForce,
+        targetStarForce: data.targetStarForce,
+        currentPotential: currentPotentialValue || undefined,
+        targetPotential: targetPotentialValue || undefined,
+        name: selectedEquipment?.name,
+        set: selectedEquipment?.set,
+        image: selectedEquipment?.image || selectedEquipmentImage,
+        level: selectedEquipment?.level,
+        starforceable: selectedEquipment?.starforceable,
+        itemType: selectedEquipment?.itemType,
+        type: selectedEquipment?.type,
+      });
+      return;
+    }
+
     // Additional validation for transferred stars
     const transferredStars = equipment?.transferredStars || 0;
     if (transferredStars > 0 && data.currentStarForce < transferredStars) {
@@ -692,6 +732,8 @@ export function EquipmentForm({
         slot: data.slot as EquipmentSlot,
         type: data.type as EquipmentType,
         image: equipmentImage,
+        // Update catalogId if user selected a different item, otherwise preserve existing
+        catalogId: selectedEquipment?.id || equipment.catalogId,
         // Preserve itemType and base_attack from selected equipment or existing equipment, with fallbacks
         itemType: selectedEquipment?.itemType || equipment.itemType || data.slot,
         base_attack: selectedEquipment?.base_attack || equipment.base_attack || (data.type === 'weapon' ? 0 : undefined),
@@ -707,6 +749,8 @@ export function EquipmentForm({
         type: data.type as EquipmentType,
         level: data.level,
         set: selectedEquipment?.set, // Store the actual set name from API
+        // Set catalogId from the selected catalog item for backend sync
+        catalogId: selectedEquipment?.id,
         currentStarForce: data.starforceable ? data.currentStarForce : 0,
         targetStarForce: data.starforceable ? data.targetStarForce : 0,
         starforceable: data.starforceable,
@@ -763,7 +807,8 @@ export function EquipmentForm({
                 equipment={equipment}
                 isEditing={isEditing}
                 slotCategories={EQUIPMENT_SLOT_CATEGORIES}
-                allowSlotEdit={allowSlotEdit}
+                allowSlotEdit={storageMode ? true : allowSlotEdit}
+                storageMode={storageMode}
                 defaultSlot={defaultSlot}
                 availableEquipment={availableEquipment}
                 equipmentLoading={equipmentLoading}

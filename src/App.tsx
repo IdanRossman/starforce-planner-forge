@@ -13,6 +13,9 @@ import { QuickPlanning } from "./pages/QuickPlanning";
 import NewCharacter from "./pages/NewCharacter";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { useAuth } from "@/contexts/AuthContext";
 
 function QuickPlanningWrapper() {
   const navigate = useNavigate();
@@ -25,9 +28,11 @@ function QuickPlanningWrapper() {
 
 function AppContent() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isHomepage = location.pathname === '/';
   const isQuickPlanning = location.pathname === '/quick-planning';
   const previousPathRef = useRef(location.pathname);
+  const { isPasswordRecovery } = useAuth();
   const [waveMovementEnabled, setWaveMovementEnabled] = useState(() => {
     // Load preference from localStorage, default to false (disabled)
     const saved = localStorage.getItem('waveMovementEnabled');
@@ -39,14 +44,10 @@ function AppContent() {
     localStorage.setItem('waveMovementEnabled', JSON.stringify(waveMovementEnabled));
   }, [waveMovementEnabled]);
 
-  // Handle clearing localStorage
-  const handleClearStorage = () => {
-    if (confirm('Are you sure you want to clear all local storage? This will reset all your preferences and data.')) {
-      localStorage.clear();
-      // Reload the page to reset state
-      window.location.reload();
-    }
-  };
+  // Redirect to reset password page when Supabase fires PASSWORD_RECOVERY
+  useEffect(() => {
+    if (isPasswordRecovery) navigate('/reset-password', { replace: true });
+  }, [isPasswordRecovery, navigate]);
 
   // Determine slide direction based on route order
   const getSlideDirection = () => {
@@ -113,7 +114,6 @@ function AppContent() {
           logoIcon={<SiCurseforge className="simple-nav-icon" />}
           waveMovementEnabled={waveMovementEnabled}
           onWaveMovementToggle={setWaveMovementEnabled}
-          onClearStorage={handleClearStorage}
         />
         
         {/* Main Content */}
@@ -150,7 +150,7 @@ function AppContent() {
                   animate="animate"
                   exit="exit"
                 >
-                  <CharacterDashboard />
+                  <ProtectedRoute><CharacterDashboard /></ProtectedRoute>
                 </motion.div>
               } />
               <Route path="/quick-planning" element={
@@ -172,7 +172,18 @@ function AppContent() {
                   animate="animate"
                   exit="exit"
                 >
-                  <NewCharacter />
+                  <ProtectedRoute><NewCharacter /></ProtectedRoute>
+                </motion.div>
+              } />
+              <Route path="/reset-password" element={
+                <motion.div
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  <ResetPasswordPage />
                 </motion.div>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -83,7 +83,7 @@ export function ItemCarousel({
 
   const handleStarForceChange = (value: string) => {
     const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 25) {
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 30) {
       onCurrentStarForceChange?.(numValue);
     } else if (value === '') {
       onCurrentStarForceChange?.(0);
@@ -222,7 +222,7 @@ export function ItemCarousel({
               <Input
                 type="number"
                 min="0"
-                max="25"
+                max="30"
                 value={currentStarForce}
                 onChange={(e) => handleStarForceChange(e.target.value)}
                 className="h-10 font-maplestory text-center text-lg font-bold"

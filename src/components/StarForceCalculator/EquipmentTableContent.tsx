@@ -19,12 +19,9 @@ interface EquipmentTableContentProps {
   setHoveredRow: (id: string | null) => void;
   isItemIncluded: (id: string) => boolean;
   // Row editing props
-  editingStarforce: string | null;
-  tempValues: { current: number; target: number };
-  setTempValues: React.Dispatch<React.SetStateAction<{ current: number; target: number }>>;
-  editingActualCost: string | null;
-  tempActualCost: number;
-  setTempActualCost: React.Dispatch<React.SetStateAction<number>>;
+  editingField: { id: string; field: 'current' | 'target' } | null;
+  tempValue: number;
+  setTempValue: React.Dispatch<React.SetStateAction<number>>;
   // State management props
   itemSafeguard: Record<string, boolean>;
   setItemSafeguard: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
@@ -34,8 +31,6 @@ interface EquipmentTableContentProps {
   setItemSparePrices: React.Dispatch<React.SetStateAction<Record<string, { value: number; unit: 'M' | 'B' }>>>;
   tempSparePrices: Record<string, { value: number; unit: 'M' | 'B' }>;
   setTempSparePrices: React.Dispatch<React.SetStateAction<Record<string, { value: number; unit: 'M' | 'B' }>>>;
-  itemActualCosts: Record<string, { value: number; unit: 'M' | 'B' }>;
-  setItemActualCosts: React.Dispatch<React.SetStateAction<Record<string, { value: number; unit: 'M' | 'B' }>>>;
   // Callback functions
   onUpdateSafeguard?: (itemId: string, useSafeguard: boolean) => void;
   onUpdateStarforce?: (itemId: string, currentStarForce: number, targetStarForce: number) => void;
@@ -44,22 +39,13 @@ interface EquipmentTableContentProps {
   isSafeguardEligible: (calc: EquipmentCalculation) => boolean;
   getCurrentSparePrice: (id: string) => { value: number; unit: 'M' | 'B' };
   commitSparePriceChange: (id: string) => void;
-  handleQuickAdjust: (calc: EquipmentCalculation, type: 'current' | 'target', delta: number) => void;
-  handleStartEdit: (calc: EquipmentCalculation) => void;
-  handleSaveEdit: (calc: EquipmentCalculation) => void;
-  handleCancelEdit: () => void;
-  handleStartActualCostEdit: (calc: EquipmentCalculation) => void;
-  handleSaveActualCost: (calc: EquipmentCalculation) => void;
-  handleCancelActualCostEdit: () => void;
+  handleStartFieldEdit: (id: string, field: 'current' | 'target', initial: number) => void;
+  handleSaveFieldEdit: (calc: EquipmentCalculation) => void;
+  handleCancelFieldEdit: () => void;
   // Formatting functions
   formatMesos: {
     display: (amount: number) => string;
   };
-  getLuckColor: {
-    text: (percentage: number) => string;
-  };
-  getEnhancedLuckRating: (percentile: number) => { label: string; color: string };
-  getLuckText: (percentage: number) => string | null;
 }
 
 export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (props) => {
@@ -76,7 +62,7 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
   }
 
   return (
-    <div className="space-y-2 max-h-[600px] overflow-y-auto">
+    <div className="space-y-2 max-h-[600px] overflow-y-auto overflow-x-auto">
       <Table>
         <EquipmentTableHeader
           enhancedSettings={props.enhancedSettings}

@@ -34,7 +34,7 @@ export interface StorageOptions {
  * - starforce-selected-character: string (characterId)
  * 
  * Types:
- * - GlobalSettings: { thirtyPercentOff, fiveTenFifteenEvent, starCatching, isInteractive, spareCount, sparePrice }
+ * - GlobalSettings: { thirtyPercentOff, thirtyPercentBoomReduction, starCatching, isInteractive, spareCount, sparePrice }
  * - ItemSettings: { safeguard, starCatching, spareCount, sparePrice }
  * - Character: { id, name, level, class, image, equipment, createdAt, updatedAt }
  * - Equipment: { id, name, slot, level, starforceable, currentStarForce, targetStarForce, actualCost, safeguard, ... }

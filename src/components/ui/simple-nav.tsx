@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Waves, Trash2, LogOut, LogIn } from 'lucide-react';
+import { Star, Waves, LogOut, LogIn } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -18,7 +18,6 @@ interface SimpleNavProps {
   logoIcon?: React.ReactNode;
   waveMovementEnabled?: boolean;
   onWaveMovementToggle?: (enabled: boolean) => void;
-  onClearStorage?: () => void;
 }
 
 export default function SimpleNav({
@@ -28,7 +27,6 @@ export default function SimpleNav({
   logoIcon,
   waveMovementEnabled = true,
   onWaveMovementToggle,
-  onClearStorage
 }: SimpleNavProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -72,23 +70,6 @@ export default function SimpleNav({
             </TooltipTrigger>
             <TooltipContent>
               <p>{waveMovementEnabled ? 'Disable' : 'Enable'} wave animation</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-
-        {onClearStorage && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                onClick={onClearStorage}
-                className="simple-nav-clear-btn"
-                aria-label="Clear local storage"
-              >
-                <Trash2 className="simple-nav-toggle-icon" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Clear local storage</p>
             </TooltipContent>
           </Tooltip>
         )}

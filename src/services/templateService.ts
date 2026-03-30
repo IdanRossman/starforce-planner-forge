@@ -1,5 +1,5 @@
 import { Equipment, EquipmentSlot, EquipmentType } from '@/types';
-import { Template, TemplateEquipmentResponse, apiService } from './api';
+import { Template, TemplateEquipmentResponse, railwayApiService as apiService } from './api';
 
 // Cache for template data
 const templateCache = new Map<string, { data: Template[] | Equipment[]; timestamp: number }>();

@@ -11,6 +11,7 @@ interface EquipmentSelectionSectionProps {
   // Equipment slot configuration
   slotCategories: SelectCategory[];
   allowSlotEdit: boolean;
+  storageMode?: boolean;
   defaultSlot?: string;
   isEditing: boolean;
   
@@ -32,6 +33,7 @@ interface EquipmentSelectionSectionProps {
 export function EquipmentSelectionSection({
   slotCategories,
   allowSlotEdit,
+  storageMode = false,
   defaultSlot,
   isEditing,
   availableEquipment,
@@ -91,12 +93,35 @@ export function EquipmentSelectionSection({
 
   return (
     <>
-      {/* Equipment Slot Selection - Hidden but still controlled */}
-      <input 
-        type="hidden" 
-        {...form.register('slot')}
-        value={selectedSlot}
-      />
+      {/* Equipment Slot Selection — only visible in storage mode */}
+      {allowSlotEdit && storageMode ? (
+        <FormFieldWrapper
+          name="slot"
+          label="Slot / Type"
+          control={form.control}
+        >
+          {(field) => (
+            <CategorizedSelect
+              value={field.value}
+              onValueChange={(value) => {
+                form.setValue('slot', value, { shouldValidate: true, shouldDirty: true });
+                // Clear equipment selection when slot changes
+                form.setValue('set', '');
+                setSelectedEquipmentImage('');
+              }}
+              placeholder="Select slot type"
+              categories={slotCategories}
+              className="bg-white border-gray-300 font-maplestory w-full"
+            />
+          )}
+        </FormFieldWrapper>
+      ) : (
+        <input
+          type="hidden"
+          {...form.register('slot')}
+          value={selectedSlot}
+        />
+      )}
 
       {/* Equipment Selection */}
       <FormFieldWrapper
