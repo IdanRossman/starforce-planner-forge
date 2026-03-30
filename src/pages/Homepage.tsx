@@ -19,6 +19,7 @@ function getClassGradient(className: string): string {
   if (c.includes('wind archer') || c.includes('dawn warrior') || c.includes('blaze wizard') || c.includes('cygnus')) return 'from-sky-900/80 to-blue-800/60';
   if (c.includes('aran') || c.includes('evan') || c.includes('mercedes') || c.includes('phantom') || c.includes('luminous')) return 'from-indigo-900/80 to-blue-800/60';
   if (c.includes('zero') || c.includes('kinesis') || c.includes('cadena') || c.includes('kain')) return 'from-zinc-900/80 to-neutral-800/60';
+  if (c.includes('ren')) return 'from-red-900/80 to-rose-800/60';
   return 'from-primary/30 to-primary/10';
 }
 

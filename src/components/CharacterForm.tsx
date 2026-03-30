@@ -35,19 +35,6 @@ interface CharacterFormProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-const MAPLE_CLASSES = [
-  'Hero', 'Paladin', 'Dark Knight', 
-  'Fire/Poison Mage', 'Ice/Lightning Mage', 'Bishop', 
-  'Bowmaster', 'Marksman', 'Pathfinder',
-  'Night Lord', 'Shadower', 'Dual Blade',
-  'Buccaneer', 'Corsair', 'Cannoneer',
-  'Dawn Warrior', 'Blaze Wizard', 'Wind Archer', 'Night Walker', 'Thunder Breaker',
-  'Aran', 'Evan', 'Mercedes', 'Phantom', 'Luminous', 'Shade',
-  'Blaster', 'Battle Mage', 'Wild Hunter', 'Mechanic', 'Xenon', 'Demon Slayer', 'Demon Avenger',
-  'Kaiser', 'Angelic Buster', 'Cadena', 'Kain', 'Illium', 'Ark', 'Adele', 'Khali', 'Lara',
-  'Zero', 'Kinesis', 'Hayato', 'Kanna', 'Beast Tamer'
-];
-
 export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChange, open: externalOpen, onOpenChange: externalOnOpenChange }: CharacterFormProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isLoadingCharacter, setIsLoadingCharacter] = useState(false);

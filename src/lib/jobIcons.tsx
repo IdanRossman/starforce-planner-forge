@@ -82,7 +82,7 @@ export const ORGANIZED_CLASSES = {
   [CLASS_SUBCATEGORIES.ANIMA]: {
     name: 'Anima',
     classes: [
-      'Hoyoung', 'Lara'
+      'Hoyoung', 'Lara', 'Ren'
     ]
   },
   [CLASS_SUBCATEGORIES.SHINE]: {
@@ -109,7 +109,7 @@ export const ORGANIZED_CLASSES = {
 export const getJobCategory = (className: string): string => {
   const warriors = [
     'Hero', 'Paladin', 'Dark Knight', 'Dawn Warrior', 'Aran', 'Kaiser', 'Demon Slayer', 'Demon Avenger',
-    'Blaster', 'Hayato', 'Zero', 'Adele'
+    'Blaster', 'Hayato', 'Zero', 'Adele', 'Ren'
   ];
   
   const mages = [
@@ -307,6 +307,7 @@ export const getJobDatabaseString = (className: string): string => {
     // Anima
     'Hoyoung': 'hoyoung',
     'Lara': 'lara',
+    'Ren': 'ren',
     
     // Shine
     // Note: 'Sia' not in DB list, mapping to generic
