@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signInWithDiscord = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
-      options: { redirectTo: window.location.origin + '/' }
+      options: { redirectTo: window.location.origin + import.meta.env.BASE_URL }
     })
     return { error }
   }
