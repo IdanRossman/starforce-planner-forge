@@ -9,7 +9,6 @@ interface AuthContextType {
   isPasswordRecovery: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; needsEmailConfirmation: boolean }>
-  signInWithGoogle: () => Promise<{ error: AuthError | null }>
   signInWithDiscord: () => Promise<{ error: AuthError | null }>
   signOut: () => Promise<void>
   resetPasswordForEmail: (email: string) => Promise<{ error: AuthError | null }>
@@ -52,18 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error, needsEmailConfirmation: !error && !data.session }
   }
 
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    })
-    return { error }
-  }
-
   const signInWithDiscord = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
-      options: { redirectTo: window.location.origin }
+      options: { redirectTo: window.location.origin + '/' }
     })
     return { error }
   }
@@ -87,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearPasswordRecovery = () => setIsPasswordRecovery(false)
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord, signOut, resetPasswordForEmail, updatePassword, clearPasswordRecovery }}>
+    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, signInWithEmail, signUpWithEmail, signInWithDiscord, signOut, resetPasswordForEmail, updatePassword, clearPasswordRecovery }}>
       {children}
     </AuthContext.Provider>
   )

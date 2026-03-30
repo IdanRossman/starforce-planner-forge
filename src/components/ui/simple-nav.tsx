@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, Waves, LogOut, LogIn } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { Star, LogOut, LogIn, Coffee } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,8 +15,6 @@ interface SimpleNavProps {
   activeHref: string;
   brandText?: string;
   logoIcon?: React.ReactNode;
-  waveMovementEnabled?: boolean;
-  onWaveMovementToggle?: (enabled: boolean) => void;
 }
 
 export default function SimpleNav({
@@ -25,8 +22,6 @@ export default function SimpleNav({
   activeHref,
   brandText = "React Bits",
   logoIcon,
-  waveMovementEnabled = true,
-  onWaveMovementToggle,
 }: SimpleNavProps) {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -52,27 +47,23 @@ export default function SimpleNav({
           ))}
         </div>
 
-        {onWaveMovementToggle && (
-          <div className="simple-nav-divider" />
-        )}
-
-        {onWaveMovementToggle && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="simple-nav-toggle">
-                <Waves className="simple-nav-toggle-icon" />
-                <Switch 
-                  checked={waveMovementEnabled} 
-                  onCheckedChange={onWaveMovementToggle}
-                  aria-label="Toggle wave animation"
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{waveMovementEnabled ? 'Disable' : 'Enable'} wave animation</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        <div className="simple-nav-divider" />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <a
+              href="https://ko-fi.com/idanrossman"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="simple-nav-clear-btn"
+              aria-label="Support on Ko-fi"
+            >
+              <Coffee className="simple-nav-toggle-icon" />
+            </a>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Support on Ko-fi</p>
+          </TooltipContent>
+        </Tooltip>
 
         {!user && (
           <>

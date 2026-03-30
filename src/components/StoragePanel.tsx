@@ -150,31 +150,23 @@ export function StoragePanel({ characterId, selectedJob, equippedCount }: Storag
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Package className="w-4 h-4 text-primary" />
           <span className="text-sm font-semibold font-maplestory">Storage</span>
           <Badge variant="secondary" className="text-xs font-maplestory">
             {usedSlots} / {TOTAL_CAPACITY}
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground" />
-            <div className="flex gap-0.5">
-              {SORT_OPTIONS.map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => setSortKey(opt.value)}
-                  className={`text-[10px] px-2 py-1 rounded-full font-maplestory transition-colors ${
-                    sortKey === opt.value
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-white/10 text-muted-foreground hover:bg-white/20'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <button
+            onClick={() => {
+              const currentIndex = SORT_OPTIONS.findIndex(o => o.value === sortKey);
+              const next = SORT_OPTIONS[(currentIndex + 1) % SORT_OPTIONS.length];
+              setSortKey(next.value);
+            }}
+            className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-maplestory transition-colors bg-white/10 hover:bg-white/20 text-muted-foreground"
+          >
+            <ArrowUpDown className="w-3 h-3" />
+            {SORT_OPTIONS.find(o => o.value === sortKey)?.label}
+          </button>
           <Button
             variant="outline"
             size="sm"

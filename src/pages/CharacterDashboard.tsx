@@ -1,11 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Character, Equipment, EquipmentSlot } from "@/types";
+import { Character, Equipment } from "@/types";
 import { CharacterForm } from "@/components/CharacterForm";
 import { EnhancedEquipmentManager } from "@/components/EnhancedEquipmentManager";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { trackCharacterCreation, trackCharacterDeletion } from "@/lib/analytics";
@@ -13,141 +11,146 @@ import { useToast } from "@/hooks/use-toast";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { useEquipment, useCharacter } from "@/hooks";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
-import CharacterCallingCard from "@/components/CharacterCallingCard";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Users,
-  Plus,
-  Target,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Download,
-  Star,
-  TrendingUp,
-  Package,
-  Sparkles
-} from "lucide-react";
+import { apiService } from "@/services/api";
+import { getJobColors } from "@/lib/jobIcons";
+import { Plus, Target, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const DAILY_LIMIT = 3;
+
+function getTodayUTC(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getRemainingGenerations(character: Character): number {
+  const today = getTodayUTC();
+  const genDate = character.cardGenerationDate;
+  if (genDate && genDate.startsWith(today)) {
+    return Math.max(0, DAILY_LIMIT - (character.cardGenerationCount ?? 0));
+  }
+  return DAILY_LIMIT;
+}
+
+function getCardUrl(hash: string | null | undefined): string | null {
+  if (!hash) return null;
+  return `${SUPABASE_URL}/storage/v1/object/public/calling-cards/${hash}.png`;
+}
 
 export default function CharacterDashboard() {
   const navigate = useNavigate();
-  
-  // Use Character Context and Operations
-  const { selectedCharacter, characters } = useCharacterContext();
-  const { 
+
+  const { selectedCharacter, characters, updateCharacter: ctxUpdateCharacter } = useCharacterContext();
+  const {
     createCharacter,
     updateCharacter,
     deleteCharacter,
     selectCharacter,
-    getCharacterSummary
   } = useCharacter();
-  const { 
+  const {
     updateStarForce: updateEquipmentStarForce,
-    transferStarForce: transferEquipment,
     updateEquipment: saveEquipment,
     addEquipment,
-    removeEquipment,
-    clearEquipmentSlot
+    clearEquipmentSlot,
   } = useEquipment();
-  
-  // Local state for UI components only
+
   const [characterFormOpen, setCharacterFormOpen] = useState(false);
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true); // Sidebar state
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [characterSprite, setCharacterSprite] = useState<string | null>(null);
 
+  // Calling card regeneration state
+  const [isRegenerating, setIsRegenerating] = useState(false);
+
+  const { toast: toastHook } = useToast();
+
+  // Fetch sprite on character change
   useEffect(() => {
     if (!selectedCharacter) { setCharacterSprite(null); return; }
-    const name = selectedCharacter.name;
     let cancelled = false;
-    fetchCharacterFromMapleRanks(name).then(data => {
+    fetchCharacterFromMapleRanks(selectedCharacter.name).then(data => {
       if (!cancelled) setCharacterSprite(data?.image ?? null);
     });
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCharacter?.id, selectedCharacter?.name]);
-  
-  const { toast } = useToast();
 
-  // Character card selection handler
-  const handleSelectCharacter = (character: Character) => {
-    selectCharacter(character.id);
+  // Poll for calling card if not yet generated
+  useEffect(() => {
+    if (!selectedCharacter || selectedCharacter.callingCardHash) return;
+    const interval = setInterval(async () => {
+      try {
+        const card = await apiService.getCallingCard(selectedCharacter.id);
+        if (card?.hash) {
+          ctxUpdateCharacter(selectedCharacter.id, { callingCardHash: card.hash });
+        }
+      } catch { /* 404 = not ready yet, keep polling */ }
+    }, 3000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCharacter?.id, selectedCharacter?.callingCardHash]);
+
+  const handleRegenerate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedCharacter) return;
+    const remaining = getRemainingGenerations(selectedCharacter);
+    if (remaining === 0) return;
+    setIsRegenerating(true);
+    try {
+      const { hash } = await apiService.regenerateCallingCard(selectedCharacter.id);
+      const today = getTodayUTC();
+      const isSameDay = selectedCharacter.cardGenerationDate?.startsWith(today);
+      const newCount = isSameDay ? (selectedCharacter.cardGenerationCount ?? 0) + 1 : 1;
+      ctxUpdateCharacter(selectedCharacter.id, {
+        callingCardHash: hash,
+        cardGenerationCount: newCount,
+        cardGenerationDate: today,
+      });
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status === 429) {
+        const today = getTodayUTC();
+        ctxUpdateCharacter(selectedCharacter.id, { cardGenerationCount: DAILY_LIMIT, cardGenerationDate: today });
+        toast.warning("You've used all 3 generations for today. Try again tomorrow.");
+      } else {
+        toast.error('Card generation failed, please try again.');
+      }
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
-  // Character CRUD handlers
   const handleCreateCharacter = (newCharacter: Character) => {
     if (editingCharacter) {
       updateCharacter(editingCharacter.id, newCharacter);
-      toast({
-        title: "Character Updated",
-        description: `${newCharacter.name} has been updated!`,
-      });
+      toastHook({ title: "Character Updated", description: `${newCharacter.name} has been updated!` });
     } else {
       createCharacter(newCharacter);
       trackCharacterCreation(newCharacter.class, newCharacter.name);
-      toast({
-        title: "Character Created",
-        description: `${newCharacter.name} has been added to your roster!`,
-      });
+      toastHook({ title: "Character Created", description: `${newCharacter.name} has been added!` });
     }
-    
     setCharacterFormOpen(false);
     setEditingCharacter(null);
   };
 
-  const handleEditCharacter = (character: Character) => {
-    setEditingCharacter(character);
-    setCharacterFormOpen(true);
-  };
-
-  const handleDeleteCharacter = (id: string) => {
-    setDeleteConfirmId(id);
-  };
-
   const handleConfirmDelete = () => {
     if (!deleteConfirmId) return;
-    const characterToDelete = characters.find(char => char.id === deleteConfirmId);
-    if (characterToDelete) {
+    const char = characters.find(c => c.id === deleteConfirmId);
+    if (char) {
       deleteCharacter(deleteConfirmId);
-      trackCharacterDeletion(characterToDelete.class);
-      toast({
-        title: "Character Deleted",
-        description: "Character has been removed from your roster.",
-      });
+      trackCharacterDeletion(char.class);
+      toastHook({ title: "Character Deleted", description: "Character has been removed from your roster." });
     }
     setDeleteConfirmId(null);
   };
 
-  // Equipment handlers
-  const handleEditEquipment = (equipment: Equipment) => {
-    console.log('Edit equipment:', equipment);
-  };
-
   const handleSaveEquipment = (equipment: Equipment) => {
-    const existingEquipment = selectedCharacter?.equipment.find(eq => eq.id === equipment.id);
-    
-    if (existingEquipment) {
+    const existing = selectedCharacter?.equipment.find(eq => eq.id === equipment.id);
+    if (existing) {
       saveEquipment(equipment.id, equipment);
-      toast({
-        title: "Equipment Updated",
-        description: `${equipment.name} has been updated.`,
-      });
     } else {
       addEquipment(equipment);
-      toast({
-        title: "Equipment Added",
-        description: `${equipment.name} has been added.`,
-      });
     }
-  };
-
-  const handleAddEquipment = (slot: EquipmentSlot) => {
-    console.log('Add equipment to slot:', slot);
-  };
-
-  const handleClearEquipment = (slot: EquipmentSlot) => {
-    clearEquipmentSlot(slot);
   };
 
   const handleUpdateStarforce = (equipmentId: string, current: number, target: number) => {
@@ -155,239 +158,130 @@ export default function CharacterDashboard() {
   };
 
   const handleTransferEquipment = (sourceEquipment: Equipment, targetEquipment: Equipment) => {
-    toast({
-      title: "Transfer Planned",
-      description: `Transfer planned: ${sourceEquipment.name} → ${targetEquipment.name}`,
-    });
+    toastHook({ title: "Transfer Planned", description: `${sourceEquipment.name} → ${targetEquipment.name}` });
   };
 
-  // Calculate character stats
-  const getCharacterStats = (character: Character) => {
-    const totalEquipment = character.equipment.length;
-    const starforceableItems = character.equipment.filter(eq => eq.starforceable).length;
-    const totalCurrentStars = character.equipment
-      .filter(eq => eq.starforceable)
-      .reduce((sum, eq) => sum + eq.currentStarForce, 0);
-    const totalTargetStars = character.equipment
-      .filter(eq => eq.starforceable)
-      .reduce((sum, eq) => sum + eq.targetStarForce, 0);
-    const starsNeeded = totalTargetStars - totalCurrentStars;
-
-    return {
-      totalEquipment,
-      starforceableItems,
-      totalCurrentStars,
-      totalTargetStars,
-      starsNeeded
-    };
-  };
+  const sortedChars = [...characters].sort((a, b) => b.level - a.level);
+  const remaining = selectedCharacter ? getRemainingGenerations(selectedCharacter) : 0;
 
   return (
-    <div className="flex h-screen overflow-hidden p-4 gap-4">
-      {/* Sidebar for Character Selection */}
-      <motion.aside
-        initial={false}
-        animate={{ width: sidebarOpen ? 320 : 60 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-card/30 backdrop-blur-md border border-border/50 rounded-3xl flex flex-col relative z-10 overflow-hidden"
-      >
-        {/* Sidebar Header */}
-        <div className="p-4 border-b border-border/50 flex items-center justify-between">
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex items-center gap-2"
-            >
-              <Users className="w-5 h-5 text-primary" />
-              <h2 className="font-semibold font-maplestory text-foreground">Characters</h2>
-            </motion.div>
-          )}
-          <div className="flex items-center gap-1">
-            {sidebarOpen && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <Button
-                        onClick={() => navigate('/character/new')}
-                        size="sm"
-                        className="h-8 w-8 p-0"
-                        disabled={characters.length >= 6}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {characters.length >= 6 ? (
-                    <TooltipContent className="font-maplestory max-w-[200px] text-center">
-                      Character slots full (6/6). Delete a character and wait 1 hour to free a slot.
-                    </TooltipContent>
-                  ) : (
-                    <TooltipContent className="font-maplestory">
-                      New Character
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="h-8 w-8 p-0 rounded-full"
-            >
-              {sidebarOpen ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              )}
-            </Button>
-          </div>
-        </div>
+    <div className="max-w-[1600px] mx-auto w-full px-6 pt-4 pb-10 relative">
 
-        {/* Character List */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {characters.length === 0 ? (
-            <div className="p-4 text-center">
-              {sidebarOpen ? (
-                <>
-                  <Users className="w-12 h-12 text-muted-foreground/50 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground font-maplestory mb-3">
-                    No characters yet
-                  </p>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate('/character/new')}
-                    className="w-full font-maplestory"
+      {/* ── Narrow character sidebar ── */}
+      <TooltipProvider>
+        <div className="fixed top-24 -ml-[4.5rem] w-14 flex flex-col items-center gap-2 py-3 px-2 z-30 bg-card/15 backdrop-blur-[20px] border border-border/20 rounded-2xl shadow-md">
+          {sortedChars.map(char => {
+            const isSelected = selectedCharacter?.id === char.id;
+            const thumbUrl = getCardUrl(char.callingCardHash);
+            const colors = getJobColors(char.class ?? '');
+            return (
+              <Tooltip key={char.id} delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => selectCharacter(char.id)}
+                    className={`relative w-10 h-10 rounded-full overflow-hidden shrink-0 transition-all duration-200 ${
+                      isSelected
+                        ? 'ring-2 ring-primary shadow-md shadow-primary/30'
+                        : 'ring-1 ring-white/10 hover:ring-white/30 opacity-50 hover:opacity-100'
+                    }`}
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Character
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => navigate('/character/new')}
-                  className="w-full h-10 p-0"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          ) : (
-            <TooltipProvider>
-              <div className="space-y-2">
-                {characters.map((character) => {
-                  const isSelected = selectedCharacter?.id === character.id;
+                    {thumbUrl ? (
+                      <img src={thumbUrl} alt={char.name} className="w-full h-full object-cover object-top" />
+                    ) : (
+                      <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex items-center justify-center`}>
+                        <span className="text-[10px] text-white font-bold">{char.name[0]}</span>
+                      </div>
+                    )}
+                    {isSelected && (
+                      <div className="absolute bottom-0 inset-x-0 h-0.5 bg-primary" />
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-maplestory">
+                  {char.name} · Lv.{char.level} {char.class}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
 
-                  return (
-                    <motion.div key={character.id} layout whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                      {sidebarOpen ? (
-                        <CharacterCallingCard
-                          character={character}
-                          isSelected={isSelected}
-                          onClick={() => handleSelectCharacter(character)}
-                          onEdit={(e) => { e.stopPropagation(); handleEditCharacter(character); }}
-                          onDelete={(e) => { e.stopPropagation(); handleDeleteCharacter(character.id); }}
-                        />
-                      ) : (
-                        // Collapsed view - just avatar
-                        <Tooltip delayDuration={300}>
-                          <TooltipTrigger asChild>
-                            <div
-                              className={`relative w-10 h-10 rounded-full overflow-hidden cursor-pointer ${isSelected ? 'ring-2 ring-primary' : 'ring-1 ring-white/10'}`}
-                              onClick={() => handleSelectCharacter(character)}
-                            >
-                              {character.callingCardHash ? (
-                                <img
-                                  src={`${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/calling-cards/${character.callingCardHash}.png`}
-                                  alt={character.name}
-                                  className="w-full h-full object-cover object-center"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-                                  <Users className="w-5 h-5 text-primary" />
-                                </div>
-                              )}
-                              {isSelected && <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full border-2 border-card" />}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" sideOffset={15} className="font-maplestory z-50">
-                            <p>{character.name}</p>
-                            <p className="text-xs text-muted-foreground">Lv. {character.level} {character.class}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </TooltipProvider>
+          {/* Add character */}
+          {characters.length < 6 && (
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => navigate('/character/new')}
+                  className="w-10 h-10 rounded-full border border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 flex items-center justify-center text-white/30 hover:text-white/60 transition-all shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="font-maplestory">New Character</TooltipContent>
+            </Tooltip>
           )}
         </div>
-      </motion.aside>
+      </TooltipProvider>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto relative">
-        {/* Overlay when sidebar is open */}
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/20 backdrop-blur-[2px] z-0 pointer-events-none"
+      {/* ── Main content ── */}
+      <div className="flex flex-col gap-4">
+
+        {/* ── No characters at all ── */}
+        {characters.length === 0 && (
+          <div className="flex-1 flex items-center justify-center py-32">
+            <div className="text-center flex flex-col items-center gap-6">
+              <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center">
+                <Plus className="w-10 h-10 text-white/20" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-bold text-white/80 font-maplestory">No Characters Yet</h2>
+                <p className="text-white/40 font-maplestory">Create your first character to get started</p>
+              </div>
+              <Button
+                onClick={() => navigate('/character/new')}
+                className="font-maplestory rounded-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Create Character
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ── No character selected ── */}
+        {characters.length > 0 && !selectedCharacter && (
+          <div className="flex-1 flex items-center justify-center py-32">
+            <div className="text-center flex flex-col items-center gap-4">
+              <Target className="w-16 h-16 text-white/10" />
+              <p className="text-white/40 font-maplestory">Select a character on the left to get started</p>
+            </div>
+          </div>
+        )}
+
+        {selectedCharacter && (
+          <EnhancedEquipmentManager
+            equipment={selectedCharacter.equipment}
+            onEditEquipment={() => {}}
+            onAddEquipment={() => {}}
+            onClearEquipment={clearEquipmentSlot}
+            onUpdateStarforce={handleUpdateStarforce}
+            onSaveEquipment={handleSaveEquipment}
+            onTransfer={handleTransferEquipment}
+            selectedJob={selectedCharacter.class}
+            characterId={selectedCharacter.id}
+            characterName={selectedCharacter.name}
+            characterImage={characterSprite ?? undefined}
+            callingCardHash={selectedCharacter.callingCardHash}
+            characterLevel={selectedCharacter.level}
+            isRegeneratingCard={isRegenerating}
+            remainingGenerations={remaining}
+            onRegenerateCard={handleRegenerate}
+            onEditCharacter={() => { setEditingCharacter(selectedCharacter); setCharacterFormOpen(true); }}
+            onDeleteCharacter={() => setDeleteConfirmId(selectedCharacter.id)}
           />
         )}
-        <div className="relative z-10 mx-auto px-6 py-8 max-w-[1800px]">
-          {/* Equipment Management Section */}
-          {selectedCharacter ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="bg-white/5 backdrop-blur-md border-border/50">
-                <CardContent className="p-6">
-                  <EnhancedEquipmentManager
-                    equipment={selectedCharacter.equipment}
-                    onEditEquipment={handleEditEquipment}
-                    onAddEquipment={handleAddEquipment}
-                    onClearEquipment={handleClearEquipment}
-                    onUpdateStarforce={handleUpdateStarforce}
-                    onSaveEquipment={handleSaveEquipment}
-                    onTransfer={handleTransferEquipment}
-                    selectedJob={selectedCharacter.class}
-                    characterId={selectedCharacter.id}
-                    characterName={selectedCharacter.name}
-                    characterImage={characterSprite ?? undefined}
-                  />
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="py-16 text-center">
-                <Target className="w-20 h-20 text-muted-foreground/50 mx-auto mb-6" />
-                <h3 className="text-xl font-semibold text-foreground mb-2 font-maplestory">
-                  No Character Selected
-                </h3>
-                <p className="text-muted-foreground mb-6 font-maplestory">
-                  Select a character from the sidebar to manage their equipment
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       </div>
 
       {/* Character Edit Form */}
-      <CharacterForm 
+      <CharacterForm
         open={characterFormOpen}
         onOpenChange={setCharacterFormOpen}
         onAddCharacter={handleCreateCharacter}
@@ -395,7 +289,7 @@ export default function CharacterDashboard() {
         onEditingChange={setEditingCharacter}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation */}
       <Dialog open={deleteConfirmId !== null} onOpenChange={(open) => { if (!open) setDeleteConfirmId(null); }}>
         <DialogContent>
           <DialogHeader>
@@ -405,14 +299,12 @@ export default function CharacterDashboard() {
                 {deleteConfirmId && characters.find(c => c.id === deleteConfirmId)?.name} will be permanently deleted.
               </span>
               <span className="block text-yellow-400/90">
-                Note: the character slot stays occupied for 1 hour after deletion. You won't be able to create a new character until then.
+                Note: the character slot stays occupied for 1 hour after deletion.
               </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="font-maplestory">
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)} className="font-maplestory">Cancel</Button>
             <Button variant="destructive" onClick={handleConfirmDelete} className="font-maplestory">
               <Trash2 className="w-4 h-4 mr-2" />
               Delete

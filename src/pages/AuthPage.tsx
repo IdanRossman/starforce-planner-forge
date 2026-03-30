@@ -6,13 +6,12 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
-import { FcGoogle } from 'react-icons/fc'
 import { FaDiscord } from 'react-icons/fa'
 import { SiCurseforge } from 'react-icons/si'
 import { Loader2, Mail } from 'lucide-react'
 
 export default function AuthPage() {
-  const { user, signInWithEmail, signUpWithEmail, signInWithGoogle, signInWithDiscord, resetPasswordForEmail } = useAuth()
+  const { user, signInWithEmail, signUpWithEmail, signInWithDiscord, resetPasswordForEmail } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
@@ -52,11 +51,6 @@ export default function AuthPage() {
     } else if (needsEmailConfirmation) {
       setEmailSent(true)
     }
-  }
-
-  const handleGoogle = async () => {
-    const { error } = await signInWithGoogle()
-    if (error) toast.error(error.message)
   }
 
   const handleDiscord = async () => {
@@ -247,15 +241,6 @@ export default function AuthPage() {
           </div>
 
           <div className="flex flex-col gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full bg-white/5 border-white/20 hover:bg-white/10"
-              onClick={handleGoogle}
-            >
-              <FcGoogle className="w-5 h-5 mr-2" />
-              Continue with Google
-            </Button>
             <Button
               type="button"
               variant="outline"

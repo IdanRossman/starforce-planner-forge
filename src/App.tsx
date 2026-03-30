@@ -33,16 +33,6 @@ function AppContent() {
   const isQuickPlanning = location.pathname === '/quick-planning';
   const previousPathRef = useRef(location.pathname);
   const { isPasswordRecovery } = useAuth();
-  const [waveMovementEnabled, setWaveMovementEnabled] = useState(() => {
-    // Load preference from localStorage, default to false (disabled)
-    const saved = localStorage.getItem('waveMovementEnabled');
-    return saved !== null ? JSON.parse(saved) : false;
-  });
-
-  // Save preference to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('waveMovementEnabled', JSON.stringify(waveMovementEnabled));
-  }, [waveMovementEnabled]);
 
   // Redirect to reset password page when Supabase fires PASSWORD_RECOVERY
   useEffect(() => {
@@ -103,21 +93,19 @@ function AppContent() {
       waveSpeed={0.75}
       shininess={40}
       zoom={0.9}
-      enableMovement={waveMovementEnabled}
+      enableMovement={false}
     >
-      <div className={`w-full relative z-50 ${isHomepage || isQuickPlanning ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <div className={`w-full relative z-50 ${isHomepage || isQuickPlanning ? 'h-screen overflow-hidden' : 'min-h-screen overflow-hidden'}`}>
         {/* Simple Clean Navigation */}
         <SimpleNav
           items={navItems}
           activeHref={location.pathname}
           brandText=""
           logoIcon={<SiCurseforge className="simple-nav-icon" />}
-          waveMovementEnabled={waveMovementEnabled}
-          onWaveMovementToggle={setWaveMovementEnabled}
         />
         
         {/* Main Content */}
-        <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-32 min-h-screen relative z-50"}>
+        <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-16 min-h-screen relative z-50"}>
           <AnimatePresence mode="wait" custom={direction}>
             <Routes location={location} key={location.pathname}>
               <Route path="/auth" element={

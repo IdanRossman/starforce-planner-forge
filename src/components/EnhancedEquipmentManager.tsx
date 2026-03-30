@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Equipment, EquipmentSlot, StorageItem } from "@/types";
 import { StoragePanel } from "@/components/StoragePanel";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
+import { useCharacterWorth, formatMesos } from "@/hooks/useCharacterWorth";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,9 @@ import {
   DollarSign,
   Zap,
   Crown,
+  RefreshCw,
+  Edit,
+  Trash2,
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -44,14 +48,23 @@ interface EnhancedEquipmentManagerProps {
   onSaveEquipment?: (equipment: Equipment) => void;
   onTransfer?: (sourceEquipment: Equipment, targetEquipment: Equipment) => void;
   selectedJob?: string;
-  additionalEquipment?: Equipment[]; // StarForce items beyond standard slots
+  additionalEquipment?: Equipment[];
   onSaveAdditionalEquipment?: (equipment: Equipment) => void;
   onDeleteAdditionalEquipment?: (equipmentId: string) => void;
-  characterId?: string; // For per-character localStorage
-  characterName?: string; // Fallback for characters without ID
+  characterId?: string;
+  characterName?: string;
   characterImage?: string;
+  callingCardHash?: string | null;
+  characterLevel?: number;
+  isRegeneratingCard?: boolean;
+  remainingGenerations?: number;
+  onRegenerateCard?: (e: React.MouseEvent) => void;
+  onEditCharacter?: () => void;
+  onDeleteCharacter?: () => void;
 }
 
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 export function EnhancedEquipmentManager({
   equipment,
@@ -64,7 +77,14 @@ export function EnhancedEquipmentManager({
   selectedJob,
   characterId,
   characterName,
-  characterImage
+  characterImage,
+  callingCardHash,
+  characterLevel,
+  isRegeneratingCard,
+  remainingGenerations = 0,
+  onRegenerateCard,
+  onEditCharacter,
+  onDeleteCharacter,
 }: EnhancedEquipmentManagerProps) {
   const { isEquipmentLoading, selectedCharacter } = useCharacterContext();
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
@@ -75,6 +95,14 @@ export function EnhancedEquipmentManager({
   // Use the potential hook
   const { getPotentialSummary } = usePotential();
 
+  // Calculate character worth
+  const storageItems = selectedCharacter?.storageItems ?? [];
+  const { worth, isLoading: isWorthLoading, refetch: refetchWorth } = useCharacterWorth(
+    equipment,
+    storageItems,
+    characterId
+  );
+
   // Handle tab switching with analytics tracking
   const handleTabChange = (newTab: string) => {
     if (newTab !== activeTab) {
@@ -84,7 +112,6 @@ export function EnhancedEquipmentManager({
   };
 
   // Convert storage items to Equipment shape for calculator/potential tabs
-  const storageItems = selectedCharacter?.storageItems ?? [];
   const storageAsEquipment: Equipment[] = storageItems.map((item: StorageItem) => ({
     id: `storage-${item.id}`,
     catalogId: item.catalogId,
@@ -106,14 +133,9 @@ export function EnhancedEquipmentManager({
   const allEquipment = [...equipment, ...storageAsEquipment];
   const starforceableEquipment = allEquipment.filter(eq => eq.starforceable);
   const pendingEquipment = starforceableEquipment.filter(eq => eq.currentStarForce < eq.targetStarForce);
-  const completedEquipment = starforceableEquipment.filter(eq => eq.currentStarForce >= eq.targetStarForce);
   const potentialEquipment = allEquipment.filter(eq => 
     eq.currentPotentialValue || eq.targetPotentialValue
   );
-  const completionRate = starforceableEquipment.length > 0 
-    ? Math.round((completedEquipment.length / starforceableEquipment.length) * 100)
-    : 0;
-
   // Track calculator usage when switching to calculator tab with pending equipment
   useEffect(() => {
     if (activeTab === "calculator" && pendingEquipment.length > 0) {
@@ -211,35 +233,29 @@ export function EnhancedEquipmentManager({
     <div className="space-y-4">
       {/* Main Content with Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
-          <TabsTrigger 
-            value="equipment" 
+        <TabsList className="grid w-full grid-cols-3 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
+          <TabsTrigger
+            value="equipment"
             className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
           >
-            <Package className="w-4 h-4" />
-            <span>Equipment</span>
+            <span>Setup</span>
           </TabsTrigger>
-              <TabsTrigger 
-                value="calculator" 
+              <TabsTrigger
+                value="calculator"
                 className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
               >
-                <Calculator className="w-4 h-4" />
-                <span>Calculator</span>
+                <span>Starforce Breakdown</span>
                 {pendingEquipment.length > 0 && (
                   <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
                     {pendingEquipment.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger 
-                value="potential" 
+              <TabsTrigger
+                value="potential"
                 className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
               >
-                <Zap className="w-4 h-4" />
-                <span>Potential</span>
-                <Badge variant="secondary" className="ml-1 rounded-full bg-purple-500 text-white text-[10px] px-1.5 py-0 h-4 font-bold">
-                  NEW
-                </Badge>
+                <span>Potential Breakdown</span>
                 {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
                   <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
                     {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
@@ -250,16 +266,144 @@ export function EnhancedEquipmentManager({
 
             {/* Equipment Setup Tab */}
             <TabsContent value="equipment" className="mt-4">
-              <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-                {/* Equipment Grid - Left Side */}
-                <Card className="xl:col-span-2 bg-white/5 backdrop-blur-md border-border/50">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+
+                {/* Column 1 — Character data */}
+                <div className="flex flex-col gap-3 overflow-visible">
+
+                  {/* Calling card with action buttons */}
+                  <div className="relative overflow-visible">
+                    {/* Glow layer — blurred copy of the card image */}
+                    {callingCardHash && (
+                      <img
+                        src={`${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`}
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute -inset-6 w-[calc(100%+48px)] h-[calc(100%+48px)] object-cover blur-3xl opacity-60 rounded-3xl pointer-events-none"
+                      />
+                    )}
+                    <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 group" style={{ aspectRatio: '1376/768' }}>
+                    {callingCardHash ? (
+                      <img
+                        src={`${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`}
+                        alt={characterName}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        {characterImage ? (
+                          <img src={characterImage} alt={characterName} className="h-full object-contain drop-shadow-xl" />
+                        ) : (
+                          <Crown className="w-10 h-10 text-white/10" />
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action buttons — top right, visible on hover */}
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {isRegeneratingCard ? (
+                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
+                          <RefreshCw className="w-3 h-3 text-primary animate-spin" />
+                          <span className="text-[10px] text-white/50 font-maplestory">Regenerating...</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={onRegenerateCard}
+                          disabled={remainingGenerations === 0}
+                          className="flex items-center gap-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-white/70 hover:text-white font-maplestory transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={remainingGenerations === 0 ? 'No generations left today' : `${remainingGenerations} left today`}
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          {remainingGenerations === 0 ? '0' : remainingGenerations}
+                        </button>
+                      )}
+                      <button
+                        onClick={onEditCharacter}
+                        className="w-6 h-6 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                      >
+                        <Edit className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={onDeleteCharacter}
+                        className="w-6 h-6 rounded-full bg-black/60 hover:bg-destructive/80 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                    </div>
+                  </div>
+
+                  {/* Character info card with worth */}
+                  <Card className="bg-white/5 backdrop-blur-md border-border/50 flex-1">
+                    <CardContent className="p-3 flex flex-col gap-2 h-full justify-between">
+                      {/* Basic info */}
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-white/35 uppercase tracking-widest font-maplestory">{selectedCharacter?.class}</p>
+                        <p className="text-base font-bold text-white font-maplestory leading-tight">{characterName}</p>
+                        <p className="text-xs text-white/40 font-maplestory">Level {characterLevel}</p>
+                      </div>
+
+                      {/* Worth section */}
+                      {(worth || isWorthLoading) && (
+                        <>
+                          <div className="border-t border-white/10" />
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <p className="text-[11px] text-white/35 uppercase tracking-widest font-maplestory">Meso Investment</p>
+                                <p className="text-[10px] text-white/25 font-maplestory">Avg. cost to reach current state</p>
+                              </div>
+                              <button
+                                onClick={refetchWorth}
+                                disabled={isWorthLoading}
+                                className="p-0.5 hover:bg-white/10 rounded transition-colors"
+                              >
+                                <RefreshCw className={`w-3 h-3 text-white/40 ${isWorthLoading ? 'animate-spin' : ''}`} />
+                              </button>
+                            </div>
+                            {worth && (
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Star className="w-3 h-3 text-yellow-400" />
+                                  <span className="text-[12px] text-white/50 font-maplestory">StarForce</span>
+                                </div>
+                                <span className="text-[12px] font-semibold text-yellow-400 font-maplestory text-right">
+                                  {formatMesos(worth.starforce.averageCost)}
+                                </span>
+
+                                <div className="flex items-center gap-1.5">
+                                  <Zap className="w-3 h-3 text-purple-400" />
+                                  <span className="text-[12px] text-white/50 font-maplestory">Potential</span>
+                                </div>
+                                <span className="text-[12px] font-semibold text-purple-400 font-maplestory text-right">
+                                  {formatMesos(worth.potential.averageCost)}
+                                </span>
+
+                                <div className="flex items-center gap-1.5 col-span-2 pt-1 border-t border-white/5">
+                                  <TrendingUp className="w-3 h-3 text-primary" />
+                                  <span className="text-[12px] text-white/70 font-maplestory font-semibold">Total</span>
+                                  <span className="text-base font-bold text-primary font-maplestory ml-auto">
+                                    {formatMesos(worth.total.averageCost)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                </div>
+
+                {/* Column 2 — Equipment Grid */}
+                <Card className="bg-white/5 backdrop-blur-md border-border/50 self-start">
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 font-maplestory text-base">
-                      <Target className="w-4 h-4 text-primary" />
+                    <CardTitle className="font-maplestory text-base">
                       Equipment Slots
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="relative">
+                  <CardContent className="relative overflow-hidden">
                     {isEquipmentLoading && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/60 backdrop-blur-sm">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -276,8 +420,8 @@ export function EnhancedEquipmentManager({
                   </CardContent>
                 </Card>
 
-                {/* Storage Panel - Right Side */}
-                <Card className="xl:col-span-3 bg-white/5 backdrop-blur-md border-border/50">
+                {/* Column 3 — Storage */}
+                <Card className="bg-white/5 backdrop-blur-md border-border/50">
                   <CardContent className="p-4">
                     <StoragePanel
                       characterId={characterId}

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapleButton } from './MapleButton';
@@ -81,14 +82,14 @@ export function MapleDialog({
   }
 
   // Combine center positioning with animation transform
-  const finalTransform = position === 'center' 
-    ? `${centerTransform} ${transform}` 
+  const finalTransform = position === 'center'
+    ? `${centerTransform} ${transform}`
     : transform;
 
-  return (
-    <div 
+  const dialog = (
+    <div
       className={`${positionClasses[position]} z-50 ${className}`}
-      style={{ 
+      style={{
         opacity: opacity,
         transform: finalTransform,
         transition: 'opacity 0.4s ease-out, transform 0.4s ease-out'
@@ -261,4 +262,6 @@ export function MapleDialog({
       </Card>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }
