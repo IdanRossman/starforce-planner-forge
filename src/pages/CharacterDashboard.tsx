@@ -126,6 +126,17 @@ export default function CharacterDashboard() {
   const handleCreateCharacter = async (newCharacter: Omit<Character, 'id'>) => {
     if (editingCharacter) {
       updateCharacter(editingCharacter.id, newCharacter);
+      if (user) {
+        try {
+          await apiService.updateCharacter(editingCharacter.id, {
+            userId: user.id,
+            name: newCharacter.name,
+            job: newCharacter.class,
+            level: newCharacter.level,
+            enableCallingCard: newCharacter.enableCallingCard ?? false,
+          });
+        } catch { /* local state already updated, non-critical */ }
+      }
       toastHook({ title: "Character Updated", description: `${newCharacter.name} has been updated!` });
     } else {
       if (user) {

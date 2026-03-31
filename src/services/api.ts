@@ -170,7 +170,7 @@ class ApiService {
     return this.delete(`/api/character/${characterId}/storage/${itemId}`);
   }
 
-  async updateCharacter(id: string, data: { userId: string; name: string; job: string; level: number }): Promise<void> {
+  async updateCharacter(id: string, data: { userId: string; name: string; job: string; level: number; enableCallingCard?: boolean }): Promise<void> {
     return this.put(`/api/character/${id}`, {
       ...data,
       createdAt: '0001-01-01T00:00:00',
