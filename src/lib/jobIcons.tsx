@@ -217,8 +217,11 @@ export const JOB_PLACEHOLDER_IMAGES: Partial<Record<string, string>> = {
   'Kinesis':            '/characters/250723-ms-classesjobs-update-kinesis-395x400.png',
 };
 
-export const getJobPlaceholderImage = (className: string): string | null =>
-  JOB_PLACEHOLDER_IMAGES[className] ?? null;
+export const getJobPlaceholderImage = (className: string): string | null => {
+  const path = JOB_PLACEHOLDER_IMAGES[className];
+  if (!path) return null;
+  return `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+};
 
 // Get job icon component
 export const getJobIcon = (className: string) => {
