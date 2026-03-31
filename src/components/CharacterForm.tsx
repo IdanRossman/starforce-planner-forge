@@ -16,13 +16,15 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Plus, Loader2, Search, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Loader2, Search, X, Sparkles } from 'lucide-react';
 
 const characterSchema = z.object({
   name: z.string().min(1, 'Character name is required').max(50, 'Name too long'),
   class: z.string().min(1, 'Character class is required'),
   level: z.coerce.number().min(1, 'Level must be at least 1').max(300, 'Level cannot exceed 300'),
   image: z.string().optional(),
+  enableCallingCard: z.boolean().default(false),
 });
 
 type CharacterFormData = z.infer<typeof characterSchema>;
@@ -75,6 +77,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       class: '',
       level: 200,
       image: '',
+      enableCallingCard: false,
     },
   });
 
@@ -134,6 +137,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
         class: editingCharacter.class,
         level: editingCharacter.level,
         image: editingCharacter.image || '',
+        enableCallingCard: editingCharacter.enableCallingCard ?? false,
       });
       setOpen(true);
     }
@@ -145,6 +149,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
       class: data.class,
       level: data.level,
       image: data.image,
+      enableCallingCard: data.enableCallingCard,
       equipment: editingCharacter?.equipment || [], // Preserve equipment when editing
     };
     onAddCharacter(newCharacter);
@@ -241,7 +246,7 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
         }
       >
         {/* Form Content */}
-        <div className="w-full h-full flex flex-col space-y-4 p-2">
+        <div className="w-full h-full flex flex-col space-y-3 p-1 sm:p-2">
           <div className="text-center mb-4">
             <h2 className="text-lg font-bold text-black font-maplestory">
               {editingCharacter ? 'Edit Character' : 'Add New Character'}
@@ -348,6 +353,31 @@ export function CharacterForm({ onAddCharacter, editingCharacter, onEditingChang
                   />
                 )}
               </FormFieldWrapper>
+
+              {/* AI Calling Card toggle */}
+              <FormField
+                control={form.control}
+                name="enableCallingCard"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-yellow-500" />
+                        <div>
+                          <FormLabel className="text-sm font-medium text-black font-maplestory cursor-pointer">
+                            AI Calling Card
+                          </FormLabel>
+                          <p className="text-xs text-gray-500 font-maplestory">Generate an AI image for this character</p>
+                        </div>
+                      </div>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </div>
+                  </FormItem>
+                )}
+              />
 
               {/* Hidden field to store image */}
               <FormField

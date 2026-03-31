@@ -1,23 +1,22 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Character, Equipment, EquipmentSlot } from "@/types";
-import { WizardIntro, WizardIntroStep, StepWizard, WizardStep, StepContent } from "@/components/shared";
+import { Equipment, EquipmentSlot } from "@/types";
+import { StepWizard, WizardStep, StepContent } from "@/components/shared";
 import { EquipmentStepLayout } from "@/components/EquipmentStepLayout";
 import { ItemCarousel } from "@/components/ItemCarousel";
-import { SetQuickSelect } from "@/components/SetQuickSelect";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CategorizedSelect, SelectCategory } from "@/components/shared/forms";
-import { getJobIcon, getJobColors, getJobCategoryName, ORGANIZED_CLASSES } from '@/lib/jobIcons';
+import { Switch } from "@/components/ui/switch";
+import { getJobIcon, getJobColors, ORGANIZED_CLASSES } from '@/lib/jobIcons';
 import { useCharacter } from "@/hooks";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchCharacterFromMapleRanks, Region } from "@/services/mapleRanksService";
 import { apiService } from "@/services/api";
 import { SLOT_TO_BACKEND_NAME } from "@/services/equipmentService";
-import { User, Target, FileText, Grid3x3, Sparkles, CheckCircle, Search, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { User, Grid3x3, Sparkles, Search, Loader2, X } from "lucide-react";
 
 // Equipment groupings for each step
 const EQUIPMENT_STEPS = [
@@ -25,211 +24,148 @@ const EQUIPMENT_STEPS = [
     id: 'armor',
     title: 'Armor Set',
     slots: ['hat', 'top', 'bottom'] as EquipmentSlot[],
-    sets: ['Fafnir', 'Absolab', 'Arcane Umbra', 'Eternal']
   },
   {
     id: 'weapon',
     title: 'Weapons',
     slots: ['weapon', 'secondary', 'emblem'] as EquipmentSlot[],
-    sets: ['Fafnir', 'Absolab', 'Arcane Umbra', 'Genesis']
   },
   {
     id: 'face-eye',
     title: 'Face & Eye Accessories',
     slots: ['face', 'eye'] as EquipmentSlot[],
-    sets: ['Sweetwater', 'Superior Gollux', 'Reinforced Gollux']
   },
   {
     id: 'jewelry',
     title: 'Jewelry',
     slots: ['earring', 'pendant1', 'pendant2', 'belt'] as EquipmentSlot[],
-    sets: ['Sweetwater', 'Superior Gollux', 'Reinforced Gollux']
   },
   {
     id: 'gear',
     title: 'Gear',
     slots: ['gloves', 'shoes', 'cape', 'shoulder'] as EquipmentSlot[],
-    sets: ['Fafnir', 'Absolab', 'Arcane Umbra', 'Eternal']
   },
   {
     id: 'rings',
     title: 'Rings',
     slots: ['ring1', 'ring2', 'ring3', 'ring4'] as EquipmentSlot[],
-    sets: []
   },
   {
     id: 'optional',
     title: 'Optional Items',
     slots: ['heart', 'pocket', 'badge'] as EquipmentSlot[],
-    sets: []
   }
 ];
+
+const TOTAL_STEPS = 2 + EQUIPMENT_STEPS.length; // 9
 
 export default function NewCharacter() {
   const navigate = useNavigate();
   const { createCharacter } = useCharacter();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
-  
+  const [currentStep, setCurrentStep] = useState(1);
+
   // Character data
   const [characterName, setCharacterName] = useState("");
   const [selectedJob, setSelectedJob] = useState("");
   const [equipment, setEquipment] = useState<Equipment[]>([]);
-  
+
   // Nexon API lookup state
   const [selectedRegion, setSelectedRegion] = useState<Region>('north-america');
   const [isSearching, setIsSearching] = useState(false);
   const [searchStatus, setSearchStatus] = useState<'idle' | 'found' | 'not-found' | 'error'>('idle');
-  const [searchMessage, setSearchMessage] = useState<string>('');
   const [fetchedCharacterImage, setFetchedCharacterImage] = useState<string | null>(null);
   const [characterLevel, setCharacterLevel] = useState(200);
-  
+
   // Selected items per slot
   const [selectedItems, setSelectedItems] = useState<Record<EquipmentSlot, Equipment | null>>({} as Record<EquipmentSlot, Equipment | null>);
-  
+
   // Current StarForce per slot
   const [currentStarForces, setCurrentStarForces] = useState<Record<EquipmentSlot, number>>({} as Record<EquipmentSlot, number>);
 
-  // Transform ORGANIZED_CLASSES into CategorizedSelect format
-  const classCategories = useMemo((): SelectCategory[] => {
-    return Object.entries(ORGANIZED_CLASSES).map(([key, category]) => ({
-      name: category.name,
-      options: category.classes.map(cls => ({
-        value: cls,
-        label: cls,
-        icon: getJobIcon(cls),
-        colors: getJobColors(cls),
-        badges: [
-          {
-            text: getJobCategoryName(cls),
-            className: `text-xs px-1.5 py-0.5 rounded ${getJobColors(cls).bgMuted} ${getJobColors(cls).text}`
-          }
-        ]
-      }))
-    }));
-  }, []);
+  const [enableCallingCard, setEnableCallingCard] = useState(false);
+  const [jobSearch, setJobSearch] = useState('');
 
-  // Search character on Nexon Rankings
+  const categories = Object.entries(ORGANIZED_CLASSES);
+
+  // Wizard steps
+  const wizardSteps: WizardStep[] = [
+    { id: 'name', title: 'Character', icon: User },
+    { id: 'job', title: 'Job Class', icon: Grid3x3 },
+    ...EQUIPMENT_STEPS.map(step => ({ id: step.id, title: step.title, icon: Grid3x3 }))
+  ];
+
+  const canGoNext =
+    currentStep === 1 ? characterName.trim() !== "" :
+    currentStep === 2 ? selectedJob !== "" :
+    true;
+
+  // Search character on MapleRanks
   const searchCharacter = async () => {
-    if (!characterName.trim()) {
-      setSearchStatus('error');
-      setSearchMessage('Please enter a character name first.');
-      return;
-    }
-
+    if (!characterName.trim()) return;
     setIsSearching(true);
     setSearchStatus('idle');
-    setSearchMessage('');
     setFetchedCharacterImage(null);
-
     try {
       const characterData = await fetchCharacterFromMapleRanks(characterName.trim(), selectedRegion);
-      
       if (characterData) {
         setFetchedCharacterImage(characterData.image);
         setCharacterLevel(characterData.level);
-        
         setSearchStatus('found');
-        const regionName = selectedRegion === 'north-america' ? 'NA' : 'EU';
       } else {
         setSearchStatus('not-found');
       }
-    } catch (error) {
+    } catch {
       setSearchStatus('error');
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Intro steps
-  const introSteps: WizardIntroStep[] = [
-    { icon: User, title: 'Character Info', description: 'Name and job' },
-    { icon: Grid3x3, title: 'Armor Set', description: 'Hat, top, bottom' },
-    { icon: Target, title: 'Weapons', description: 'Weapon, secondary' },
-    { icon: Sparkles, title: 'Accessories & More', description: 'Face, jewelry, rings' }
-  ];
-
-  // Wizard steps (Step 1 = Character Info, Step 2+ = Equipment)
-  const wizardSteps: WizardStep[] = [
-    { id: 'info', title: 'Character Info', icon: User },
-    ...EQUIPMENT_STEPS.map(step => ({
-      id: step.id,
-      title: step.title,
-      icon: Grid3x3
-    }))
-  ];
+  const handleJobSelect = (job: string) => {
+    setSelectedJob(job);
+    setJobSearch('');
+    setCurrentStep(3); // auto-advance to first equipment step
+  };
 
   const handleSelectItem = (slot: EquipmentSlot, item: Equipment | null) => {
     setSelectedItems(prev => ({ ...prev, [slot]: item }));
-    
-    // Update equipment array
     if (item) {
-      // Use the equipment directly from the API
       const newEquipment: Equipment = {
         ...item,
-        id: `${slot}-${Date.now()}`, // Generate new ID for this instance
-        slot: slot, // Ensure slot is correct
+        id: `${slot}-${Date.now()}`,
+        slot,
         currentStarForce: currentStarForces[slot] ?? item.currentStarForce ?? 0,
         targetStarForce: item.targetStarForce ?? 0
       };
-      
-      // Replace or add equipment for this slot
-      setEquipment(prev => {
-        const filtered = prev.filter(eq => eq.slot !== slot);
-        return [...filtered, newEquipment];
-      });
+      setEquipment(prev => [...prev.filter(eq => eq.slot !== slot), newEquipment]);
     } else {
-      // Remove equipment for this slot
       setEquipment(prev => prev.filter(eq => eq.slot !== slot));
     }
   };
 
   const handleCurrentStarForceChange = (slot: EquipmentSlot, stars: number) => {
     setCurrentStarForces(prev => ({ ...prev, [slot]: stars }));
-    
-    // Update equipment if item is already selected
     const selectedItem = selectedItems[slot];
     if (selectedItem) {
-      setEquipment(prev => 
-        prev.map(eq => 
-          eq.slot === slot 
-            ? { ...eq, currentStarForce: stars }
-            : eq
-        )
+      setEquipment(prev =>
+        prev.map(eq => eq.slot === slot ? { ...eq, currentStarForce: stars } : eq)
       );
     }
   };
 
-  const handleQuickSelectSet = (setName: string, slots: EquipmentSlot[]) => {
-    // Quick select is more complex with API - we'd need to fetch and filter by set
-    // For now, this will be a TODO
-    toast({
-      title: "Quick Select",
-      description: "Quick select is not yet implemented with API data.",
-      variant: "default"
-    });
-  };
-
-  const handleClearAll = (slots: EquipmentSlot[]) => {
-    slots.forEach(slot => {
-      handleSelectItem(slot, null);
-    });
-  };
-
   const handleComplete = async () => {
     if (!user) return;
-
     try {
-      // 1. Create the character record
       const created = await apiService.createCharacter({
         userId: user.id,
         name: characterName,
         job: selectedJob,
         level: characterLevel,
+        enableCallingCard,
       });
 
-      // 2. Bulk upsert equipment slots
       const equipmentPayload = (Object.entries(selectedItems) as [EquipmentSlot, Equipment | null][])
         .filter(([, item]) => item !== null)
         .map(([slot, item]) => ({
@@ -245,7 +181,6 @@ export default function NewCharacter() {
         await apiService.upsertCharacterEquipment(created.id, equipmentPayload);
       }
 
-      // 3. Keep in localStorage until full migration — use server ID so they stay in sync
       createCharacter({
         name: characterName,
         class: selectedJob,
@@ -253,12 +188,12 @@ export default function NewCharacter() {
         image: fetchedCharacterImage || './characters/maple-admin.png',
         equipment,
         starForceItems: [],
+        enableCallingCard,
       }, created.id);
 
       toast({ title: "Character Created!", description: `${characterName} has been added to your roster.` });
       navigate('/characters');
     } catch (error: any) {
-      console.error('Failed to create character:', error);
       if (error.status === 429) {
         toast({
           title: "Character Slot Full",
@@ -271,214 +206,204 @@ export default function NewCharacter() {
     }
   };
 
-  const canProceedFromInfo = characterName.trim() !== "" && selectedJob !== "";
-
   return (
-    <div className="min-h-screen bg-gradient-to-br p-6">
+    <div className="min-h-screen p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Step 0: Introduction */}
-        {currentStep === 0 && (
-          <WizardIntro
-            title="Create New Character"
-            subtitle="Build your character step by step"
-            steps={introSteps}
-            onStart={() => setCurrentStep(1)}
-            startButtonText="Let's Begin"
-          />
-        )}
+        <StepWizard
+          steps={wizardSteps}
+          currentStep={currentStep - 1}
+          onStepChange={(step) => setCurrentStep(step + 1)}
+          canGoNext={canGoNext}
+          nextLabel={currentStep === TOTAL_STEPS ? "Complete" : "Next"}
+          onNext={async () => {
+            if (currentStep === TOTAL_STEPS) {
+              await handleComplete();
+            }
+          }}
+        >
+          {/* ── Step 1: Character name + lookup ── */}
+          {currentStep === 1 && (
+            <StepContent>
+              <div className="max-w-md mx-auto">
+                <Card className="bg-card/20 backdrop-blur-md border-white/20">
+                  <CardContent className="p-5 sm:p-8 space-y-5">
 
-        {/* Step 1+: Wizard */}
-        {currentStep > 0 && (
-          <StepWizard
-            steps={wizardSteps}
-            currentStep={currentStep - 1}
-            onStepChange={(step) => setCurrentStep(step + 1)}
-            canGoNext={currentStep === 1 ? canProceedFromInfo : true}
-            nextLabel={currentStep === wizardSteps.length ? "Complete" : "Next"}
-            onNext={async () => {
-              if (currentStep === wizardSteps.length) {
-                await handleComplete();
-              }
-            }}
-          >
-            {/* Step 1: Character Info */}
-            {currentStep === 1 && (
-              <StepContent>
-                <div className="max-w-md mx-auto">
-                  <Card className="bg-card/20 backdrop-blur-md border-white/20">
-                    <CardContent className="p-8 space-y-6">
-                      {/* Character Image Preview with Shadow Effect */}
-                      {fetchedCharacterImage && (
-                        <div className="flex flex-col items-center py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                          {/* Character Image Container */}
-                          <div className="relative">
-                            {/* Character Image */}
-                            <div className="relative animate-in zoom-in duration-700 delay-150 z-10">
-                              <img 
-                                src={fetchedCharacterImage} 
-                                alt={characterName}
-                                className="max-h-64 object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-300"
-                                onError={(e) => {
-                                  console.error('Failed to load character image');
-                                  e.currentTarget.src = './characters/maple-admin.png';
-                                }}
-                                style={{
-                                  filter: 'drop-shadow(0 10px 30px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 20px rgba(100, 200, 255, 0.3))'
-                                }}
-                              />
-                            </div>
-                            
-                            {/* Animated Shadow/Glow beneath character */}
-                            <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 w-56 h-12 animate-in slide-in-from-bottom-2 duration-500 delay-300">
-                              {/* Main shadow ellipse */}
-                              <div 
-                                className="absolute inset-0 rounded-full blur-lg"
-                                style={{
-                                  background: 'radial-gradient(ellipse at center, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.3) 40%, transparent 70%)'
-                                }}
-                              ></div>
-                              {/* Animated glow ring */}
-                              <div 
-                                className="absolute inset-0 rounded-full blur-2xl animate-pulse"
-                                style={{
-                                  background: 'radial-gradient(ellipse at center, rgba(59, 130, 246, 0.5) 0%, rgba(168, 85, 247, 0.3) 50%, transparent 70%)'
-                                }}
-                              ></div>
-                              {/* Secondary glow with delayed animation */}
-                              <div 
-                                className="absolute inset-0 rounded-full blur-3xl opacity-60 animate-pulse"
-                                style={{
-                                  background: 'radial-gradient(ellipse at center, rgba(34, 211, 238, 0.4) 0%, rgba(147, 51, 234, 0.2) 50%, transparent 70%)',
-                                  animationDelay: '1s',
-                                  animationDuration: '3s'
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Character Name with Search and Region Toggle */}
-                      <div className="space-y-2">
-                        <Label htmlFor="name" className="font-maplestory text-white">Character Name</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            id="name"
-                            value={characterName}
-                            onChange={(e) => setCharacterName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !isSearching) {
-                                searchCharacter();
-                              }
-                            }}
-                            placeholder="Enter your name..."
-                            className="font-maplestory bg-slate-800/60 text-white border-white/20 placeholder:text-white/40 flex-1 h-10"
-                          />
-                          {/* Region Toggle */}
-                          <div className="flex items-center gap-0.5 bg-white/10 p-0.5 rounded-lg border border-white/20 h-10">
-                            <button
-                              onClick={() => setSelectedRegion('north-america')}
-                              className={`px-3 h-9 rounded-md font-maplestory text-xs font-semibold transition-all ${
-                                selectedRegion === 'north-america'
-                                  ? 'bg-white text-black shadow-md'
-                                  : 'text-white/70 hover:text-white hover:bg-white/10'
-                              }`}
-                              title="North America"
-                            >
-                              US
-                            </button>
-                            <button
-                              onClick={() => setSelectedRegion('europe')}
-                              className={`px-3 h-9 rounded-md font-maplestory text-xs font-semibold transition-all ${
-                                selectedRegion === 'europe'
-                                  ? 'bg-white text-black shadow-md'
-                                  : 'text-white/70 hover:text-white hover:bg-white/10'
-                              }`}
-                              title="Europe"
-                            >
-                              EU
-                            </button>
-                          </div>
-                          <Button
-                            onClick={searchCharacter}
-                            disabled={!characterName.trim() || isSearching}
-                            className="font-maplestory h-10"
-                            variant="secondary"
-                          >
-                            {isSearching ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Searching...
-                              </>
-                            ) : (
-                              <>
-                                <Search className="h-4 w-4 mr-2" />
-                                Search
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        <p className="text-xs text-white/70 font-maplestory">
-                          Auto-lookup from Nexon Rankings
-                        </p>
-                      </div>
-
-                      {/* Job Class Selector */}
-                      <div className="space-y-2">
-                        <Label htmlFor="job" className="font-maplestory text-white">Job Class</Label>
-                        <CategorizedSelect
-                          categories={classCategories}
-                          value={selectedJob}
-                          onValueChange={setSelectedJob}
-                          placeholder="Select your job..."
-                          className="bg-slate-800/60 border-white/20 text-white"
-                          variant="dark"
+                    {/* Sprite preview */}
+                    {fetchedCharacterImage && (
+                      <div className="flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <img
+                          src={fetchedCharacterImage}
+                          alt={characterName}
+                          className="max-h-48 sm:max-h-64 object-contain drop-shadow-2xl"
+                          style={{ filter: 'drop-shadow(0 10px 30px rgba(0,0,0,0.5)) drop-shadow(0 0 20px rgba(100,200,255,0.3))' }}
+                          onError={(e) => { e.currentTarget.src = './characters/maple-admin.png'; }}
                         />
                       </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </StepContent>
-            )}
+                    )}
 
-            {/* Step 2+: Equipment Steps */}
-            {currentStep > 1 && currentStep <= EQUIPMENT_STEPS.length + 1 && (
-              <EquipmentStepLayout equipment={equipment}>
-                {(() => {
-                  const equipmentStep = EQUIPMENT_STEPS[currentStep - 2];
-                  return (
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground font-maplestory mb-1">
-                          {equipmentStep.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground font-maplestory">
-                          Select equipment for: {equipmentStep.slots.join(', ')}
-                        </p>
+                    {/* Name input */}
+                    <div className="space-y-2">
+                      <Label htmlFor="name" className="font-maplestory text-white">Character Name</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="name"
+                          value={characterName}
+                          onChange={(e) => { setCharacterName(e.target.value); setSearchStatus('idle'); }}
+                          onKeyDown={(e) => { if (e.key === 'Enter' && !isSearching) searchCharacter(); }}
+                          placeholder="Enter your IGN..."
+                          className="font-maplestory bg-slate-800/60 text-white border-white/20 placeholder:text-white/40 flex-1 h-10"
+                        />
+                        {/* Region toggle */}
+                        <div className="flex items-center gap-0.5 bg-white/10 p-0.5 rounded-lg border border-white/20 h-10 shrink-0">
+                          {(['north-america', 'europe'] as Region[]).map(r => (
+                            <button
+                              key={r}
+                              onClick={() => setSelectedRegion(r)}
+                              className={`px-2.5 h-9 rounded-md font-maplestory text-xs font-semibold transition-all ${
+                                selectedRegion === r ? 'bg-white text-black shadow-md' : 'text-white/70 hover:text-white hover:bg-white/10'
+                              }`}
+                            >
+                              {r === 'north-america' ? 'US' : 'EU'}
+                            </button>
+                          ))}
+                        </div>
+                        <Button
+                          onClick={searchCharacter}
+                          disabled={!characterName.trim() || isSearching}
+                          className="font-maplestory h-10 shrink-0"
+                          variant="secondary"
+                        >
+                          {isSearching
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Search className="h-4 w-4" />
+                          }
+                        </Button>
                       </div>
-
-                      {/* Item Carousels for each slot */}
-                      <div className="space-y-4">
-                        {equipmentStep.slots.map(slot => (
-                          <ItemCarousel
-                            key={slot}
-                            slot={slot}
-                            slotLabel={slot.charAt(0).toUpperCase() + slot.slice(1)}
-                            selectedItem={selectedItems[slot]}
-                            onSelectItem={(item) => handleSelectItem(slot, item)}
-                            job={selectedJob}
-                            currentStarForce={currentStarForces[slot] ?? 0}
-                            onCurrentStarForceChange={(stars) => handleCurrentStarForceChange(slot, stars)}
-                          />
-                        ))}
-                      </div>
+                      <p className="text-xs text-white/50 font-maplestory">
+                        {searchStatus === 'found' && '✓ Found on MapleRanks — level & sprite loaded'}
+                        {searchStatus === 'not-found' && 'Not found on MapleRanks — you can still continue manually'}
+                        {searchStatus === 'idle' && 'Auto-lookup from MapleRanks'}
+                      </p>
                     </div>
-                  );
-                })()}
-              </EquipmentStepLayout>
-            )}
-          </StepWizard>
-        )}
+
+                    {/* AI Calling Card toggle */}
+                    <div className="flex items-center justify-between rounded-lg border border-white/15 bg-white/5 px-3 py-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-yellow-400" />
+                        <div>
+                          <p className="text-sm font-medium text-white font-maplestory">AI Calling Card</p>
+                          <p className="text-xs text-white/50 font-maplestory">Generate an AI image for this character</p>
+                        </div>
+                      </div>
+                      <Switch checked={enableCallingCard} onCheckedChange={setEnableCallingCard} />
+                    </div>
+
+                  </CardContent>
+                </Card>
+              </div>
+            </StepContent>
+          )}
+
+          {/* ── Step 2: Job selection ── */}
+          {currentStep === 2 && (
+            <Card className="max-w-lg mx-auto bg-card/20 backdrop-blur-md border-white/20">
+              <CardContent className="p-4 space-y-3">
+                {/* Search box */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search class..."
+                    value={jobSearch}
+                    onChange={(e) => setJobSearch(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  />
+                  {jobSearch && (
+                    <button
+                      onClick={() => setJobSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Categorized job list */}
+                <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+                  {categories.map(([categoryName, categoryData]) => {
+                    const allJobs = Object.values(categoryData as Record<string, string | string[]>)
+                      .flat()
+                      .filter((job): job is string => typeof job === 'string' && job !== categoryName);
+
+                    const visibleJobs = jobSearch.trim()
+                      ? allJobs.filter(j => j.toLowerCase().includes(jobSearch.toLowerCase()))
+                      : allJobs;
+
+                    if (visibleJobs.length === 0) return null;
+
+                    return (
+                      <div key={categoryName}>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                          {categoryName}
+                        </p>
+                        <div className="space-y-1">
+                          {visibleJobs.map((job) => {
+                            const JobIcon = getJobIcon(job);
+                            const jobColors = getJobColors(job);
+                            return (
+                              <Button
+                                key={job}
+                                variant="outline"
+                                className={`w-full justify-start border h-10 transition-all ${
+                                  selectedJob === job
+                                    ? 'border-primary/60 bg-primary/15 text-white'
+                                    : 'border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40'
+                                }`}
+                                onClick={() => handleJobSelect(job)}
+                              >
+                                <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center mr-3 shrink-0`}>
+                                  <JobIcon className="w-3 h-3 text-white" />
+                                </div>
+                                <span className="text-sm">{job}</span>
+                              </Button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Steps 3+: Equipment ── */}
+          {currentStep > 2 && currentStep <= EQUIPMENT_STEPS.length + 2 && (
+            <EquipmentStepLayout equipment={equipment}>
+              {(() => {
+                const equipmentStep = EQUIPMENT_STEPS[currentStep - 3];
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-4">
+                      {equipmentStep.slots.map(slot => (
+                        <ItemCarousel
+                          key={slot}
+                          slot={slot}
+                          slotLabel={slot.charAt(0).toUpperCase() + slot.slice(1)}
+                          selectedItem={selectedItems[slot]}
+                          onSelectItem={(item) => handleSelectItem(slot, item)}
+                          job={selectedJob}
+                          currentStarForce={currentStarForces[slot] ?? 0}
+                          onCurrentStarForceChange={(stars) => handleCurrentStarForceChange(slot, stars)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </EquipmentStepLayout>
+          )}
+        </StepWizard>
       </div>
     </div>
   );

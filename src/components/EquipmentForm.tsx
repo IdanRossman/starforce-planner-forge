@@ -787,7 +787,7 @@ export function EquipmentForm({
         }
         bottomLeftActions={undefined}
       >
-        <div className="space-y-4 p-6 max-h-[calc(90vh-200px)] overflow-y-auto w-full">
+        <div className="space-y-4 p-3 sm:p-6 max-h-[calc(90vh-200px)] overflow-y-auto w-full">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold font-maplestory text-black mb-2">
               {isEditing ? 'Edit Equipment' : 'Add Equipment'}

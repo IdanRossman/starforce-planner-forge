@@ -1,6 +1,6 @@
 import React from 'react';
-import { Settings, Sparkles, Loader2, Info } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Settings, Sparkles, Info } from 'lucide-react';
+import { Card, CardContent } from '../ui/card';
 import { Switch } from '../ui/switch';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
@@ -38,16 +38,10 @@ export function PotentialCalculatorSettings({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 font-maplestory">
-          <Settings className="w-5 h-5 text-primary" />
-          Potential Enhancement Settings
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Enhancement Settings */}
+      <CardContent className="space-y-4 pt-4">
         <div>
-          <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">
+          <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory flex items-center gap-2">
+            <Settings className="w-4 h-4" />
             Calculation Options
           </h4>
           <div className="grid grid-cols-1 gap-4">

@@ -2,11 +2,13 @@ import { useMemo } from "react";
 import { Equipment } from "@/types";
 import { PotentialBulkItemResult } from "@/services/potentialService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { PotentialTableHeader } from "./PotentialTableHeader";
 import { PotentialTableContent } from "./PotentialTableContent";
-import { Zap, AlertCircle } from "lucide-react";
+import { PotentialMobileCard } from "./PotentialTableRow";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Zap } from "lucide-react";
 
 interface PotentialCalculatorTableProps {
   equipment: Equipment[];
@@ -37,24 +39,18 @@ export function PotentialCalculatorTable({
   smartOptimizationEnabled = false,
   resetUserModifications = 0
 }: PotentialCalculatorTableProps) {
-  // Filter equipment that has potential configuration and current != target (show only incomplete)
+  const isMobile = useIsMobile();
+
   const potentialEquipment = useMemo(() => {
     const allEquipment = [...equipment, ...additionalEquipment];
     return allEquipment.filter(eq => {
-      // Must have at least one potential value set
       const hasCurrentPotential = eq.currentPotentialValue && eq.currentPotentialValue.trim() !== '';
       const hasTargetPotential = eq.targetPotentialValue && eq.targetPotentialValue.trim() !== '';
-      
-      if (!hasCurrentPotential && !hasTargetPotential) {
-        return false; // No potential values set
-      }
-      
-      // Show only if current != target (incomplete goals)
+      if (!hasCurrentPotential && !hasTargetPotential) return false;
       return eq.currentPotentialValue !== eq.targetPotentialValue;
     });
   }, [equipment, additionalEquipment]);
 
-  // Show message if no potential equipment
   if (potentialEquipment.length === 0) {
     return (
       <Card>
@@ -69,22 +65,50 @@ export function PotentialCalculatorTable({
     );
   }
 
+  const cardHeader = (
+    <CardHeader className="pb-4">
+      <CardTitle className="flex items-center gap-2 font-maplestory">
+        <Zap className="w-5 h-5 text-purple-500" />
+        {isMobile ? 'Potential' : 'Potential Enhancement Calculations'}
+        <Badge variant="secondary" className="ml-2 font-maplestory bg-purple-500/20 text-purple-600">
+          {potentialEquipment.length} item{potentialEquipment.length !== 1 ? 's' : ''}
+        </Badge>
+        {isCalculating && (
+          <Badge variant="secondary" className="ml-2 font-maplestory bg-blue-500/20 text-blue-600 animate-pulse">
+            Calculating...
+          </Badge>
+        )}
+      </CardTitle>
+    </CardHeader>
+  );
+
+  if (isMobile) {
+    return (
+      <Card>
+        {cardHeader}
+        <CardContent className="p-3 space-y-2">
+          {potentialEquipment.map(item => (
+            <PotentialMobileCard
+              key={item.id}
+              equipment={item}
+              calculation={calculationResults.get(item.name)}
+              isCalculating={isCalculating}
+              onUpdateCubeType={onUpdateCubeType}
+              onUpdatePotential={onUpdatePotential}
+              isItemIncluded={isItemIncluded}
+              toggleItemIncluded={toggleItemIncluded}
+              smartOptimizationEnabled={smartOptimizationEnabled}
+              resetUserModifications={resetUserModifications}
+            />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
-      <CardHeader className="pb-4">
-        <CardTitle className="flex items-center gap-2 font-maplestory">
-          <Zap className="w-5 h-5 text-purple-500" />
-          Potential Enhancement Calculations
-          <Badge variant="secondary" className="ml-2 font-maplestory bg-purple-500/20 text-purple-600">
-            {potentialEquipment.length} item{potentialEquipment.length !== 1 ? 's' : ''}
-          </Badge>
-          {isCalculating && (
-            <Badge variant="secondary" className="ml-2 font-maplestory bg-blue-500/20 text-blue-600 animate-pulse">
-              Calculating...
-            </Badge>
-          )}
-        </CardTitle>
-      </CardHeader>
+      {cardHeader}
       <CardContent className="p-0">
         <div className="rounded-md border border-border overflow-hidden">
           <Table>

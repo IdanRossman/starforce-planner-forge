@@ -8,6 +8,7 @@ import './simple-nav.css';
 interface NavItem {
   label: string;
   href: string;
+  icon?: React.ComponentType<{ className?: string }>;
 }
 
 interface SimpleNavProps {
@@ -34,17 +35,24 @@ export default function SimpleNav({
           {logoIcon || <Star className="simple-nav-icon" />}
           <span className="simple-nav-brand-text">{brandText}</span>
         </Link>
-        
+
         <div className="simple-nav-links">
-          {items.map((item) => (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={`simple-nav-link ${activeHref === item.href ? 'active' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {items.map((item) => {
+            const isActive = activeHref === item.href;
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                className={`simple-nav-link ${isActive ? 'active' : ''}`}
+                aria-label={item.label}
+              >
+                {/* Icon — shown on mobile only */}
+                {item.icon && <item.icon className="simple-nav-link-icon" />}
+                {/* Label — shown on desktop only */}
+                <span className="simple-nav-link-text">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="simple-nav-divider" />

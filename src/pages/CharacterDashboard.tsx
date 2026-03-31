@@ -10,6 +10,7 @@ import { trackCharacterCreation, trackCharacterDeletion } from "@/lib/analytics"
 import { useToast } from "@/hooks/use-toast";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { useEquipment, useCharacter } from "@/hooks";
+import { useAuth } from "@/contexts/AuthContext";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 import { apiService } from "@/services/api";
 import { getJobColors } from "@/lib/jobIcons";
@@ -40,6 +41,7 @@ function getCardUrl(hash: string | null | undefined): string | null {
 export default function CharacterDashboard() {
   const navigate = useNavigate();
 
+  const { user } = useAuth();
   const { selectedCharacter, characters, updateCharacter: ctxUpdateCharacter } = useCharacterContext();
   const {
     createCharacter,
@@ -62,6 +64,7 @@ export default function CharacterDashboard() {
   // Calling card regeneration state
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+
   const { toast: toastHook } = useToast();
 
   // Fetch sprite on character change
@@ -75,9 +78,9 @@ export default function CharacterDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCharacter?.id, selectedCharacter?.name]);
 
-  // Poll for calling card if not yet generated
+  // Poll for calling card if not yet generated (only if user opted in)
   useEffect(() => {
-    if (!selectedCharacter || selectedCharacter.callingCardHash) return;
+    if (!selectedCharacter || selectedCharacter.callingCardHash || !selectedCharacter.enableCallingCard) return;
     const interval = setInterval(async () => {
       try {
         const card = await apiService.getCallingCard(selectedCharacter.id);
@@ -120,12 +123,27 @@ export default function CharacterDashboard() {
     }
   };
 
-  const handleCreateCharacter = (newCharacter: Character) => {
+  const handleCreateCharacter = async (newCharacter: Omit<Character, 'id'>) => {
     if (editingCharacter) {
       updateCharacter(editingCharacter.id, newCharacter);
       toastHook({ title: "Character Updated", description: `${newCharacter.name} has been updated!` });
     } else {
-      createCharacter(newCharacter);
+      if (user) {
+        try {
+          const created = await apiService.createCharacter({
+            userId: user.id,
+            name: newCharacter.name,
+            job: newCharacter.class,
+            level: newCharacter.level,
+            enableCallingCard: newCharacter.enableCallingCard ?? false,
+          });
+          createCharacter(newCharacter, created.id);
+        } catch {
+          createCharacter(newCharacter);
+        }
+      } else {
+        createCharacter(newCharacter);
+      }
       trackCharacterCreation(newCharacter.class, newCharacter.name);
       toastHook({ title: "Character Created", description: `${newCharacter.name} has been added!` });
     }
@@ -167,9 +185,46 @@ export default function CharacterDashboard() {
   return (
     <div className="max-w-[1600px] mx-auto w-full px-6 pt-4 pb-10 relative">
 
-      {/* ── Narrow character sidebar ── */}
+      {/* ── Mobile character strip (shown on small screens) ── */}
+      <div className="flex md:hidden gap-2 overflow-x-auto pb-3 mb-2 px-1 -mx-1 scrollbar-none">
+        {sortedChars.map(char => {
+          const isSelected = selectedCharacter?.id === char.id;
+          const thumbUrl = getCardUrl(char.callingCardHash);
+          const colors = getJobColors(char.class ?? '');
+          return (
+            <button
+              key={char.id}
+              onClick={() => selectCharacter(char.id)}
+              className={`relative w-11 h-11 rounded-full overflow-hidden shrink-0 transition-all duration-200 ${
+                isSelected
+                  ? 'ring-2 ring-primary shadow-md shadow-primary/30'
+                  : 'ring-1 ring-white/10 opacity-60 hover:opacity-100'
+              }`}
+            >
+              {thumbUrl ? (
+                <img src={thumbUrl} alt={char.name} className="w-full h-full object-cover object-top" />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${colors.bg} flex items-center justify-center`}>
+                  <span className="text-[10px] text-white font-bold">{char.name[0]}</span>
+                </div>
+              )}
+              {isSelected && <div className="absolute bottom-0 inset-x-0 h-0.5 bg-primary" />}
+            </button>
+          );
+        })}
+        {characters.length < 6 && (
+          <button
+            onClick={() => navigate('/character/new')}
+            className="w-11 h-11 rounded-full border border-dashed border-white/20 hover:border-white/40 hover:bg-white/5 flex items-center justify-center text-white/30 hover:text-white/60 transition-all shrink-0"
+          >
+            <Plus className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* ── Narrow character sidebar (desktop only) ── */}
       <TooltipProvider>
-        <div className="fixed top-24 -ml-[4.5rem] w-14 flex flex-col items-center gap-2 py-3 px-2 z-30 bg-card/15 backdrop-blur-[20px] border border-border/20 rounded-2xl shadow-md">
+        <div className="hidden md:flex fixed top-24 -ml-[4.5rem] w-14 flex-col items-center gap-2 py-3 px-2 z-30 bg-card/15 backdrop-blur-[20px] border border-border/20 rounded-2xl shadow-md">
           {sortedChars.map(char => {
             const isSelected = selectedCharacter?.id === char.id;
             const thumbUrl = getCardUrl(char.callingCardHash);
@@ -271,9 +326,10 @@ export default function CharacterDashboard() {
             characterImage={characterSprite ?? undefined}
             callingCardHash={selectedCharacter.callingCardHash}
             characterLevel={selectedCharacter.level}
+            enableCallingCard={selectedCharacter.enableCallingCard ?? false}
             isRegeneratingCard={isRegenerating}
             remainingGenerations={remaining}
-            onRegenerateCard={handleRegenerate}
+            onRegenerateCard={selectedCharacter.enableCallingCard ? handleRegenerate : undefined}
             onEditCharacter={() => { setEditingCharacter(selectedCharacter); setCharacterFormOpen(true); }}
             onDeleteCharacter={() => setDeleteConfirmId(selectedCharacter.id)}
           />

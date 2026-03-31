@@ -148,6 +148,78 @@ export const getClassSubcategory = (className: string): string => {
   return 'Other'; // fallback for unknown classes
 };
 
+// Job placeholder images — add entries as official art becomes available
+// Filename convention: /characters/{nexon-filename}.png
+export const JOB_PLACEHOLDER_IMAGES: Partial<Record<string, string>> = {
+  // Explorers
+  'Hero':               '/characters/250723-ms-classesjobs-update-hero-395x400-v3.png',
+  'Paladin':            '/characters/250723-ms-classesjobs-update-paladin-395x400-1.png',
+  'Dark Knight':        '/characters/250723-darkknight-classesjobs-update-hero-395x400-v3.png',
+  'Fire/Poison Mage':   '/characters/250723-archmage-fp-classesjobs-update-hero-395x400-v3.png',
+  'Ice/Lightning Mage': '/characters/250723-ms-classesjobs-update-arch-mage-il-395x400.png',
+  'Bishop':             '/characters/250723-bishop-classesjobs-update-hero-395x400-v3.png',
+  'Bowmaster':          '/characters/250723-bowmaster-classesjobs-update-hero-395x400-v3.png',
+  'Marksman':           '/characters/250723-ms-classesjobs-update-marksman-395x400.png',
+  'Pathfinder':         '/characters/250723-ms-classesjobs-update-pathfinder-395x400.png',
+  'Night Lord':         '/characters/250723-ms-classesjobs-update-nightlord-395x400.png',
+  'Shadower':           '/characters/250723-ms-classesjobs-update-shadower-395x400.png',
+  'Dual Blade':         '/characters/250723-ms-classesjobs-update-dualblade-395x400.png',
+  'Buccaneer':          '/characters/250723-buccaneer-classesjobs-update-hero-395x400-v3.png',
+  'Corsair':            '/characters/250723-ms-classesjobs-update-corsair-395x400.png',
+  'Cannon Master':      '/characters/250723-cannoneer-classesjobs-update-hero-395x400-v3.png',
+  // Cygnus Knights
+  'Dawn Warrior':       '/characters/250723-ms-classesjobs-update-dawnwarrior-395x400.png',
+  'Blaze Wizard':       '/characters/250723-ms-classesjobs-update-blazewizard-395x400.png',
+  'Wind Archer':        '/characters/250723-ms-classesjobs-update-windarcher-395x400.png',
+  'Night Walker':       '/characters/250723-ms-classesjobs-update-nightwalker-395x400.png',
+  'Thunder Breaker':    '/characters/250723-ms-classesjobs-update-thunderbreaker-395x400.png',
+  'Mihile':             '/characters/250723-ms-classesjobs-update-mihile-395x400.png',
+  // Heroes
+  'Aran':               '/characters/aran_img_v255.png',
+  'Evan':               '/characters/250723-evan-classesjobs-update-hero-395x400-v3.png',
+  'Mercedes':           '/characters/250723-ms-classesjobs-update-mercedes-395x400.png',
+  'Phantom':            '/characters/250723-ms-classesjobs-update-phantom-395x400.png',
+  'Luminous':           '/characters/250723-luminous-classesjobs-update-hero-395x400-v3.png',
+  'Shade':              '/characters/shade_img_v255.png',
+  // Resistance
+  'Blaster':            '/characters/250723-blaster-classesjobs-update-hero-395x400-v3.png',
+  'Battle Mage':        '/characters/250723-battlemage-classesjobs-update-hero-395x400-v3.png',
+  'Wild Hunter':        '/characters/wild_hunter_v267_395x400.png',
+  'Mechanic':           '/characters/250723-ms-classesjobs-update-mechanic-395x400.png',
+  'Xenon':              '/characters/250723-xenon-classesjobs-update-hero-395x400-v3.png',
+  'Demon Slayer':       '/characters/250723-ms-classesjobs-update-demonslayer-395x400.png',
+  'Demon Avenger':      '/characters/250723-ms-classesjobs-update-demonavenger-395x400.png',
+  // Nova
+  'Kaiser':             '/characters/250723-ms-classesjobs-update-kaiser-395x400.png',
+  'Angelic Buster':     '/characters/angelic-buster-img-v251.png',
+  'Cadena':             '/characters/250723-ms-classesjobs-update-cadena-395x400.png',
+  'Kain':               '/characters/250723-ms-classesjobs-update-kain-395x400.png',
+  // Flora
+  'Illium':             '/characters/250723-illium-classesjobs-update-hero-395x400-v3.png',
+  'Ark':                '/characters/250723-ms-classesjobs-update-ark-395x400.png',
+  'Adele':              '/characters/250723-ms-classesjobs-update-adele-395x400.png',
+  'Khali':              '/characters/250723-ms-classesjobs-update-khali-395x400.png',
+  // Sengoku
+  'Hayato':             '/characters/v266-hayato-395x400.png',
+  'Kanna':              '/characters/v266-kanna-395x400.png',
+  // Jianghu
+  'Lynn':               '/characters/lynn.png',
+  'Mo Xuan':            '/characters/mo-xuan-img.png',
+  // Anima
+  'Hoyoung':            '/characters/250723-hoyoung-classesjobs-update-hero-395x400-v3.png',
+  'Lara':               '/characters/250723-lara-classesjobs-update-hero-395x400-v3.png',
+  'Ren':                '/characters/251105_ms_ren_characterthumbnail_fullcolor_395x400.png',
+  // Shine
+  'Sia':                '/characters/sia_astelle_v267_395x400.png',
+  // Transcendent
+  'Zero':               '/characters/250723-ms-classesjobs-update-zero-395x400.png',
+  // Friends World
+  'Kinesis':            '/characters/250723-ms-classesjobs-update-kinesis-395x400.png',
+};
+
+export const getJobPlaceholderImage = (className: string): string | null =>
+  JOB_PLACEHOLDER_IMAGES[className] ?? null;
+
 // Get job icon component
 export const getJobIcon = (className: string) => {
   const category = getJobCategory(className);

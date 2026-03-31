@@ -8,8 +8,9 @@ import { MapleDialog, MapleButton } from '@/components/shared';
 import { FormFieldWrapper, CategorizedSelect, SelectCategory } from '@/components/shared/forms';
 import { MapleInput } from '@/components/shared/forms/MapleInput';
 import { Badge } from '@/components/ui/badge';
-import { 
+import {
   ArrowRight,
+  ArrowDown,
   AlertTriangle,
   Info,
   Star
@@ -189,7 +190,7 @@ export function StarForceTransferDialog({
       opacity={opacity}
       transform={transform}
       position="center"
-      minWidth="800px"
+      minWidth="600px"
       className="max-w-6xl"
       onClose={() => onOpenChange(false)}
       bottomRightActions={
@@ -204,7 +205,7 @@ export function StarForceTransferDialog({
       }
       bottomLeftActions={undefined}
     >
-      <div className="max-w-2xl mx-auto space-y-6 p-6">
+      <div className="max-w-2xl mx-auto space-y-4 p-3 sm:p-6">
         {/* Header Section */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -274,38 +275,39 @@ export function StarForceTransferDialog({
                 <span className="font-semibold text-green-900 font-maplestory">Transfer Preview</span>
               </div>
               
-              {/* Equipment Preview with Images - Full Width */}
-              <div className="flex items-center justify-between mb-6">
+              {/* Equipment Preview with Images */}
+              <div className="flex flex-col sm:flex-row items-center justify-between mb-4 gap-3 sm:gap-0">
                 {/* Source Equipment */}
-                <div className="flex flex-col items-center gap-3 flex-1">
-                  <EquipmentImage 
-                    src={targetEquipment.image} 
+                <div className="flex sm:flex-col items-center gap-3 flex-1">
+                  <EquipmentImage
+                    src={targetEquipment.image}
                     alt={targetEquipment.name || `Equipment ${targetEquipment.id}`}
                     size="lg"
                     fallbackIcon={getSlotIcon(targetEquipment.slot)}
                   />
-                  <div className="text-center max-w-[200px]">
+                  <div className="text-left sm:text-center">
                     <div className="text-blue-700 font-maplestory text-sm">{targetEquipment.name}</div>
                     <div className="text-gray-600 text-xs font-maplestory">{targetEquipment.currentStarForce}★ → {targetEquipment.targetStarForce}★</div>
                   </div>
                 </div>
-                
-                {/* Arrow */}
-                <div className="flex-shrink-0 mx-6">
-                  <ArrowRight className="w-8 h-8 text-green-600" />
+
+                {/* Arrow — horizontal on sm+, vertical on mobile */}
+                <div className="flex-shrink-0 sm:mx-6">
+                  <ArrowRight className="hidden sm:block w-8 h-8 text-green-600" />
+                  <ArrowDown className="sm:hidden w-6 h-6 text-green-600" />
                 </div>
-                
+
                 {/* Target Equipment */}
-                <div className="flex flex-col items-center gap-3 flex-1">
+                <div className="flex sm:flex-col items-center gap-3 flex-1">
                   {selectedTargetEquipment ? (
                     <>
-                      <EquipmentImage 
-                        src={selectedTargetEquipment.image} 
+                      <EquipmentImage
+                        src={selectedTargetEquipment.image}
                         alt={selectedTargetEquipment.name || `Equipment ${selectedTargetEquipment.id}`}
                         size="lg"
                         fallbackIcon={getSlotIcon(selectedTargetEquipment.slot)}
                       />
-                      <div className="text-center max-w-[200px]">
+                      <div className="text-left sm:text-center">
                         <div className="text-blue-700 font-maplestory text-sm">{selectedTargetEquipment.name}</div>
                         <div className="text-gray-600 text-xs font-maplestory">
                           {transferPreview?.transferredStars || 0}★ → {form.watch('targetTargetStarForce') || 0}★
@@ -314,10 +316,10 @@ export function StarForceTransferDialog({
                     </>
                   ) : (
                     <>
-                      <div className="w-16 h-16 bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center">
+                      <div className="w-16 h-16 bg-gray-200 border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center shrink-0">
                         <span className="text-gray-500 text-xs font-maplestory">Select</span>
                       </div>
-                      <div className="text-center max-w-[200px]">
+                      <div className="text-left sm:text-center">
                         <div className="text-gray-400 font-maplestory text-sm">Target Equipment</div>
                         <div className="text-gray-400 text-xs font-maplestory">Select equipment above</div>
                       </div>

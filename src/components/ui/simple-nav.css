@@ -90,7 +90,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.375rem;
+  padding: 0.5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   background: transparent;
   border: none;
   border-radius: 0.375rem;
@@ -112,13 +114,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 9999px;
   background: hsl(var(--primary) / 0.2);
   border: 1px solid hsl(var(--primary) / 0.4);
   color: hsl(var(--primary));
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -186,6 +188,19 @@
   animation: shine 3s linear infinite;
 }
 
+/* Icon shown inside nav links — hidden on desktop, shown on mobile */
+.simple-nav-link-icon {
+  display: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+}
+
+/* Text label shown on desktop, hidden on mobile */
+.simple-nav-link-text {
+  display: inline;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
   .simple-nav-wrapper {
@@ -227,21 +242,55 @@
 
   .simple-nav-clear-btn {
     padding: 0.375rem;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
   }
 }
 
 @media (max-width: 480px) {
+  .simple-nav-wrapper {
+    max-width: calc(100% - 2rem);
+    width: calc(100% - 2rem);
+  }
+
   .simple-nav-island {
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
+    width: 100%;
+    justify-content: space-evenly;
   }
 
-  .simple-nav-brand-text {
-    display: none; /* Hide brand text on very small screens */
+  .simple-nav-brand {
+    display: none;
   }
 
+  .simple-nav-links {
+    gap: 1.5rem;
+  }
+
+  /* Show icon, hide text label */
+  .simple-nav-link-icon {
+    display: block;
+  }
+
+  .simple-nav-link-text {
+    display: none;
+  }
+
+  /* Tighter link padding for icon-only mode */
   .simple-nav-link {
-    padding: 0.375rem 0.625rem;
-    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+
+  /* Active state: icon-only — override gradient text which doesn't apply to SVG */
+  .simple-nav-link.active {
+    background: hsl(var(--primary) / 0.15);
+    -webkit-text-fill-color: unset;
+    color: hsl(var(--primary));
+    animation: none;
+  }
+
+  .simple-nav-link.active .simple-nav-link-icon {
+    color: hsl(var(--primary));
   }
 }

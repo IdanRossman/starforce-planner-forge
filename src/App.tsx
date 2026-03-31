@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
+import { Home, Calculator, Users } from "lucide-react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
 import { SiCurseforge } from 'react-icons/si';
@@ -58,9 +59,9 @@ function AppContent() {
   }, [location.pathname]);
 
   const navItems = [
-    { label: 'Home', href: '/' },
-    { label: 'Quick Planning', href: '/quick-planning' },
-    { label: 'Characters', href: '/characters' }
+    { label: 'Home', href: '/', icon: Home },
+    { label: 'Quick Planning', href: '/quick-planning', icon: Calculator },
+    { label: 'Characters', href: '/characters', icon: Users }
   ];
 
   const pageVariants = {
@@ -95,7 +96,7 @@ function AppContent() {
       zoom={0.9}
       enableMovement={false}
     >
-      <div className={`w-full relative z-50 ${isHomepage || isQuickPlanning ? 'h-screen overflow-hidden' : 'min-h-screen overflow-hidden'}`}>
+      <div className={`w-full relative z-50 ${isQuickPlanning ? 'h-screen overflow-hidden' : 'min-h-screen overflow-x-hidden'}`}>
         {/* Simple Clean Navigation */}
         <SimpleNav
           items={navItems}
@@ -105,7 +106,7 @@ function AppContent() {
         />
         
         {/* Main Content */}
-        <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-16 min-h-screen relative z-50"}>
+        <main className={isHomepage ? "" : isQuickPlanning ? "pt-24 h-screen overflow-hidden relative z-50" : "pt-24 pb-24 min-h-screen relative z-50"}>
           <AnimatePresence mode="wait" custom={direction}>
             <Routes location={location} key={location.pathname}>
               <Route path="/auth" element={

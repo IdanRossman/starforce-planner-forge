@@ -34,6 +34,9 @@ export default function VantaWaves({
   const vantaEffect = useRef<any>(null);
 
   useEffect(() => {
+    // Skip Vanta on mobile — too heavy for mid-range devices
+    if (window.matchMedia('(max-width: 767px)').matches) return;
+
     if (!vantaEffect.current && vantaRef.current) {
       // Wait for VANTA to load
       const initVanta = () => {

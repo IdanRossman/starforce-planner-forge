@@ -83,22 +83,16 @@ export function StepWizard({
           </Button>
 
           {/* Progress Indicator */}
-          <div className="flex items-center gap-2">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className={`
-                  w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all
-                  ${currentStep === index ? 'bg-primary text-primary-foreground scale-110' : 
-                    currentStep > index ? 'bg-primary/50 text-primary-foreground' : 
-                    'bg-muted text-muted-foreground'}
-                `}>
-                  {index + 1}
-                </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-12 h-1 mx-2 transition-all ${currentStep > index ? 'bg-primary' : 'bg-muted'}`} />
-                )}
-              </div>
-            ))}
+          <div className="flex flex-col items-center gap-1.5 min-w-0 flex-1 mx-3">
+            <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
+              />
+            </div>
+            <span className="text-xs text-muted-foreground font-maplestory whitespace-nowrap">
+              {steps[currentStep]?.title} · {currentStep + 1} / {steps.length}
+            </span>
           </div>
 
           {/* Next/Finish Button */}

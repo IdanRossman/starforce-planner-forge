@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Equipment } from "@/types";
 import { 
   useStarForceCalculation,
@@ -49,6 +50,8 @@ export function StarForceCalculator({
   characterId: propCharacterId, // Use prop or context
   characterName: propCharacterName
 }: StarForceCalculatorProps) {
+  const isMobile = useIsMobile();
+
   // Get character data from context
   const selectedCharacter = useSelectedCharacter();
   const contextEquipment = useSelectedCharacterEquipment();
@@ -345,14 +348,16 @@ export function StarForceCalculator({
                   />
                   <Label htmlFor="star-catching" className="text-sm cursor-pointer font-maplestory">Star Catching</Label>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="interactive-server"
-                    checked={enhancedSettings.isInteractive}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
-                  />
-                  <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory">Interactive Server</Label>
-                </div>
+                {!isMobile && (
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="interactive-server"
+                      checked={enhancedSettings.isInteractive}
+                      onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
+                    />
+                    <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory">Interactive Server</Label>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -412,7 +417,7 @@ export function StarForceCalculator({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-maplestory">
                 <Calculator className="w-5 h-5 text-primary" />
-                StarForce Planning Table
+                {isMobile ? 'SF Planning' : 'StarForce Planning Table'}
               </CardTitle>
               <div className="flex items-center gap-2">
                 {hasChanges && (
@@ -439,10 +444,12 @@ export function StarForceCalculator({
                     </div>
                   </Button>
                 )}
-                <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-                  <Download className="w-4 h-4" />
-                  Export
-                </Button>
+                {!isMobile && (
+                  <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
+                    <Download className="w-4 h-4" />
+                    Export
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>

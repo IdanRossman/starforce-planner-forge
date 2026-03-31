@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Equipment } from "@/types";
 import { calculateBulkStarforce } from "@/services/starforceService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,9 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { 
-  Calculator, 
-  Coins, 
+import {
+  Calculator,
+  Coins,
   Target,
   Sword,
   Shield,
@@ -33,6 +33,7 @@ import {
   Star,
   Package
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface QuickStarForceTableProps {
   equipment: Equipment[];
@@ -107,6 +108,8 @@ const getDangerColor = (currentStars: number) => {
 };
 
 export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
+  const isMobile = useIsMobile();
+
   // Event states with global star catching
   const [events, setEvents] = useState<StarForceEvents>({
     thirtyPercentBoomReduction: false,
@@ -249,80 +252,118 @@ export function QuickStarForceTable({ equipment }: QuickStarForceTableProps) {
         </div>
       </div>
 
-      {/* Calculation Table - Simplified with max height and scroll */}
-      <div className="rounded-md border bg-card max-h-[400px] overflow-y-auto">
-        <Table>
-          <TableHeader className="sticky top-0 bg-card z-10">
-            <TableRow>
-              <TableHead className="font-maplestory">Equipment</TableHead>
-              <TableHead className="text-center font-maplestory">Current ★</TableHead>
-              <TableHead className="text-center font-maplestory">Target ★</TableHead>
-              <TableHead className="text-center font-maplestory">Expected Cost</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {calculations.map((calc) => (
-              <TableRow key={calc.equipment.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    {/* Equipment Image or Icon */}
-                    {calc.equipment.image ? (
-                      <EquipmentImage 
-                        src={calc.equipment.image} 
-                        alt={calc.equipment.name || calc.equipment.set || "Equipment"}
-                        size="sm"
-                        className="shrink-0"
-                      />
-                    ) : (
-                      <div className="text-muted-foreground">
-                        {getSlotIcon(calc.equipment.slot)}
-                      </div>
+      {/* Calculation Table / Cards */}
+      {isMobile ? (
+        <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          {calculations.map((calc) => {
+            const name = calc.equipment.name || calc.equipment.set || `Lv.${calc.equipment.level} Equipment`;
+            return (
+              <div key={calc.equipment.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50">
+                <div className="shrink-0">
+                  {calc.equipment.image ? (
+                    <EquipmentImage
+                      src={calc.equipment.image}
+                      alt={name}
+                      size="sm"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 flex items-center justify-center text-muted-foreground">
+                      {getSlotIcon(calc.equipment.slot)}
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm font-maplestory truncate">{name}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {calc.equipment.tier && (
+                      <Badge variant="outline" className={`${getTierColor(calc.equipment.tier)} font-maplestory text-[10px] px-1 py-0 h-4`}>
+                        {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
+                      </Badge>
                     )}
-                    
-                    {/* Equipment Details */}
-                    <div>
-                      <div className="font-medium font-maplestory">
-                        {calc.equipment.name || calc.equipment.set 
-                          ? `${calc.equipment.name || calc.equipment.set}` 
-                          : `Lv.${calc.equipment.level} Equipment`
-                        }
-                      </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        {calc.equipment.tier && (
-                          <Badge variant="outline" className={`${getTierColor(calc.equipment.tier)} font-maplestory`}>
-                            {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
-                          </Badge>
-                        )}
-                        <span className="text-xs text-muted-foreground capitalize font-maplestory">
-                          {calc.equipment.slot}
-                        </span>
+                    <span className="text-[10px] text-muted-foreground font-maplestory">
+                      <span className={getDangerColor(calc.equipment.currentStarForce)}>★{calc.equipment.currentStarForce}</span>
+                      {' → '}
+                      <span className="text-primary">★{calc.equipment.targetStarForce}</span>
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="font-semibold text-sm font-maplestory">{formatMesos(calc.expectedCost)}</p>
+                  <p className="text-[10px] text-muted-foreground font-maplestory">expected</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-md border bg-card max-h-[400px] overflow-y-auto">
+          <Table>
+            <TableHeader className="sticky top-0 bg-card z-10">
+              <TableRow>
+                <TableHead className="font-maplestory">Equipment</TableHead>
+                <TableHead className="text-center font-maplestory">Current ★</TableHead>
+                <TableHead className="text-center font-maplestory">Target ★</TableHead>
+                <TableHead className="text-center font-maplestory">Expected Cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {calculations.map((calc) => (
+                <TableRow key={calc.equipment.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {calc.equipment.image ? (
+                        <EquipmentImage
+                          src={calc.equipment.image}
+                          alt={calc.equipment.name || calc.equipment.set || "Equipment"}
+                          size="sm"
+                          className="shrink-0"
+                        />
+                      ) : (
+                        <div className="text-muted-foreground">
+                          {getSlotIcon(calc.equipment.slot)}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium font-maplestory">
+                          {calc.equipment.name || calc.equipment.set
+                            ? `${calc.equipment.name || calc.equipment.set}`
+                            : `Lv.${calc.equipment.level} Equipment`
+                          }
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          {calc.equipment.tier && (
+                            <Badge variant="outline" className={`${getTierColor(calc.equipment.tier)} font-maplestory`}>
+                              {calc.equipment.tier.charAt(0).toUpperCase() + calc.equipment.tier.slice(1)}
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground capitalize font-maplestory">
+                            {calc.equipment.slot}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TableCell>
-                
-                <TableCell className="text-center">
-                  <Badge variant="outline" className={`${getDangerColor(calc.equipment.currentStarForce)} font-maplestory`}>
-                    ★{calc.equipment.currentStarForce}
-                  </Badge>
-                </TableCell>
-                
-                <TableCell className="text-center">
-                  <Badge variant="outline" className="text-primary font-maplestory">
-                    ★{calc.equipment.targetStarForce}
-                  </Badge>
-                </TableCell>
-                
-                <TableCell className="text-center">
-                  <span className="font-semibold text-foreground font-maplestory">
-                    {formatMesos(calc.expectedCost)}
-                  </span>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className={`${getDangerColor(calc.equipment.currentStarForce)} font-maplestory`}>
+                      ★{calc.equipment.currentStarForce}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant="outline" className="text-primary font-maplestory">
+                      ★{calc.equipment.targetStarForce}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <span className="font-semibold text-foreground font-maplestory">
+                      {formatMesos(calc.expectedCost)}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

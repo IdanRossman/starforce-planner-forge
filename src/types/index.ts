@@ -23,6 +23,7 @@ export interface Character {
   storageItems?: StorageItem[];
   starForceItems?: Equipment[];
   image?: string;
+  enableCallingCard?: boolean;
   callingCardHash?: string | null;
   cardGenerationDate?: string | null;
   cardGenerationCount?: number;

@@ -182,7 +182,7 @@ export function StoragePanel({ characterId, selectedJob, equippedCount }: Storag
 
       {/* Grid */}
       <div className="bg-card/30 rounded-lg border border-border/50 p-2">
-        <div className="grid grid-cols-8 gap-1 max-h-[500px] overflow-y-auto">
+        <div className="grid grid-cols-5 sm:grid-cols-8 gap-1 overflow-y-auto xl:max-h-[600px]">
           {sortedItems.map(item => (
             <StorageSlot
               key={item.id}

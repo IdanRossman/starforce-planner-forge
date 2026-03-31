@@ -96,12 +96,16 @@ export function MapleDialog({
       }}
     >
       {/* Blue outer card (MapleStory style frame) */}
-      <Card 
-        className="shadow-2xl border-4 backdrop-blur-sm relative" 
-        style={{ 
-          borderColor: '#2AA6DA', 
+      <Card
+        className="shadow-2xl border-4 backdrop-blur-sm relative"
+        style={{
+          borderColor: '#2AA6DA',
           backgroundColor: 'rgba(42, 166, 218, 0.9)',
-          minWidth: minWidth
+          minWidth: `min(${minWidth}, calc(100vw - 2rem))`,
+          maxWidth: 'calc(100vw - 2rem)',
+          maxHeight: 'calc(100dvh - 2rem)',
+          overflowY: 'auto',
+          boxSizing: 'border-box',
         }}
       >
         

@@ -131,7 +131,7 @@ class ApiService {
   }
 
   // Character endpoints
-  async createCharacter(data: { userId: string; name: string; job: string; level: number }): Promise<{ id: string; userId: string; name: string; job: string; level: number }> {
+  async createCharacter(data: { userId: string; name: string; job: string; level: number; enableCallingCard?: boolean }): Promise<{ id: string; userId: string; name: string; job: string; level: number }> {
     return this.post('/api/character', {
       ...data,
       createdAt: '0001-01-01T00:00:00',

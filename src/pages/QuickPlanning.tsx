@@ -1,26 +1,38 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Equipment, EquipmentSlot } from "@/types";
 import { Template } from "@/services/api";
 import { motion, AnimatePresence } from "framer-motion";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EquipmentGrid } from "@/components/EquipmentGrid";
 import { QuickStarForceTable } from "@/components/QuickStarForceTable";
 import { EquipmentForm } from "@/components/EquipmentForm";
 import { getAllTemplates, getTemplateEquipmentForJob } from "@/services/templateService";
-import { getJobIcon, getJobColors, getJobCategoryName, getClassSubcategory, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
-import { 
+import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
+import { apiService } from "@/services/api";
+import { SLOT_TO_BACKEND_NAME } from "@/services/equipmentService";
+import { getJobIcon, getJobColors, getJobDatabaseString, ORGANIZED_CLASSES } from '@/lib/jobIcons';
+import { useAuth } from "@/contexts/AuthContext";
+import { useCharacterContext } from "@/hooks/useCharacterContext";
+import { toast } from "sonner";
+import { Switch } from "@/components/ui/switch";
+import {
   Target,
   FileText,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Grid3x3,
-  ArrowRight,
-  Calculator
+  Calculator,
+  Search,
+  X,
+  UserPlus,
+  Loader2,
+  Save,
+  Sparkles
 } from "lucide-react";
 
 interface QuickPlanningProps {
@@ -28,9 +40,11 @@ interface QuickPlanningProps {
 }
 
 export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [categoryIndex, setCategoryIndex] = useState(0);
-  const [categoryDirection, setCategoryDirection] = useState(0);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { addCharacter } = useCharacterContext();
+
+  const [currentStep, setCurrentStep] = useState(1);
   const [selectedJob, setSelectedJob] = useState<string>("");
   const [selectedTemplate, setSelectedTemplate] = useState<string>("empty");
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -44,26 +58,27 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
 
+  // Save as character
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [charName, setCharName] = useState('');
+  const [charLevel, setCharLevel] = useState(200);
+  const [charImage, setCharImage] = useState('');
+  const [enableCallingCard, setEnableCallingCard] = useState(false);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [lookupNotFound, setLookupNotFound] = useState(false);
+
+  const [jobSearch, setJobSearch] = useState('');
+
   const categories = Object.entries(ORGANIZED_CLASSES);
   
-  // Navigation handlers with direction tracking
-  const goToPreviousCategory = () => {
-    setCategoryDirection(-1);
-    setCategoryIndex(prev => Math.max(0, prev - 1));
-  };
-  
-  const goToNextCategory = () => {
-    setCategoryDirection(1);
-    setCategoryIndex(prev => Math.min(categories.length - 1, prev + 1));
-  };
-
   // Clear state on mount
   useEffect(() => {
     setEquipment([]);
     setStarForceItems([]);
     setSelectedJob("");
     setSelectedTemplate("empty");
-    setCurrentStep(0);
+    setCurrentStep(1);
   }, []);
 
   // Update starforce items when equipment changes
@@ -189,6 +204,70 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
     setEquipment(prev => prev.filter(eq => eq.slot !== slot));
   };
 
+  const handleNameBlur = async () => {
+    if (!charName.trim()) return;
+    setIsLookingUp(true);
+    setLookupNotFound(false);
+    try {
+      const data = await fetchCharacterFromMapleRanks(charName.trim());
+      if (data) {
+        setCharLevel(data.level);
+        setCharImage(data.image);
+        setLookupNotFound(false);
+      } else {
+        setLookupNotFound(true);
+      }
+    } catch {
+      setLookupNotFound(true);
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const handleSaveCharacter = async () => {
+    if (!charName.trim() || !user) return;
+    setIsSaving(true);
+    try {
+      const created = await apiService.createCharacter({
+        userId: user.id,
+        name: charName.trim(),
+        job: selectedJob,
+        level: charLevel,
+        enableCallingCard,
+      });
+
+      const equipmentPayload = equipment.map(eq => ({
+        equipmentSlot: SLOT_TO_BACKEND_NAME[eq.slot] ?? eq.slot,
+        equipmentId: eq.id,
+        currentStarforce: eq.currentStarForce ?? 0,
+        targetStarforce: eq.targetStarForce ?? 0,
+        currentPotential: eq.currentPotentialValue ?? '',
+        targetPotential: eq.targetPotentialValue ?? '',
+      }));
+
+      if (equipmentPayload.length > 0) {
+        await apiService.upsertCharacterEquipment(created.id, equipmentPayload);
+      }
+
+      addCharacter({
+        name: charName.trim(),
+        class: selectedJob,
+        level: charLevel,
+        image: charImage || undefined,
+        equipment,
+        enableCallingCard,
+      }, created.id);
+
+      toast.success(`${charName} saved to your characters!`);
+      setShowSaveDialog(false);
+      navigate('/characters');
+    } catch {
+      toast.error('Failed to save character. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Animation variants for step transitions
   const stepVariants = {
     enter: (direction: number) => ({
@@ -206,21 +285,24 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
   };
 
   return (
-    <div className={`px-6 ${currentStep === 3 ? 'py-6 overflow-y-auto h-[calc(100vh-6rem)]' : 'h-[calc(100vh-12rem)] flex items-center justify-center'}`}>
+    <div className={`px-3 sm:px-6 ${currentStep === 3 ? 'py-4 sm:py-6 overflow-y-auto h-[calc(100vh-6rem)]' : 'h-[calc(100vh-12rem)] flex items-center justify-center'}`}>
       <div className={`w-full max-w-7xl ${currentStep === 3 ? 'mx-auto' : ''}`}>
-      {/* Wizard Progress Indicator with Navigation - Only show when past intro */}
-      {currentStep > 0 && (
-        <div className="flex items-center justify-between mb-3">
-          {/* Back Button */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToPreviousStep}
-            className="border-2 border-white/30 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back
-          </Button>
+      {/* Wizard Progress Indicator with Navigation */}
+      <div className="flex items-center justify-between mb-3">
+          {/* Back Button - hidden on step 1 */}
+          <div className="w-[72px]">
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousStep}
+                className="border-2 border-white/30 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back
+              </Button>
+            )}
+          </div>
 
           {/* Progress Indicator */}
           <div className="flex items-center gap-2">
@@ -235,7 +317,7 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                   {step}
                 </div>
                 {step < 3 && (
-                  <div className={`w-12 h-1 mx-2 transition-all ${currentStep > step ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`w-6 sm:w-12 h-1 mx-1 sm:mx-2 transition-all ${currentStep > step ? 'bg-primary' : 'bg-muted'}`} />
                 )}
               </div>
             ))}
@@ -248,7 +330,8 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
                 variant="outline"
                 size="sm"
                 onClick={goToNextStep}
-                className="border-2 border-white/30 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm"
+                disabled={currentStep === 1 && !selectedJob}
+                className="border-2 border-white/30 bg-white/5 text-white hover:bg-white/10 backdrop-blur-sm disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 Next
                 <ChevronRight className="w-4 h-4 ml-1" />
@@ -256,7 +339,6 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
             )}
           </div>
         </div>
-      )}
 
       {/* Animated Step Content */}
       <AnimatePresence mode="wait" custom={currentStep}>
@@ -269,233 +351,122 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
           exit="exit"
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          {/* Step 0: Introduction */}
-          {currentStep === 0 && (
-            <Card className="max-w-4xl mx-auto bg-card/20 backdrop-blur-md border-white/20">
-              <CardContent className="p-12 text-center space-y-10">
-                <div className="space-y-3">
-                  <h2 className="text-4xl font-bold text-white">Quick Planning Wizard</h2>
-                  <p className="text-muted-foreground text-lg">
-                    Plan your character's progression in 3 simple steps
-                  </p>
-                </div>
-
-                {/* Workflow Steps */}
-                <div className="flex items-center justify-center gap-6 max-w-3xl mx-auto">
-                  {/* Step 1 */}
-                  <div className="flex-1 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center mx-auto">
-                      <Target className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-white">Select Job</h3>
-                      <p className="text-muted-foreground text-sm">Choose your class</p>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <ArrowRight className="w-8 h-8 text-white/50 flex-shrink-0 mt-6" />
-
-                  {/* Step 2 */}
-                  <div className="flex-1 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center mx-auto">
-                      <FileText className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg text-white">Select Template</h3>
-                      <p className="text-muted-foreground text-sm">Preset or clean slate</p>
-                    </div>
-                  </div>
-
-                  {/* Arrow */}
-                  <ArrowRight className="w-8 h-8 text-white/50 flex-shrink-0 mt-6" />
-
-                  {/* Step 3 */}
-                  <div className="flex-1 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center mx-auto">
-                      <Grid3x3 className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-lg">View & Adjust</h3>
-                      <p className="text-muted-foreground text-sm">SF calculations</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  size="lg" 
-                  className="bg-white text-black hover:bg-gray-100 text-lg px-8 py-6 shadow-2xl hover:shadow-3xl transition-all"
-                  onClick={goToNextStep}
-                >
-                  Get Started
-                </Button>
-              </CardContent>
-            </Card>
-          )}
 
           {/* Step 1: Job Selection */}
           {currentStep === 1 && (
-            <Card className="max-w-7xl mx-auto bg-card/20 backdrop-blur-md border-white/20">
-              <CardContent className="p-6">
-                {/* Category Navigation */}
-                <div className="flex items-center justify-between mb-6">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToPreviousCategory}
-                    disabled={categoryIndex === 0}
-                    className="h-10 w-10"
-                  >
-                    <ChevronLeft className="w-6 h-6" />
-                  </Button>
-                  
-                  <div className="flex-1 text-center px-4">
-                    {/* Rotating category list */}
-                    <div className="flex items-center justify-center gap-2 text-base text-muted-foreground flex-wrap">
-                      {categories.map((cat, idx) => (
-                        <>
-                          <span 
-                            key={cat[0]}
-                            className={`transition-all cursor-pointer hover:text-primary whitespace-nowrap ${
-                              idx === categoryIndex ? 'font-bold shiny-golden-text' : ''
-                            }`}
-                            onClick={() => {
-                              setCategoryDirection(idx > categoryIndex ? 1 : -1);
-                              setCategoryIndex(idx);
-                            }}
-                          >
-                            {cat[0]}
-                          </span>
-                          {idx < categories.length - 1 && (
-                            <div key={`dot-${idx}`} className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40 flex-shrink-0" />
-                          )}
-                        </>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={goToNextCategory}
-                    disabled={categoryIndex === categories.length - 1}
-                    className="h-10 w-10"
-                  >
-                    <ChevronRight className="w-6 h-6" />
-                  </Button>
+            <Card className="max-w-lg mx-auto bg-card/20 backdrop-blur-md border-white/20">
+              <CardContent className="p-4 space-y-3">
+                {/* Search box */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder="Search class..."
+                    value={jobSearch}
+                    onChange={(e) => setJobSearch(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
+                  />
+                  {jobSearch && (
+                    <button
+                      onClick={() => setJobSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
 
-                {/* Current Category Jobs with slide animation */}
-                <AnimatePresence mode="wait" custom={categoryDirection}>
-                  <motion.div
-                    key={categoryIndex}
-                    custom={categoryDirection}
-                    initial={{ x: categoryDirection > 0 ? -300 : 300, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: categoryDirection > 0 ? 300 : -300, opacity: 0 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                    className="space-y-2 max-h-[360px] overflow-y-auto scrollbar-thin max-w-md mx-auto"
-                  >
-                    {Object.entries(categories[categoryIndex][1]).map(([subCategory, jobList]) => {
-                      const jobs = Array.isArray(jobList) ? jobList : [jobList];
-                      // Filter out jobs that match the category name (e.g., "Explorers")
-                      const filteredJobs = jobs.filter(job => job !== categories[categoryIndex][0]);
-                      
-                      return (
-                        <div key={subCategory} className="space-y-2">
-                          {filteredJobs.map((job) => {
+                {/* Full categorized list */}
+                <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-1">
+                  {categories.map(([categoryName, categoryData]) => {
+                    const allJobs = Object.values(categoryData as Record<string, string | string[]>)
+                      .flat()
+                      .filter((job): job is string => typeof job === 'string' && job !== categoryName);
+
+                    const visibleJobs = jobSearch.trim()
+                      ? allJobs.filter(j => j.toLowerCase().includes(jobSearch.toLowerCase()))
+                      : allJobs;
+
+                    if (visibleJobs.length === 0) return null;
+
+                    return (
+                      <div key={categoryName}>
+                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
+                          {categoryName}
+                        </p>
+                        <div className="space-y-1">
+                          {visibleJobs.map((job) => {
                             const JobIcon = getJobIcon(job);
                             const jobColors = getJobColors(job);
-                            
                             return (
                               <Button
                                 key={job}
                                 variant="outline"
-                                className="w-full justify-start border-2 border-white/30 bg-white/5 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm text-left h-12 transition-all"
-                                onClick={() => handleJobSelect(job)}
+                                className="w-full justify-start border border-white/20 bg-white/5 hover:bg-white/10 hover:border-white/40 backdrop-blur-sm text-left h-10 transition-all"
+                                onClick={() => { setJobSearch(''); handleJobSelect(job); }}
                               >
-                                <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center mr-3 flex-shrink-0`}>
+                                <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${jobColors.bg} flex items-center justify-center mr-3 shrink-0`}>
                                   <JobIcon className="w-3 h-3 text-white" />
                                 </div>
-                                <span>{job}</span>
+                                <span className="text-sm">{job}</span>
                               </Button>
                             );
                           })}
                         </div>
-                      );
-                    })}
-                  </motion.div>
-                </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           )}
 
           {/* Step 2: Template Selection */}
           {currentStep === 2 && (
-            <Card className="max-w-4xl mx-auto bg-card/20 backdrop-blur-md border-white/20">
-              <CardHeader>
-                <div className="text-center space-y-4">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="p-3 bg-primary/20 rounded-xl">
-                      <FileText className="w-8 h-8 text-primary" />
-                    </div>
-                    <CardTitle className="text-3xl">Choose a Template</CardTitle>
-                  </div>
-                  <p className="text-muted-foreground text-lg">
-                    Start with a pre-configured setup or build from scratch
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent className="p-8">
-                <div className="space-y-4 max-w-2xl mx-auto max-h-[400px] overflow-y-auto scrollbar-thin">
-                  {/* Empty Template Option */}
-                  <Card 
-                    className="cursor-pointer border-2 border-white/30 bg-white/5 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all"
-                    onClick={() => handleTemplateSelect("empty")}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-white/10 border-2 border-white/30 flex items-center justify-center">
-                          <Grid3x3 className="w-6 h-6 text-white" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg text-white">Start from Scratch</h3>
-                          <p className="text-sm text-muted-foreground">Build your equipment setup manually</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+            <Card className="max-w-lg mx-auto bg-card/20 backdrop-blur-md border-white/20">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Choose a starting point</p>
 
-                  {/* Template Options */}
-                  {isLoadingTemplates ? (
-                    <div className="flex items-center justify-center p-8">
-                      <div className="w-6 h-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                    </div>
-                  ) : (
-                    templates.map((template) => (
-                      <Card 
+                {/* Start from Scratch — distinct dashed style */}
+                <button
+                  onClick={() => handleTemplateSelect("empty")}
+                  className="w-full flex items-center gap-3 px-3 py-3 rounded-lg border-2 border-dashed border-white/30 bg-white/5 hover:bg-white/10 hover:border-white/50 transition-all text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                    <Grid3x3 className="w-4 h-4 text-white/70" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Start from Scratch</p>
+                    <p className="text-xs text-muted-foreground">Empty setup — add items manually</p>
+                  </div>
+                </button>
+
+                {/* Template list */}
+                {isLoadingTemplates ? (
+                  <div className="flex items-center justify-center py-6">
+                    <div className="w-5 h-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-[50vh] overflow-y-auto pr-1">
+                    {templates.map((template) => (
+                      <button
                         key={template.id}
-                        className="cursor-pointer border-2 border-white/30 bg-white/5 hover:bg-white/10 hover:border-white/50 backdrop-blur-sm transition-all"
                         onClick={() => handleTemplateSelect(template.id.toString())}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border border-white/15 bg-white/5 hover:bg-white/10 hover:border-white/30 transition-all text-left"
                       >
-                        <CardContent className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-secondary to-blue-500 flex items-center justify-center">
-                              <FileText className="w-6 h-6 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg text-white">{template.name}</h3>
-                              {template.description && (
-                                <p className="text-sm text-muted-foreground">{template.description}</p>
-                              )}
-                            </div>
-                            <Badge variant="secondary">Template</Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
-                </div>
+                        <div className="w-7 h-7 rounded-md bg-gradient-to-br from-primary/40 to-blue-500/40 flex items-center justify-center shrink-0">
+                          <FileText className="w-3.5 h-3.5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-white">{template.name}</p>
+                          {template.description && (
+                            <p className="text-xs text-muted-foreground truncate">{template.description}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -503,37 +474,46 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
           {/* Step 3: Equipment Grid & Calculations */}
           {currentStep === 3 && (
             <Card className="max-w-[1400px] mx-auto bg-card/20 backdrop-blur-md border-white/20">
-              <CardContent className="p-8">
-                <div className="space-y-6">
-                  <div className="text-center space-y-2">
+              <CardContent className="p-2 sm:p-8">
+                {/* Header row */}
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-white">{selectedJob}</span>
+                    <Badge variant="outline" className="text-xs bg-primary/10">{equipment.length} items</Badge>
                   </div>
+                  {user && (
+                    <Button
+                      size="sm"
+                      onClick={() => setShowSaveDialog(true)}
+                      className="flex items-center gap-1.5 bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-xs"
+                      variant="outline"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      Save as Character
+                    </Button>
+                  )}
+                </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-                    {/* Equipment Grid */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 px-2">
-                        <Target className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-lg text-white">Equipment Grid</h3>
-                        <Badge variant="outline" className="text-xs bg-primary/10">
-                          {equipment.length} items
-                        </Badge>
-                      </div>
-                      <EquipmentGrid 
-                        equipment={equipment}
-                        onEditEquipment={handleEditEquipment}
-                        onAddEquipment={handleAddEquipment}
-                        onClearEquipment={handleDeleteEquipment}
-                      />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-2">
+                      <Target className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-lg text-white">Equipment Grid</h3>
                     </div>
-
-                    {/* StarForce Calculations */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 px-2">
-                        <Calculator className="w-5 h-5 text-primary" />
-                        <h3 className="font-semibold text-lg text-white">StarForce Calculations</h3>
-                      </div>
-                      <QuickStarForceTable equipment={starForceItems} />
+                    <EquipmentGrid
+                      equipment={equipment}
+                      onEditEquipment={handleEditEquipment}
+                      onAddEquipment={handleAddEquipment}
+                      onClearEquipment={handleDeleteEquipment}
+                      characterImage={charImage || undefined}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 px-2">
+                      <Calculator className="w-5 h-5 text-primary" />
+                      <h3 className="font-semibold text-lg text-white">StarForce Calculations</h3>
                     </div>
+                    <QuickStarForceTable equipment={starForceItems} />
                   </div>
                 </div>
               </CardContent>
@@ -552,6 +532,84 @@ export function QuickPlanning({ onNavigateHome }: QuickPlanningProps) {
         allowSlotEdit={!editingEquipment}
         selectedJob={selectedJob}
       />
+
+      {/* Save as Character Dialog */}
+      <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Save as Character
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Enter your character name to look up their level and sprite from MapleRanks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Character name + lookup */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Character Name</label>
+              <div className="relative flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter IGN..."
+                  value={charName}
+                  onChange={(e) => { setCharName(e.target.value); setLookupNotFound(false); setCharImage(''); }}
+                  onBlur={handleNameBlur}
+                  className="flex-1 px-3 py-2 rounded-lg bg-muted border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                {isLookingUp && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground shrink-0" />}
+              </div>
+              {lookupNotFound && (
+                <p className="text-xs text-amber-500">Not found on MapleRanks — you can still save manually.</p>
+              )}
+            </div>
+
+            {/* Preview row */}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
+              {charImage ? (
+                <img src={charImage} alt={charName} className="w-12 h-12 object-contain" />
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                  <UserPlus className="w-5 h-5 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm truncate">{charName || '—'}</p>
+                <p className="text-xs text-muted-foreground">{selectedJob} · Lv.{charLevel}</p>
+              </div>
+              <Badge variant="outline" className="text-xs shrink-0">{equipment.length} items</Badge>
+            </div>
+
+            {/* AI Calling Card toggle */}
+            <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-500" />
+                <div>
+                  <p className="text-sm font-medium font-maplestory">AI Calling Card</p>
+                  <p className="text-xs text-muted-foreground font-maplestory">Generate an AI image for this character</p>
+                </div>
+              </div>
+              <Switch checked={enableCallingCard} onCheckedChange={setEnableCallingCard} />
+            </div>
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setShowSaveDialog(false); setCharName(''); setCharImage(''); setLookupNotFound(false); setEnableCallingCard(false); }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSaveCharacter}
+              disabled={!charName.trim() || isSaving}
+              className="flex items-center gap-1.5"
+            >
+              {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+              {isSaving ? 'Saving...' : 'Save Character'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Template Confirmation Dialog */}
       <AlertDialog open={showTemplateConfirmDialog} onOpenChange={setShowTemplateConfirmDialog}>

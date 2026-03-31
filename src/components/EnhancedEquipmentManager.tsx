@@ -4,7 +4,8 @@ import { StoragePanel } from "@/components/StoragePanel";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { useCharacterWorth, formatMesos } from "@/hooks/useCharacterWorth";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getJobPlaceholderImage, getJobColors } from "@/lib/jobIcons";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -56,6 +57,7 @@ interface EnhancedEquipmentManagerProps {
   characterImage?: string;
   callingCardHash?: string | null;
   characterLevel?: number;
+  enableCallingCard?: boolean;
   isRegeneratingCard?: boolean;
   remainingGenerations?: number;
   onRegenerateCard?: (e: React.MouseEvent) => void;
@@ -65,6 +67,36 @@ interface EnhancedEquipmentManagerProps {
 
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+function CallingCardPlaceholder({ jobClass, characterImage, characterName }: {
+  jobClass: string;
+  characterImage?: string;
+  characterName?: string;
+}) {
+  const placeholder = getJobPlaceholderImage(jobClass);
+  const colors = getJobColors(jobClass);
+  const displayImage = placeholder || characterImage;
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {/* Job-colored gradient background */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} opacity-30`} />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/10" />
+      {/* Character art */}
+      <div className="absolute inset-0 flex items-end justify-center">
+        {displayImage ? (
+          <img
+            src={displayImage}
+            alt={characterName || jobClass}
+            className="h-full object-contain drop-shadow-2xl"
+          />
+        ) : (
+          <Crown className="w-10 h-10 text-white/10 mb-8" />
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function EnhancedEquipmentManager({
   equipment,
@@ -80,6 +112,7 @@ export function EnhancedEquipmentManager({
   characterImage,
   callingCardHash,
   characterLevel,
+  enableCallingCard = false,
   isRegeneratingCard,
   remainingGenerations = 0,
   onRegenerateCard,
@@ -244,7 +277,8 @@ export function EnhancedEquipmentManager({
                 value="calculator"
                 className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
               >
-                <span>Starforce Breakdown</span>
+                <span className="hidden sm:inline">Starforce Breakdown</span>
+                <span className="inline sm:hidden">Starforce</span>
                 {pendingEquipment.length > 0 && (
                   <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
                     {pendingEquipment.length}
@@ -255,7 +289,8 @@ export function EnhancedEquipmentManager({
                 value="potential"
                 className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
               >
-                <span>Potential Breakdown</span>
+                <span className="hidden sm:inline">Potential Breakdown</span>
+                <span className="inline sm:hidden">Potential</span>
                 {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length > 0 && (
                   <Badge variant="secondary" className="ml-1 rounded-full bg-primary/20 text-primary text-xs px-1.5 py-0 min-w-[20px] h-5 font-maplestory">
                     {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
@@ -273,15 +308,20 @@ export function EnhancedEquipmentManager({
 
                   {/* Calling card with action buttons */}
                   <div className="relative overflow-visible">
-                    {/* Glow layer — blurred copy of the card image */}
-                    {callingCardHash && (
-                      <img
-                        src={`${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`}
-                        alt=""
-                        aria-hidden="true"
-                        className="absolute -inset-6 w-[calc(100%+48px)] h-[calc(100%+48px)] object-cover blur-3xl opacity-60 rounded-3xl pointer-events-none"
-                      />
-                    )}
+                    {/* Glow layer — blurred copy of card or placeholder */}
+                    {(() => {
+                      const glowSrc = callingCardHash
+                        ? `${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`
+                        : getJobPlaceholderImage(selectedJob || selectedCharacter?.class || '') || characterImage;
+                      return glowSrc ? (
+                        <img
+                          src={glowSrc}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute -inset-6 w-[calc(100%+48px)] h-[calc(100%+48px)] object-cover blur-3xl opacity-40 rounded-3xl pointer-events-none"
+                        />
+                      ) : null;
+                    })()}
                     <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 group" style={{ aspectRatio: '1376/768' }}>
                     {callingCardHash ? (
                       <img
@@ -290,32 +330,32 @@ export function EnhancedEquipmentManager({
                         className="absolute inset-0 w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                        {characterImage ? (
-                          <img src={characterImage} alt={characterName} className="h-full object-contain drop-shadow-xl" />
-                        ) : (
-                          <Crown className="w-10 h-10 text-white/10" />
-                        )}
-                      </div>
+                      <CallingCardPlaceholder
+                        jobClass={selectedJob || selectedCharacter?.class || ''}
+                        characterImage={characterImage}
+                        characterName={characterName}
+                      />
                     )}
 
                     {/* Action buttons — top right, visible on hover */}
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {isRegeneratingCard ? (
-                        <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
-                          <RefreshCw className="w-3 h-3 text-primary animate-spin" />
-                          <span className="text-[10px] text-white/50 font-maplestory">Regenerating...</span>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={onRegenerateCard}
-                          disabled={remainingGenerations === 0}
-                          className="flex items-center gap-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-white/70 hover:text-white font-maplestory transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={remainingGenerations === 0 ? 'No generations left today' : `${remainingGenerations} left today`}
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          {remainingGenerations === 0 ? '0' : remainingGenerations}
-                        </button>
+                      {enableCallingCard && (
+                        isRegeneratingCard ? (
+                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
+                            <RefreshCw className="w-3 h-3 text-primary animate-spin" />
+                            <span className="text-[10px] text-white/50 font-maplestory">Regenerating...</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={onRegenerateCard}
+                            disabled={remainingGenerations === 0}
+                            className="flex items-center gap-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-white/70 hover:text-white font-maplestory transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={remainingGenerations === 0 ? 'No generations left today' : `${remainingGenerations} left today`}
+                          >
+                            <RefreshCw className="w-3 h-3" />
+                            {remainingGenerations === 0 ? '0' : remainingGenerations}
+                          </button>
+                        )
                       )}
                       <button
                         onClick={onEditCharacter}
@@ -398,12 +438,7 @@ export function EnhancedEquipmentManager({
 
                 {/* Column 2 — Equipment Grid */}
                 <Card className="bg-white/5 backdrop-blur-md border-border/50 self-start">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="font-maplestory text-base">
-                      Equipment Slots
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="relative overflow-hidden">
+                  <CardContent className="relative overflow-hidden p-2">
                     {isEquipmentLoading && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/60 backdrop-blur-sm">
                         <Loader2 className="w-6 h-6 animate-spin text-primary" />

@@ -314,14 +314,6 @@ export function PotentialCalculator() {
         isCalculating={isCalculating}
       />
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Potential Calculator</h2>
-          <p className="text-muted-foreground">
-            Calculate potential costs for {selectedCharacter.name}'s equipment
-          </p>
-        </div>
-      </div>
 
       {error && (
         <div className="bg-destructive/15 border border-destructive text-destructive px-4 py-3 rounded-md">
@@ -331,7 +323,7 @@ export function PotentialCalculator() {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Total Average Cost */}
           <Card>
             <CardContent className="p-4">

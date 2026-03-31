@@ -5,12 +5,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Card, CardContent } from "@/components/ui/card";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { useState, useEffect } from "react";
-import { 
-  Plus, 
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  Plus,
   Star,
-  Calculator,
-  Sword,
-  Shield,
   Crown,
   Shirt,
   Footprints,
@@ -20,6 +18,8 @@ import {
   Ear,
   Heart,
   Package,
+  Sword,
+  Shield,
   X
 } from "lucide-react";
 
@@ -127,33 +127,34 @@ const getSlotIcon = (slot: string) => {
 };
 
 // Component to handle equipment display with image state - Ultra compact version
-const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, slot: string, label: string }) => {
+const EquipmentDisplay = ({ equipment, slot, label, compact = false }: { equipment: Equipment, slot: string, label: string, compact?: boolean }) => {
   const [hasImage, setHasImage] = useState(false);
+  const imgSize = compact ? 'sm' : 'md';
+  const sfTextSize = compact ? 'text-[8px]' : 'text-[10px]';
+  const sfIconSize = compact ? 'w-1.5 h-1.5' : 'w-2 h-2';
 
   return (
     <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
       {equipment.image ? (
-        // Image-centered layout: larger image with minimal spacing
         <>
           <EquipmentImage
             src={equipment.image}
             alt={equipment.name || equipment.set || "Equipment"}
-            size="md"
+            size={imgSize}
             fallbackIcon={() => getSlotIcon(slot)}
             onImageStatusChange={setHasImage}
             className="shrink-0"
           />
-          {/* Ultra-compact StarForce display */}
           {equipment.starforceable && (
-            <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-              <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
-              <span className="text-white font-semibold text-[10px]">
+            <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+              <Star className={`${sfIconSize} text-yellow-400 fill-yellow-400`} />
+              <span className={`text-white font-semibold ${sfTextSize}`}>
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-white/50 text-[10px]">→</span>
-                  <span className="text-primary font-semibold text-[10px]">
+                  <span className={`text-white/50 ${sfTextSize}`}>→</span>
+                  <span className={`text-primary font-semibold ${sfTextSize}`}>
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -162,30 +163,28 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
           )}
         </>
       ) : (
-        // Text layout: centered text with tiny icon
         <div className="flex flex-col items-center justify-center gap-0.5">
-          <div className="flex items-center justify-center w-4 h-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded shrink-0">
+          <div className={`flex items-center justify-center ${compact ? 'w-3 h-3' : 'w-4 h-4'} bg-white/10 backdrop-blur-sm border border-white/20 rounded shrink-0`}>
             {getSlotIcon(slot)}
           </div>
           <div className="flex flex-col items-center">
-            <p className="text-[10px] font-medium text-white truncate leading-tight text-center">
+            <p className={`${compact ? 'text-[8px]' : 'text-[10px]'} font-medium text-white truncate leading-tight text-center`}>
               {equipment.name || equipment.set || `Lv.${equipment.level}`}
             </p>
-            <p className="text-[9px] text-muted-foreground truncate leading-tight text-center">
+            <p className={`${compact ? 'text-[7px]' : 'text-[9px]'} text-muted-foreground truncate leading-tight text-center`}>
               {label}
             </p>
           </div>
-          {/* Ultra-compact StarForce display for text mode */}
           {equipment.starforceable && (
             <div className="flex items-center gap-0.5 px-0.5 py-0.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-              <Star className="w-2 h-2 text-yellow-400 fill-yellow-400" />
-              <span className="text-white font-semibold text-[10px]">
+              <Star className={`${sfIconSize} text-yellow-400 fill-yellow-400`} />
+              <span className={`text-white font-semibold ${sfTextSize}`}>
                 {equipment.currentStarForce}
               </span>
               {equipment.targetStarForce > equipment.currentStarForce && (
                 <>
-                  <span className="text-white/50 text-[10px]">→</span>
-                  <span className="text-primary font-semibold text-[10px]">
+                  <span className={`text-white/50 ${sfTextSize}`}>→</span>
+                  <span className={`text-primary font-semibold ${sfTextSize}`}>
                     {equipment.targetStarForce}
                   </span>
                 </>
@@ -199,6 +198,8 @@ const EquipmentDisplay = ({ equipment, slot, label }: { equipment: Equipment, sl
 };
 
 export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onClearEquipment, onOpenCalculator, characterImage }: EquipmentGridProps) {
+  const isMobile = useIsMobile();
+
   // Create equipment mapping, prioritizing target equipment over source equipment for display
   const equipmentBySlot = equipment.reduce((acc, item) => {
     const existingItem = acc[item.slot];
@@ -230,15 +231,6 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
     return acc;
   }, {} as Record<EquipmentSlot, Equipment>);
 
-  const hasIncompleteStarForce = equipment.some(eq => eq.starforceable && eq.currentStarForce < eq.targetStarForce);
-
-  // Group equipment by category for mobile view
-  const categorizedSlots = EQUIPMENT_SLOTS.reduce((acc, slot) => {
-    if (!acc[slot.category]) acc[slot.category] = [];
-    acc[slot.category].push(slot);
-    return acc;
-  }, {} as Record<string, typeof EQUIPMENT_SLOTS>);
-
   const renderEquipmentSlot = (slotData: typeof EQUIPMENT_SLOTS[0]) => {
     const { slot, label, position } = slotData;
     const equipment = equipmentBySlot[slot];
@@ -263,7 +255,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           }
         }}
       >
-        <CardContent className="p-0 h-[74px] w-full flex items-center justify-center relative">
+        <CardContent className={`p-0 ${isMobile ? 'h-[56px]' : 'h-[74px]'} w-full flex items-center justify-center relative`}>
           {equipment ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
               <EquipmentDisplay
@@ -271,22 +263,23 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
                 equipment={equipment}
                 slot={slot}
                 label={label}
+                compact={isMobile}
               />
             </div>
           ) : isDisabled ? (
             <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
-              <span className="text-[9px]">{label}</span>
-              <span className="text-[8px] text-muted-foreground/60">(Coming Soon)</span>
+              <span className={isMobile ? 'text-[7px]' : 'text-[9px]'}>{label}</span>
+              {!isMobile && <span className="text-[8px] text-muted-foreground/60">(Soon)</span>}
             </div>
           ) : (
             <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
-              <Plus className="w-2.5 h-2.5" />
-              <span className="text-[9px]">{label}</span>
+              <Plus className={isMobile ? 'w-2 h-2' : 'w-2.5 h-2.5'} />
+              <span className={isMobile ? 'text-[7px]' : 'text-[9px]'}>{label}</span>
             </div>
           )}
-          {/* Delete button on hover */}
+          {/* Delete button — always visible on touch devices, hover-only on desktop */}
           {equipment && (
-            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
@@ -309,106 +302,19 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
-        {/* Desktop Grid Layout */}
-        <div className="hidden lg:block">
-          <div className="grid grid-cols-7 grid-rows-6 gap-1 p-2 bg-card/30 rounded-lg border border-border/50 max-w-[600px] mx-auto">
-            {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
-            {/* Character sprite — spans the empty cols 3-5, rows 1-4 */}
-            <div className="col-start-3 col-end-6 row-start-1 row-end-5 flex items-center justify-center rounded-md overflow-hidden bg-white/5 border border-white/10">
-              {characterImage ? (
-                <img
-                  src={characterImage}
-                  alt="Character"
-                  className="w-2/3 h-2/3 object-contain drop-shadow-lg"
-                />
-              ) : (
-                <div className="text-muted-foreground/30 text-[9px] text-center px-2">Character</div>
-              )}
-            </div>
-          </div>
-        </div>
-        
-        {/* Mobile Categorized Layout */}
-        <div className="lg:hidden space-y-4">
-          {Object.entries(categorizedSlots).map(([category, slots]) => (
-            <div key={category} className="bg-card/30 rounded-lg border border-border/50 p-4">
-              <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2 font-maplestory">
-                {category === 'Weapons' && <Sword className="w-4 h-4" />}
-                {category === 'Armor' && <Shield className="w-4 h-4" />}
-                {category === 'Accessories' && <Eye className="w-4 h-4" />}
-                {category === 'Jewelry' && <Gem className="w-4 h-4" />}
-                {category === 'Special' && <Star className="w-4 h-4" />}
-                {category}
-              </h4>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {slots.map((slotData) => {
-                  const { slot, label } = slotData;
-                  const equipment = equipmentBySlot[slot];
-                  const isDisabled = slot === 'android';
-
-                  return (
-                    <Card
-                      key={slot}
-                      className={`relative transition-all duration-200 group ${
-                        isDisabled
-                          ? "bg-muted/20 border-muted/50 cursor-not-allowed opacity-50"
-                          : equipment
-                            ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md"
-                            : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
-                      }`}
-                      onClick={() => {
-                        if (isDisabled) return;
-                        if (equipment) {
-                          onEditEquipment(equipment);
-                        } else {
-                          onAddEquipment(slot);
-                        }
-                      }}
-                    >
-                      <CardContent className="p-0 h-[74px] w-full flex items-center justify-center relative">
-                        {equipment ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
-                            <EquipmentDisplay
-                              equipment={equipment}
-                              slot={slot}
-                              label={label}
-                            />
-                          </div>
-                        ) : isDisabled ? (
-                          <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
-                            <span className="text-[9px]">{label}</span>
-                            <span className="text-[8px] text-muted-foreground/60">(Coming Soon)</span>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex flex-col gap-1 items-center justify-center text-muted-foreground">
-                            <Plus className="w-2.5 h-2.5" />
-                            <span className="text-[9px]">{label}</span>
-                          </div>
-                        )}
-                        {/* Delete button on hover */}
-                        {equipment && (
-                          <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onClearEquipment(equipment.slot);
-                              }}
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
+      <div className={`grid grid-cols-7 grid-rows-6 gap-0.5 ${isMobile ? 'p-1' : 'p-2'} bg-card/30 rounded-lg border border-border/50 w-full mx-auto`}>
+        {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
+        {/* Character sprite — spans the empty cols 3-5, rows 1-4 */}
+        <div className="col-start-3 col-end-6 row-start-1 row-end-5 flex items-center justify-center rounded-md overflow-hidden bg-white/5 border border-white/10">
+          {characterImage ? (
+            <img
+              src={characterImage}
+              alt="Character"
+              className="w-2/3 h-2/3 object-contain drop-shadow-lg"
+            />
+          ) : (
+            <div className="text-muted-foreground/30 text-[9px] text-center px-2">Character</div>
+          )}
         </div>
       </div>
     </TooltipProvider>
