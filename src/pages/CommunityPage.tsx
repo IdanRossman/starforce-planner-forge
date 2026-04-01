@@ -421,7 +421,7 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4">
+    <div className="max-w-7xl mx-auto px-4 pt-4">
       <div className="flex flex-col lg:flex-row gap-6">
 
         {/* ── Left column ── */}

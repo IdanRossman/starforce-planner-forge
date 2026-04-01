@@ -93,11 +93,41 @@ export function StartSessionDialog({
   const [sessionName, setSessionName] = useState(defaultName);
   const [startingMesoText, setStartingMesoText] = useState('');
   const [isStarting, setIsStarting] = useState(false);
+  const [activeTab, setActiveTab] = useState<'equipped' | 'storage'>('equipped');
 
   const equippedItems = (selectedCharacter?.equipment ?? []).filter(e => e.starforceable && e.catalogId);
   const storageItems = (selectedCharacter?.storageItems ?? []).filter(e => e.starforceable && e.catalogId);
 
   const isQueued = (catalogId: string) => queue.some(q => q.equipmentId === parseInt(catalogId));
+
+  const allEquippedSelected = equippedItems.length > 0 && equippedItems.every(i => isQueued(i.catalogId!));
+  const allStorageSelected = storageItems.length > 0 && storageItems.every(i => isQueued(i.catalogId!));
+
+  const handleSelectAll = () => {
+    if (activeTab === 'equipped') {
+      if (allEquippedSelected) {
+        equippedItems.forEach(i => onRemoveFromQueue(parseInt(i.catalogId!)));
+      } else {
+        equippedItems.forEach(i => {
+          if (!isQueued(i.catalogId!)) {
+            const qi = itemToQueue(i, events);
+            if (qi) onAddToQueue(qi);
+          }
+        });
+      }
+    } else {
+      if (allStorageSelected) {
+        storageItems.forEach(i => onRemoveFromQueue(parseInt(i.catalogId!)));
+      } else {
+        storageItems.forEach(i => {
+          if (!isQueued(i.catalogId!)) {
+            const qi = itemToQueue(storageToEquipmentLike(i), events);
+            if (qi) onAddToQueue(qi);
+          }
+        });
+      }
+    }
+  };
 
   const toggleEquipped = (item: Equipment) => {
     const id = parseInt(item.catalogId ?? '');
@@ -248,15 +278,25 @@ export function StartSessionDialog({
               </Button>
             </div>
 
-            <Tabs defaultValue="equipped">
-              <TabsList className="h-8 bg-white/5 border border-border/40 p-0.5 gap-0.5 rounded-lg">
-                <TabsTrigger value="equipped" className="h-7 text-xs font-maplestory rounded-md px-3">
-                  Equipped <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{equippedItems.length}</Badge>
-                </TabsTrigger>
-                <TabsTrigger value="storage" className="h-7 text-xs font-maplestory rounded-md px-3">
-                  Storage <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{storageItems.length}</Badge>
-                </TabsTrigger>
-              </TabsList>
+            <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'equipped' | 'storage')}>
+              <div className="flex items-center justify-between gap-2">
+                <TabsList className="h-8 bg-white/5 border border-border/40 p-0.5 gap-0.5 rounded-lg">
+                  <TabsTrigger value="equipped" className="h-7 text-xs font-maplestory rounded-md px-3">
+                    Equipped <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{equippedItems.length}</Badge>
+                  </TabsTrigger>
+                  <TabsTrigger value="storage" className="h-7 text-xs font-maplestory rounded-md px-3">
+                    Storage <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{storageItems.length}</Badge>
+                  </TabsTrigger>
+                </TabsList>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="h-7 text-xs font-maplestory text-white/50 hover:text-white/90 px-2"
+                >
+                  {(activeTab === 'equipped' ? allEquippedSelected : allStorageSelected) ? 'Deselect All' : 'Select All'}
+                </Button>
+              </div>
 
               <TabsContent value="equipped" className="mt-2">
                 {equippedItems.length === 0 ? (

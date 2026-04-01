@@ -217,10 +217,6 @@ class ApiService {
     return this.get(`/api/starforce/session/character/${characterId}`);
   }
 
-  async getSession(sessionId: string): Promise<import('@/types').StarforceSession> {
-    return this.get(`/api/starforce/session/${sessionId}`);
-  }
-
   async addSessionLog(sessionId: string, data: {
     equipmentId: number;
     startStar: number;
@@ -271,35 +267,6 @@ class ApiService {
   async searchCommunityEquipment(q: string): Promise<import('@/types').EquipmentSearchResult[]> {
     const r = await this.get<{ results: import('@/types').EquipmentSearchResult[] }>(`/api/community/equipment/search?q=${encodeURIComponent(q)}`);
     return r.results ?? [];
-  }
-
-  async getCommunityStats(params: {
-    equipmentId: number;
-    startStar: number;
-    targetStar: number;
-    from?: string;
-    starCatching?: boolean;
-    thirtyPctMesoReduction?: boolean;
-  }): Promise<import('@/types').CommunityEquipmentStats> {
-    const p = new URLSearchParams({
-      equipmentId: String(params.equipmentId),
-      startStar: String(params.startStar),
-      targetStar: String(params.targetStar),
-    });
-    if (params.from) p.set('from', params.from);
-    if (params.starCatching !== undefined) p.set('starCatching', String(params.starCatching));
-    if (params.thirtyPctMesoReduction !== undefined) p.set('thirtyPctMesoReduction', String(params.thirtyPctMesoReduction));
-    return this.get(`/api/community/stats?${p}`);
-  }
-
-  async getCommunityBoomDistribution(
-    equipmentId: number,
-    startStar: number,
-    targetStar: number
-  ): Promise<import('@/types').CommunityBoomDistribution> {
-    return this.get(
-      `/api/community/boom-distribution?equipmentId=${equipmentId}&startStar=${startStar}&targetStar=${targetStar}`
-    );
   }
 
   async getCommunityTrending(

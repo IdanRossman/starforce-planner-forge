@@ -281,33 +281,6 @@ export interface EquipmentSummary {
   topBoomStars: { star: number; count: number; rate: number }[];
 }
 
-export interface CommunityEquipmentStats {
-  equipmentId: number;
-  equipmentName: string;
-  image?: string;
-  startStar: number;
-  targetStar: number;
-  sampleSize: number;
-  mesoCost: {
-    average: number;
-    median: number;
-    p25: number;
-    p75: number;
-  };
-  successRate: number;
-  boomRate: number;
-  averageBooms: number;
-  simulatorComparison?: {
-    median: number;
-    average: number;
-  };
-}
-
-export interface CommunityBoomDistribution {
-  equipmentId: number;
-  sampleSize: number;
-  distribution: { star: number; count: number; rate: number }[];
-}
 
 export interface CommunityTrendingItem {
   equipmentId: number;

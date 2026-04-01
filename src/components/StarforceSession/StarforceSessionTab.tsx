@@ -9,12 +9,12 @@ import { EquipmentImage } from '@/components/EquipmentImage';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Reorder, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { formatMeso } from '@/lib/utils';
 import {
-  Star, Plus, CheckCircle2, Clock, ChevronDown, ChevronRight,
+  Star, Plus, CheckCircle2, Clock, ChevronDown,
   TrendingUp, TrendingDown, Minus, Package, Loader2,
-  ChevronLeft, GripHorizontal, Flame, Trash2,
+  Flame, Trash2,
 } from 'lucide-react';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
 import { toast } from 'sonner';
@@ -245,109 +245,67 @@ function PastSessionCard({ session, imageMap, onDelete }: { session: StarforceSe
 
 // ── Active session item card ───────────────────────────────────────────────────
 
-function ItemCard({
-  item,
-  isActive,
-  onSelect,
-  onMoveLeft,
-  onMoveRight,
-  showLeft,
-  showRight,
+function ItemChip({
+  item, isActive, onSelect,
 }: {
   item: SessionItemState;
   isActive: boolean;
   onSelect: () => void;
-  onMoveLeft: () => void;
-  onMoveRight: () => void;
-  showLeft: boolean;
-  showRight: boolean;
 }) {
-  const starsRemaining = item.targetStar - item.currentStar;
   const totalRange = item.targetStar - item.startStar;
   const progress = totalRange > 0 ? Math.max(0, Math.min(1, (item.currentStar - item.startStar) / totalRange)) : 1;
 
   return (
-    <motion.div
+    <motion.button
       layout
-      className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border cursor-pointer select-none transition-all duration-200 w-[96px] shrink-0 ${
-        item.completed
-          ? 'border-green-500/30 bg-green-500/5 opacity-60'
-          : isActive
-            ? 'border-primary/60 bg-primary/10 shadow-lg shadow-primary/20'
-            : 'border-border/30 bg-white/3 hover:bg-white/8 hover:border-white/20'
-      }`}
       onClick={onSelect}
-      whileHover={!item.completed ? { scale: 1.03 } : {}}
-      whileTap={!item.completed ? { scale: 0.97 } : {}}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      className={`relative flex flex-col items-center gap-1 p-2 rounded-xl border cursor-pointer select-none transition-all duration-200 w-[72px] shrink-0 ${
+        item.completed
+          ? 'border-green-500/25 bg-green-500/5 opacity-50'
+          : isActive
+            ? 'border-primary/60 bg-primary/10 shadow-md shadow-primary/20'
+            : 'border-border/30 bg-card hover:bg-white/8 hover:border-white/20'
+      }`}
     >
-      {/* Drag hint */}
-      <GripHorizontal className="w-3 h-3 text-white/15 absolute top-1.5 left-1/2 -translate-x-1/2" />
-
-      {/* Completed overlay */}
-      {item.completed && (
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-green-500/10 z-10">
-          <CheckCircle2 className="w-7 h-7 text-green-400" />
-        </div>
-      )}
-
-      {/* Active indicator */}
+      {/* Active dot */}
       {isActive && !item.completed && (
-        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary" />
+        <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary shadow-sm shadow-primary" />
       )}
 
-      <EquipmentImage
-        src={item.image}
-        alt={item.name}
-        size="md"
-        fallbackIcon={() => <Package className="w-5 h-5" />}
-        className="mt-2"
-      />
+      {/* Image */}
+      <div className="relative">
+        <EquipmentImage
+          src={item.image}
+          alt={item.name}
+          size="sm"
+          fallbackIcon={() => <Package className="w-4 h-4" />}
+        />
+        {item.completed && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-black/40">
+            <CheckCircle2 className="w-4 h-4 text-green-400" />
+          </div>
+        )}
+      </div>
 
-      <p className="text-[10px] font-maplestory text-white/70 text-center leading-tight line-clamp-2 w-full">{item.name}</p>
-
-      {/* Star progress */}
+      {/* Current → target */}
       <div className="flex items-center gap-0.5">
-        <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400 shrink-0" />
-        <span className={`text-[11px] font-bold font-maplestory ${isActive ? 'text-primary' : 'text-white/80'}`}>
+        <Star className="w-2 h-2 text-yellow-400 fill-yellow-400 shrink-0" />
+        <span className={`text-[11px] font-bold font-maplestory ${isActive ? 'text-primary' : 'text-white/75'}`}>
           {item.currentStar}
         </span>
-        <span className="text-[10px] text-white/30 font-maplestory">/ {item.targetStar}</span>
+        <span className="text-[9px] text-white/25 font-maplestory">/{item.targetStar}</span>
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1 rounded-full bg-white/10 overflow-hidden">
+      <div className="w-full h-0.5 rounded-full bg-white/10 overflow-hidden">
         <div
           className={`h-full rounded-full transition-all duration-500 ${item.completed ? 'bg-green-400' : 'bg-primary'}`}
           style={{ width: `${progress * 100}%` }}
         />
       </div>
-
-      {!item.completed && (
-        <span className="text-[9px] text-white/30 font-maplestory">{starsRemaining} star{starsRemaining !== 1 ? 's' : ''} left</span>
-      )}
-
-      {/* Arrow buttons (hover only) */}
-      {!item.completed && (
-        <div className="absolute -bottom-3 left-0 right-0 flex justify-between px-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-          {showLeft && (
-            <button
-              onClick={e => { e.stopPropagation(); onMoveLeft(); }}
-              className="w-5 h-5 rounded-full bg-card/80 border border-border/50 flex items-center justify-center hover:bg-white/20 transition-colors"
-            >
-              <ChevronLeft className="w-3 h-3 text-white/60" />
-            </button>
-          )}
-          {showRight && (
-            <button
-              onClick={e => { e.stopPropagation(); onMoveRight(); }}
-              className="w-5 h-5 rounded-full bg-card/80 border border-border/50 flex items-center justify-center hover:bg-white/20 transition-colors ml-auto"
-            >
-              <ChevronRight className="w-3 h-3 text-white/60" />
-            </button>
-          )}
-        </div>
-      )}
-    </motion.div>
+    </motion.button>
   );
 }
 
@@ -438,7 +396,7 @@ export function StarforceSessionTab({ characterId, selectedJob }: Props) {
     sessions, isLoading, activeSession,
     loadSessions, startSession, ensureSession,
     updateItemStar, updateMesoBalance,
-    setActiveItem, reorderItems, advanceActiveItem,
+    setActiveItem, advanceActiveItem,
     addItemsToSession, addLog, deleteLog,
     endSession, deleteSession,
   } = useStarforceSession(characterId);
@@ -549,17 +507,6 @@ export function StarforceSessionTab({ characterId, selectedJob }: Props) {
     loadSessions();
   };
 
-  const handleMoveItem = (equipmentId: number, direction: 'left' | 'right') => {
-    if (!activeSession) return;
-    const items = [...activeSession.items];
-    const idx = items.findIndex(i => i.equipmentId === equipmentId);
-    if (idx === -1) return;
-    const swapIdx = direction === 'left' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= items.length) return;
-    [items[idx], items[swapIdx]] = [items[swapIdx], items[idx]];
-    reorderItems(items);
-  };
-
   const totalSpent = activeSession
     ? activeSession.startingMeso > 0
       ? activeSession.startingMeso - activeSession.currentMesoBalance
@@ -620,26 +567,16 @@ export function StarforceSessionTab({ characterId, selectedJob }: Props) {
                 <Plus className="w-3 h-3" /> Add item
               </Button>
             </div>
-            <Reorder.Group
-              axis="x"
-              values={activeSession.items}
-              onReorder={reorderItems}
-              className="flex gap-3 overflow-x-auto pb-4 pt-1 px-0.5 scrollbar-none"
-            >
-              {activeSession.items.map((item, idx) => (
-                <Reorder.Item key={item.equipmentId} value={item} className="shrink-0 group">
-                  <ItemCard
-                    item={item}
-                    isActive={item.equipmentId === activeSession.activeItemEquipmentId}
-                    onSelect={() => !item.completed && setActiveItem(item.equipmentId)}
-                    onMoveLeft={() => handleMoveItem(item.equipmentId, 'left')}
-                    onMoveRight={() => handleMoveItem(item.equipmentId, 'right')}
-                    showLeft={idx > 0}
-                    showRight={idx < activeSession.items.length - 1}
-                  />
-                </Reorder.Item>
+            <div className="flex gap-2 overflow-x-auto pb-1 pt-1 px-0.5 scrollbar-none">
+              {activeSession.items.map(item => (
+                <ItemChip
+                  key={item.equipmentId}
+                  item={item}
+                  isActive={item.equipmentId === activeSession.activeItemEquipmentId}
+                  onSelect={() => setActiveItem(item.equipmentId)}
+                />
               ))}
-            </Reorder.Group>
+            </div>
           </div>
 
           {/* Log action */}
@@ -661,19 +598,26 @@ export function StarforceSessionTab({ characterId, selectedJob }: Props) {
                       <span className="text-[10px] text-white/30 font-maplestory">→ ★{activeItem.targetStar}</span>
                     </div>
                   </div>
-                  {activeSession.currentMesoBalance > 0 && (
-                    <div className="text-right shrink-0">
-                      <p className="text-[9px] text-white/25 font-maplestory">balance</p>
-                      <p className="text-xs font-bold font-maplestory text-primary/80">{formatMeso(activeSession.currentMesoBalance)}</p>
-                    </div>
-                  )}
                 </div>
+
+                {activeSession.startingMeso > 0 && (
+                  <div className="flex items-center justify-between text-[10px] font-maplestory bg-white/5 rounded-md px-3 py-1.5">
+                    <span className="text-white/40">Started</span>
+                    <span className="text-white/60">{formatMeso(activeSession.startingMeso)}</span>
+                    <span className="text-white/20">·</span>
+                    <span className="text-white/40">Balance</span>
+                    <span className="text-primary/80 font-bold">{formatMeso(activeSession.currentMesoBalance)}</span>
+                    <span className="text-white/20">·</span>
+                    <span className="text-white/40">Spent</span>
+                    <span className="text-red-400/80">{formatMeso(activeSession.startingMeso - activeSession.currentMesoBalance)}</span>
+                  </div>
+                )}
 
                 <Button
                   onClick={() => setLogDialogOpen(true)}
-                  className="font-maplestory w-full h-10 text-sm rounded-lg"
+                  className="font-maplestory w-full sm:w-auto sm:px-8 h-10 text-sm rounded-lg sm:mx-auto sm:flex"
                 >
-                  Done tapping this item? Record result
+                  Log Result
                 </Button>
                 <p className="text-[10px] text-white/20 font-maplestory text-center leading-relaxed">
                   Switch to a different item above at any time · results saved per chunk, not per star
