@@ -421,16 +421,17 @@ export default function CommunityPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pt-4">
+    <div className="max-w-7xl mx-auto px-4 pt-4 space-y-5">
+
+      <div>
+        <h1 className="text-2xl font-bold font-maplestory text-white/90">Community Starforce Data</h1>
+        <p className="text-sm text-white/35 font-maplestory mt-1">Real outcomes from real players — not simulations.</p>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6">
 
         {/* ── Left column ── */}
         <div className="flex-1 min-w-0 space-y-5">
-
-          <div>
-            <h1 className="text-2xl font-bold font-maplestory text-white/90">Community Starforce Data</h1>
-            <p className="text-sm text-white/35 font-maplestory mt-1">Real outcomes from real players — not simulations.</p>
-          </div>
 
           <GlobalStatsBanner stats={globalStats} />
 
