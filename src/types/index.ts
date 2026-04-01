@@ -180,3 +180,158 @@ export interface GameAssistantProps {
   debugMode?: boolean; // Controls whether tip persists for debugging
 }
 
+
+// Starforce Session Types
+export interface StarforceSession {
+  id: string;
+  characterId: string;
+  name?: string;
+  createdAt: string;
+  startingMeso?: number;
+  endingMeso?: number;
+  logs: StarforceSessionLog[];
+}
+
+export interface StarforceSessionLog {
+  id: string;
+  sessionId: string;
+  equipmentId: number;
+  equipmentName?: string;
+  startStar: number;
+  targetStar: number;
+  endStar: number;
+  totalMesoCost: number;
+  totalBooms: number;
+  starCatching: boolean;
+  safeguard: boolean;
+  thirtyPctMesoReduction: boolean;
+  thirtyPctBoomReduction: boolean;
+  mvpDiscount: number;
+  createdAt: string;
+  boomDetails?: StarforceBoomDetail[];
+}
+
+export interface StarforceBoomDetail {
+  id: string;
+  sessionLogId: string;
+  boomedFromStar: number;
+}
+
+export interface LuckAnalysis {
+  logId: string;
+  equipmentId: number;
+  equipmentName: string;
+  startStar: number;
+  targetStar: number;
+  endStar: number;
+  actual: { mesoCost: number; booms: number };
+  simulated: {
+    average: { mesoCost: number; booms: number };
+    median: { mesoCost: number; booms: number };
+    percentile75: { mesoCost: number; booms: number };
+  };
+}
+
+export interface SessionQueueItem {
+  equipmentId: number;
+  name: string;
+  image?: string;
+  level: number;
+  startStar: number;
+  targetStar: number;
+  starCatching: boolean;
+  safeguard: boolean;
+  thirtyPctMesoReduction: boolean;
+  thirtyPctBoomReduction: boolean;
+  mvpDiscount: number;
+}
+
+export interface SessionItemState extends SessionQueueItem {
+  currentStar: number;
+  completed: boolean;
+}
+
+export interface ActiveSessionData {
+  sessionId: string | null; // null until first log is submitted
+  characterId: string;
+  sessionName?: string;
+  startingMeso: number;
+  currentMesoBalance: number;
+  activeItemEquipmentId: number | null;
+  items: SessionItemState[];
+  logs: StarforceSessionLog[];
+}
+
+// ── Community types ───────────────────────────────────────────────────────────
+
+export interface CommunityGlobalStats {
+  totalLogs: number;
+  totalMesoTracked: number;
+  totalBooms: number;
+  overallSuccessRate?: number;
+  simulatorDriftPercent?: number | null;
+}
+
+export interface EquipmentSummary {
+  equipmentId: number;
+  equipmentName: string;
+  image?: string;
+  totalLogs: number;
+  topTargets: { targetStar: number; count: number; successRate: number; averageBooms: number }[];
+  topBoomStars: { star: number; count: number; rate: number }[];
+}
+
+export interface CommunityEquipmentStats {
+  equipmentId: number;
+  equipmentName: string;
+  image?: string;
+  startStar: number;
+  targetStar: number;
+  sampleSize: number;
+  mesoCost: {
+    average: number;
+    median: number;
+    p25: number;
+    p75: number;
+  };
+  successRate: number;
+  boomRate: number;
+  averageBooms: number;
+  simulatorComparison?: {
+    median: number;
+    average: number;
+  };
+}
+
+export interface CommunityBoomDistribution {
+  equipmentId: number;
+  sampleSize: number;
+  distribution: { star: number; count: number; rate: number }[];
+}
+
+export interface CommunityTrendingItem {
+  equipmentId: number;
+  equipmentName: string;
+  image?: string;
+  sampleSize: number;
+  medianMesoCost: number;
+  successRate: number;
+  mostCommonRange: { startStar: number; targetStar: number };
+}
+
+export interface CommunityFeedEntry {
+  equipmentName: string;
+  image?: string;
+  startStar: number;
+  endStar: number;
+  totalMesoCost: number;
+  totalBooms: number;
+  success: boolean;
+  loggedAt: string;
+}
+
+export interface EquipmentSearchResult {
+  equipmentId: number;
+  equipmentName: string;
+  image?: string;
+}

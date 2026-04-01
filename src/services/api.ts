@@ -207,7 +207,114 @@ class ApiService {
   async generatePartyImage(userId: string): Promise<{ hash: string; url: string }> {
     return this.post(`/api/partyimage/${userId}/generate`, {});
   }
+
+  // Starforce Session endpoints
+  async createSession(data: { characterId: string; name?: string; startingMeso?: number }): Promise<import('@/types').StarforceSession> {
+    return this.post('/api/starforce/session', data);
+  }
+
+  async getCharacterSessions(characterId: string): Promise<import('@/types').StarforceSession[]> {
+    return this.get(`/api/starforce/session/character/${characterId}`);
+  }
+
+  async getSession(sessionId: string): Promise<import('@/types').StarforceSession> {
+    return this.get(`/api/starforce/session/${sessionId}`);
+  }
+
+  async addSessionLog(sessionId: string, data: {
+    equipmentId: number;
+    startStar: number;
+    targetStar: number;
+    endStar: number;
+    totalMesoCost: number;
+    totalBooms: number;
+    starCatching: boolean;
+    safeguard: boolean;
+    thirtyPctMesoReduction: boolean;
+    thirtyPctBoomReduction: boolean;
+    mvpDiscount: number;
+    updateCharacterEquipment: boolean;
+  }): Promise<import('@/types').StarforceSessionLog> {
+    return this.post(`/api/starforce/session/${sessionId}/log`, data);
+  }
+
+  async addBoomDetail(logId: string, boomedFromStar: number): Promise<import('@/types').StarforceBoomDetail> {
+    return this.post(`/api/starforce/session/log/${logId}/boom`, { boomedFromStar });
+  }
+
+  async getLuckAnalysis(logId: string): Promise<import('@/types').LuckAnalysis> {
+    return this.get(`/api/starforce/session/log/${logId}/luck`);
+  }
+
+  async deleteSessionLog(logId: string): Promise<void> {
+    await this.request(`/api/starforce/session/log/${logId}`, { method: 'DELETE' });
+  }
+
+  async updateSession(sessionId: string, data: { endingMeso?: number }): Promise<void> {
+    return this.put(`/api/starforce/session/${sessionId}`, data);
+  }
+
+  async deleteSession(sessionId: string): Promise<void> {
+    await this.request(`/api/starforce/session/${sessionId}`, { method: 'DELETE' });
+  }
+
+  // ── Community endpoints ───────────────────────────────────────────────────
+
+  async getCommunityGlobalStats(): Promise<import('@/types').CommunityGlobalStats> {
+    return this.get('/api/community/global-stats');
+  }
+
+  async getEquipmentSummary(equipmentId: number): Promise<import('@/types').EquipmentSummary> {
+    return this.get(`/api/community/equipment/${equipmentId}/summary`);
+  }
+
+  async searchCommunityEquipment(q: string): Promise<import('@/types').EquipmentSearchResult[]> {
+    const r = await this.get<{ results: import('@/types').EquipmentSearchResult[] }>(`/api/community/equipment/search?q=${encodeURIComponent(q)}`);
+    return r.results ?? [];
+  }
+
+  async getCommunityStats(params: {
+    equipmentId: number;
+    startStar: number;
+    targetStar: number;
+    from?: string;
+    starCatching?: boolean;
+    thirtyPctMesoReduction?: boolean;
+  }): Promise<import('@/types').CommunityEquipmentStats> {
+    const p = new URLSearchParams({
+      equipmentId: String(params.equipmentId),
+      startStar: String(params.startStar),
+      targetStar: String(params.targetStar),
+    });
+    if (params.from) p.set('from', params.from);
+    if (params.starCatching !== undefined) p.set('starCatching', String(params.starCatching));
+    if (params.thirtyPctMesoReduction !== undefined) p.set('thirtyPctMesoReduction', String(params.thirtyPctMesoReduction));
+    return this.get(`/api/community/stats?${p}`);
+  }
+
+  async getCommunityBoomDistribution(
+    equipmentId: number,
+    startStar: number,
+    targetStar: number
+  ): Promise<import('@/types').CommunityBoomDistribution> {
+    return this.get(
+      `/api/community/boom-distribution?equipmentId=${equipmentId}&startStar=${startStar}&targetStar=${targetStar}`
+    );
+  }
+
+  async getCommunityTrending(
+    days?: 7 | 30 | 90
+  ): Promise<{ items: import('@/types').CommunityTrendingItem[] }> {
+    return this.get(`/api/community/trending${days ? `?days=${days}` : ''}`);
+  }
+
+  async getCommunityFeed(limit?: number): Promise<{ entries: import('@/types').CommunityFeedEntry[] }> {
+    return this.get(`/api/community/feed${limit ? `?limit=${limit}` : ''}`);
+  }
 }
 
 export const apiService = new ApiService();
 export const railwayApiService = new ApiService('https://forge-service-production.up.railway.app');
+export const sessionApiService = new ApiService(
+  import.meta.env.VITE_SESSION_API_URL ?? import.meta.env.VITE_API_URL ?? 'https://maple-forge-backend-production.up.railway.app'
+);

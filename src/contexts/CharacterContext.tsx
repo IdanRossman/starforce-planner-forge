@@ -27,6 +27,7 @@ export interface CharacterContextState {
 
   // Utility
   getCharacterById: (characterId: string) => Character | undefined;
+  refreshCharacterEquipment: (characterId: string) => Promise<void>;
   isLoading: boolean;
   isEquipmentLoading: boolean;
   error: string | null;
@@ -340,6 +341,23 @@ export function CharacterProvider({ children }: CharacterProviderProps) {
     setSelectedCharacter(prev => prev?.id === characterId ? { ...prev, storageItems: applyRemove(prev.storageItems) } : prev);
   }, []);
 
+  const refreshCharacterEquipment = useCallback(async (characterId: string) => {
+    if (!user) return;
+    equipmentLoadedRef.current.delete(characterId);
+    setIsEquipmentLoading(true);
+    try {
+      const backendSlots = await apiService.getCharacterEquipment(characterId);
+      const { equipped, storage } = await buildEquipmentFromSlots(backendSlots);
+      equipmentLoadedRef.current.add(characterId);
+      setCharacters(prev => prev.map(c => c.id === characterId ? { ...c, equipment: equipped, storageItems: storage } : c));
+      setSelectedCharacter(prev => prev?.id === characterId ? { ...prev, equipment: equipped, storageItems: storage } : prev);
+    } catch (err) {
+      console.error('Failed to refresh character equipment:', err);
+    } finally {
+      setIsEquipmentLoading(false);
+    }
+  }, [user]);
+
   const contextValue: CharacterContextState = {
     // State
     characters,
@@ -354,7 +372,8 @@ export function CharacterProvider({ children }: CharacterProviderProps) {
     deleteCharacter,
     selectCharacter,
     getCharacterById,
-    
+    refreshCharacterEquipment,
+
     // Basic Equipment Operations
     addEquipmentToCharacter,
     removeEquipmentFromCharacter,

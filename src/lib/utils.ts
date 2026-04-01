@@ -314,14 +314,14 @@ export function formatMeso(amount: number): string {
 
 export function parseMesoInput(input: string): number {
   if (!input || input.trim() === '') return 0;
-  
+
   const cleanInput = input.trim().toUpperCase();
   const lastChar = cleanInput.slice(-1);
   const numericPart = cleanInput.slice(0, -1);
-  
+
   let multiplier = 1;
   let numberStr = cleanInput;
-  
+
   if (lastChar === 'K') {
     multiplier = 1000;
     numberStr = numericPart;
@@ -332,10 +332,15 @@ export function parseMesoInput(input: string): number {
     multiplier = 1000000000;
     numberStr = numericPart;
   }
-  
+
   const number = parseFloat(numberStr);
   if (isNaN(number)) return 0;
-  
+
+  // No explicit suffix and value is small — assume billions (e.g. "42" → 42B)
+  if (multiplier === 1 && number < 10_000) {
+    return Math.floor(number * 1_000_000_000);
+  }
+
   return Math.floor(number * multiplier);
 }
 

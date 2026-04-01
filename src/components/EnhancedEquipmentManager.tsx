@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Equipment, EquipmentSlot, StorageItem } from "@/types";
 import { StoragePanel } from "@/components/StoragePanel";
+import { StarforceSessionTab } from "@/components/StarforceSession/StarforceSessionTab";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { useCharacterWorth, formatMesos } from "@/hooks/useCharacterWorth";
 import { Loader2 } from "lucide-react";
@@ -119,7 +120,7 @@ export function EnhancedEquipmentManager({
   onEditCharacter,
   onDeleteCharacter,
 }: EnhancedEquipmentManagerProps) {
-  const { isEquipmentLoading, selectedCharacter } = useCharacterContext();
+  const { isEquipmentLoading, selectedCharacter, refreshCharacterEquipment } = useCharacterContext();
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
@@ -141,6 +142,9 @@ export function EnhancedEquipmentManager({
     if (newTab !== activeTab) {
       trackTabSwitch(activeTab, newTab);
       setActiveTab(newTab);
+      if (newTab === 'equipment' && characterId) {
+        refreshCharacterEquipment(characterId);
+      }
     }
   };
 
@@ -266,7 +270,7 @@ export function EnhancedEquipmentManager({
     <div className="space-y-4">
       {/* Main Content with Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
           <TabsTrigger
             value="equipment"
             className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
@@ -296,6 +300,13 @@ export function EnhancedEquipmentManager({
                     {potentialEquipment.filter(eq => eq.targetPotentialValue && eq.targetPotentialValue !== eq.currentPotentialValue).length}
                   </Badge>
                 )}
+              </TabsTrigger>
+              <TabsTrigger
+                value="sessions"
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+              >
+                <span className="hidden sm:inline">SF Sessions</span>
+                <span className="inline sm:hidden">Sessions</span>
               </TabsTrigger>
             </TabsList>
 
@@ -517,6 +528,14 @@ export function EnhancedEquipmentManager({
             {/* Potential Calculator Tab */}
             <TabsContent value="potential" className="mt-4">
               <PotentialCalculator />
+            </TabsContent>
+
+            {/* Starforce Sessions Tab */}
+            <TabsContent value="sessions" className="mt-4">
+              <StarforceSessionTab
+                characterId={characterId}
+                selectedJob={selectedJob}
+              />
             </TabsContent>
 
           </Tabs>

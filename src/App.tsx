@@ -4,11 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Home, Calculator, Users } from "lucide-react";
+import { Home, Calculator, Users, BarChart2 } from "lucide-react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
 import { SiCurseforge } from 'react-icons/si';
 import Homepage from "./pages/Homepage";
+import CommunityPage from "./pages/CommunityPage";
 import CharacterDashboard from "./pages/CharacterDashboard";
 import { QuickPlanning } from "./pages/QuickPlanning";
 import NewCharacter from "./pages/NewCharacter";
@@ -42,7 +43,7 @@ function AppContent() {
 
   // Determine slide direction based on route order
   const getSlideDirection = () => {
-    const routes = ['/', '/quick-planning', '/characters'];
+    const routes = ['/', '/quick-planning', '/community', '/characters'];
     const currentIndex = routes.indexOf(location.pathname);
     const previousIndex = routes.indexOf(previousPathRef.current);
     
@@ -61,6 +62,7 @@ function AppContent() {
   const navItems = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Quick Planning', href: '/quick-planning', icon: Calculator },
+    { label: 'Community', href: '/community', icon: BarChart2 },
     { label: 'Characters', href: '/characters', icon: Users }
   ];
 
@@ -173,6 +175,17 @@ function AppContent() {
                   exit="exit"
                 >
                   <ResetPasswordPage />
+                </motion.div>
+              } />
+              <Route path="/community" element={
+                <motion.div
+                  custom={direction}
+                  variants={pageVariants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                >
+                  <CommunityPage />
                 </motion.div>
               } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
