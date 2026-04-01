@@ -217,22 +217,22 @@ export function LogResultDialog({ open, onOpenChange, item, currentMesoBalance, 
                     {boomStars.map((star, i) => (
                       <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-border/20">
                         <span className="text-[10px] text-white/30 font-maplestory w-14 shrink-0">Boom {i + 1} at</span>
-                        <button
-                          onClick={() => setBoomStars(prev => { const n = [...prev]; n[i] = Math.max(0, n[i] - 1); return n; })}
-                          className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
-                        >
-                          <Minus className="w-2.5 h-2.5" />
-                        </button>
-                        <div className="flex items-center gap-1 flex-1 justify-center">
+                        <div className="flex items-center gap-1 flex-1">
                           <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400 shrink-0" />
-                          <span className="text-xs font-bold font-maplestory text-white w-5 text-center">{star || '—'}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            max={30}
+                            placeholder="★"
+                            value={star || ''}
+                            onChange={e => {
+                              const val = parseInt(e.target.value);
+                              setBoomStars(prev => { const n = [...prev]; n[i] = isNaN(val) ? 0 : Math.min(30, Math.max(0, val)); return n; });
+                            }}
+                            onBlur={() => setShowBoomDetails(false)}
+                            className="w-14 bg-transparent border-none text-center font-bold font-maplestory text-xs text-white focus:outline-none tabular-nums placeholder:text-white/20"
+                          />
                         </div>
-                        <button
-                          onClick={() => setBoomStars(prev => { const n = [...prev]; n[i] = Math.min(30, n[i] + 1); return n; })}
-                          className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors shrink-0"
-                        >
-                          <Plus className="w-2.5 h-2.5" />
-                        </button>
                       </div>
                     ))}
                   </div>
