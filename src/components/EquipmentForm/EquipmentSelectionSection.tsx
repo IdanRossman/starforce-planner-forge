@@ -99,6 +99,7 @@ export function EquipmentSelectionSection({
           name="slot"
           label="Slot / Type"
           control={form.control}
+          labelClassName="text-white/50 font-maplestory font-medium text-xs uppercase tracking-wide"
         >
           {(field) => (
             <CategorizedSelect
@@ -111,7 +112,8 @@ export function EquipmentSelectionSection({
               }}
               placeholder="Select slot type"
               categories={slotCategories}
-              className="bg-white border-gray-300 font-maplestory w-full"
+              className="bg-white/8 border-white/15 font-maplestory w-full"
+              variant="dark"
             />
           )}
         </FormFieldWrapper>
@@ -128,6 +130,7 @@ export function EquipmentSelectionSection({
         name="set"
         label="Equipment"
         control={form.control}
+        labelClassName="text-white/50 font-maplestory font-medium text-xs uppercase tracking-wide"
         underText={equipmentSource === 'local' && availableEquipment.length > 0 ? (
           <ApiStatusBadge status="local" />
         ) : undefined}
@@ -135,7 +138,7 @@ export function EquipmentSelectionSection({
         {(field) => {
           if (equipmentLoading) {
             return (
-              <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
+              <div className="p-3 text-center text-sm text-white/40 font-maplestory border border-white/10 rounded-md w-full bg-white/5">
                 Loading equipment data...
               </div>
             );
@@ -143,10 +146,10 @@ export function EquipmentSelectionSection({
 
           if (availableEquipment.length === 0) {
             return (
-              <div className="p-4 text-center text-sm text-muted-foreground font-maplestory border rounded-md w-full">
-                {equipmentSource === 'api' 
+              <div className="p-3 text-center text-sm text-white/40 font-maplestory border border-white/10 rounded-md w-full bg-white/5">
+                {equipmentSource === 'api'
                   ? 'No equipment found for this slot and job'
-                  : 'Equipment data not available - using manual entry'
+                  : 'Equipment data not available'
                 }
               </div>
             );
@@ -155,6 +158,7 @@ export function EquipmentSelectionSection({
           return (
             <CategorizedSelect
               value={field.value}
+              variant="dark"
               onValueChange={(value) => {
                 console.log('Equipment selection changed to:', value);
                 
@@ -229,7 +233,7 @@ export function EquipmentSelectionSection({
               }}
               placeholder="Select equipment"
               categories={equipmentCategories}
-              className="bg-white border-gray-300 font-maplestory w-full"
+              className="bg-white/8 border-white/15 font-maplestory w-full"
             />
           );
         }}

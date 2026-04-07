@@ -5,7 +5,6 @@ import { EquipmentFormData } from '@/hooks/utils/useEquipmentFormValidation';
 import { useStarForceUtils } from '@/hooks/starforce/useStarForceUtils';
 import { FormFieldWrapper } from '@/components/shared/forms';
 import { MapleInput } from '@/components/shared/forms/MapleInput';
-import { MapleButton } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, ArrowRightLeft } from 'lucide-react';
 
@@ -79,49 +78,8 @@ export function SimpleStarForceConfigurationSection({
 
   if (!watchStarforceable) {
     return (
-      <div className="space-y-4 opacity-60">
-        <div className="text-center py-6 bg-gray-50 rounded-lg border border-gray-200">
-          <p className="font-maplestory text-sm text-gray-600 mb-4">
-            This equipment cannot be enhanced with StarForce
-          </p>
-          
-          {/* Disabled Current and Target StarForce Inputs */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <FormFieldWrapper
-                name="currentStarForce"
-                label="Current Stars"
-                control={form.control}
-              >
-                {() => (
-                  <MapleInput
-                    type="number"
-                    disabled
-                    value={0}
-                    className="font-maplestory bg-gray-100 text-center"
-                  />
-                )}
-              </FormFieldWrapper>
-            </div>
-
-            <div>
-              <FormFieldWrapper
-                name="targetStarForce"
-                label="Target Stars"
-                control={form.control}
-              >
-                {() => (
-                  <MapleInput
-                    type="number"
-                    disabled
-                    value={0}
-                    className="font-maplestory bg-gray-100 text-center"
-                  />
-                )}
-              </FormFieldWrapper>
-            </div>
-          </div>
-        </div>
+      <div className="py-3 text-center">
+        <p className="font-maplestory text-xs text-white/30">Not starforceable</p>
       </div>
     );
   }
@@ -129,12 +87,14 @@ export function SimpleStarForceConfigurationSection({
   return (
     <div className="space-y-4">
       {/* Current and Target StarForce - Inline */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="relative">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide">Current</p>
           <FormFieldWrapper
             name="currentStarForce"
             label="Current Stars"
             control={form.control}
+            hideLabel
           >
             {(field) => (
               <MapleInput
@@ -142,45 +102,37 @@ export function SimpleStarForceConfigurationSection({
                 min={0}
                 max={maxStars}
                 onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                className="font-maplestory text-center"
+                className="font-maplestory text-center !border-white/15 !text-white h-9 [&]:bg-transparent"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
                 value={field.value || 0}
               />
             )}
           </FormFieldWrapper>
-          {/* Quick Select Current Buttons */}
-          <div className="flex flex-wrap gap-1 mt-1 justify-center">
+          <div className="flex flex-wrap gap-1">
             {[0, 15, 17, 19, 21, 22].filter(stars => stars <= maxStars).map(stars => (
               <button
                 key={stars}
                 type="button"
-                onClick={() => {
-                  form.setValue('currentStarForce', stars, { shouldValidate: true });
-                }}
-                className={`px-2 py-1 text-xs font-maplestory rounded border transition-colors ${
+                onClick={() => form.setValue('currentStarForce', stars, { shouldValidate: true })}
+                className={`px-1.5 py-0.5 text-[10px] font-maplestory rounded border transition-colors ${
                   currentStars === stars
-                    ? 'bg-blue-500 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-400'
+                    ? 'bg-yellow-400/20 text-yellow-400 border-yellow-400/30'
+                    : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60'
                 }`}
               >
                 {stars}★
               </button>
             ))}
           </div>
-          {autoAdjusted.current && (
-            <Badge 
-              variant="secondary" 
-              className="absolute -top-2 -right-2 bg-yellow-100 text-yellow-800 text-xs font-maplestory"
-            >
-              Auto-adjusted
-            </Badge>
-          )}
         </div>
 
-        <div className="relative">
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide">Target</p>
           <FormFieldWrapper
             name="targetStarForce"
             label="Target Stars"
             control={form.control}
+            hideLabel
           >
             {(field) => (
               <MapleInput
@@ -188,69 +140,57 @@ export function SimpleStarForceConfigurationSection({
                 min={Math.max(1, currentStars || 0)}
                 max={maxStars}
                 onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-                className="font-maplestory text-center"
+                className="font-maplestory text-center !border-white/15 !text-white h-9"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }}
                 value={field.value || 1}
               />
             )}
           </FormFieldWrapper>
-          {/* Quick Select Target Buttons */}
-          <div className="flex flex-wrap gap-1 mt-1 justify-center">
+          <div className="flex flex-wrap gap-1">
             {[15, 17, 19, 21, 22].filter(stars => stars <= maxStars).map(stars => (
               <button
                 key={stars}
                 type="button"
-                onClick={() => {
-                  form.setValue('targetStarForce', stars, { shouldValidate: true });
-                }}
-                className={`px-2 py-1 text-xs font-maplestory rounded border transition-colors ${
+                onClick={() => form.setValue('targetStarForce', stars, { shouldValidate: true })}
+                className={`px-1.5 py-0.5 text-[10px] font-maplestory rounded border transition-colors ${
                   targetStars === stars
-                    ? 'bg-yellow-500 text-white border-yellow-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-yellow-50 hover:border-yellow-400'
+                    ? 'bg-primary/20 text-primary border-primary/30'
+                    : 'bg-white/5 text-white/40 border-white/10 hover:bg-white/10 hover:text-white/60'
                 }`}
               >
                 {stars}★
               </button>
             ))}
           </div>
-          {autoAdjusted.target && (
-            <Badge 
-              variant="secondary" 
-              className="absolute -top-2 -right-2 bg-yellow-100 text-yellow-800 text-xs font-maplestory"
-            >
-              Auto-adjusted
-            </Badge>
-          )}
         </div>
       </div>
 
       {/* Transfer Options - Only show when relevant */}
       {hasTransferOptions && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-3 p-2.5 bg-white/5 rounded-lg border border-white/10">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowRightLeft className="h-4 w-4 text-blue-600" />
-            <span className="font-maplestory text-sm font-medium text-blue-800">
+            <ArrowRightLeft className="h-3.5 w-3.5 text-white/40" />
+            <span className="font-maplestory text-xs font-medium text-white/60">
               Transfer Options
             </span>
           </div>
-          
-          <div className="space-y-2">
-            {/* Transfer FROM this equipment (to higher level) */}
+
+          <div className="space-y-1.5">
             {transferOptions.canTransferFrom.length > 0 && (
-              <div className="flex items-center justify-between p-2 bg-white rounded border border-blue-200">
+              <div className="flex items-center justify-between p-2 bg-white/5 rounded border border-white/10">
                 <div className="flex items-center gap-2">
-                  <ArrowUp className="h-3 w-3 text-green-600" />
-                  <span className="text-xs font-maplestory text-gray-700">
-                    Transfer FROM this → {transferOptions.canTransferFrom.length} higher level item(s)
+                  <ArrowUp className="h-3 w-3 text-green-400" />
+                  <span className="text-xs font-maplestory text-white/50">
+                    {transferOptions.canTransferFrom.length} higher level item(s)
                   </span>
                 </div>
-                <MapleButton
-                  variant="blue"
-                  size="sm"
+                <button
                   type="button"
                   onClick={() => setShowTransferDialog?.(true)}
+                  className="px-2.5 py-1 text-[10px] font-maplestory rounded border border-primary/30 bg-primary/15 text-primary hover:bg-primary/25 hover:border-primary/50 transition-colors"
                 >
                   Transfer Out
-                </MapleButton>
+                </button>
               </div>
             )}
 

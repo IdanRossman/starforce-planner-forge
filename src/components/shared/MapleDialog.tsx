@@ -124,43 +124,42 @@ export function MapleDialog({
         )}
 
         <CardContent className="p-2 pb-8">
-          {/* Gray middle card */}
-          <Card className="border-gray-700 border-2" style={{ backgroundColor: '#EEEEEE' }}>
+          {/* Dark middle card */}
+          <Card className="border-white/10 border-2" style={{ backgroundColor: 'hsl(217, 33%, 10%)' }}>
             <CardContent className="p-0">
               <div className="flex items-stretch gap-0">
-                
+
                 {/* Character Portrait Section (conditional) */}
                 {character && (
-                  <div className="p-3 border-r-2 border-gray-500 flex flex-col items-center justify-center" 
-                       style={{ backgroundColor: 'rgba(238, 238, 238, 0.9)' }}>
+                  <div className="p-3 border-r-2 border-white/10 flex flex-col items-center justify-center"
+                       style={{ backgroundColor: 'hsl(217, 33%, 12%)' }}>
                     <div className="relative mb-2">
-                      <img 
-                        src={character.image} 
+                      <img
+                        src={character.image}
                         alt={character.name}
-                        className={`w-24 h-24 border-3 border-yellow-400 bg-gray-50 ${
-                          character.image.includes('/equipment/') || character.image.includes('equipment') 
-                            ? 'object-contain' 
+                        className={`w-24 h-24 border-2 border-primary/40 ${
+                          character.image.includes('/equipment/') || character.image.includes('equipment')
+                            ? 'object-contain bg-white/5 rounded-lg'
                             : 'object-cover rounded-full'
                         }`}
-                        style={{ backgroundColor: 'rgba(245, 245, 245, 0.8)' }}
                         onError={(e) => {
                           e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'%3E%3Cpath d='M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/%3E%3Ccircle cx='12' cy='7' r='4'/%3E%3C/svg%3E";
                         }}
                       />
                     </div>
-                    <div className="px-2 py-1 rounded-md shadow-sm" style={{ backgroundColor: '#707070' }}>
-                      <span className="text-xs font-bold text-white text-center block font-maplestory">
+                    <div className="px-2 py-1 rounded-md" style={{ backgroundColor: 'hsl(217, 33%, 18%)' }}>
+                      <span className="text-xs font-bold text-white/80 text-center block font-maplestory">
                         {character.name}
                       </span>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Content card */}
                 <div className="flex-1" style={{ width: character ? '66%' : '100%' }}>
-                  <Card 
+                  <Card
                     className={`border-0 h-full transition-all duration-200 ${onCardClick ? 'cursor-pointer hover:bg-opacity-95' : ''}`}
-                    style={{ backgroundColor: '#F9F9F9' }}
+                    style={{ backgroundColor: 'hsl(217, 33%, 9%)' }}
                     onClick={onCardClick}
                   >
                     <CardContent className="p-4 flex flex-col h-full">

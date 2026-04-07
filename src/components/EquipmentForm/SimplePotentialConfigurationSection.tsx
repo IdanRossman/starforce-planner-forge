@@ -104,65 +104,43 @@ export function SimplePotentialConfigurationSection({
   
   return (
     <div className="space-y-4">
-      {/* Loading State */}
       {isLoading && (
-        <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <p className="font-maplestory text-sm text-blue-800">
-            Loading potential options...
-          </p>
+        <div className="p-2.5 bg-white/5 rounded-lg border border-white/10">
+          <p className="font-maplestory text-xs text-white/40">Loading potential options…</p>
         </div>
       )}
-
-      {/* Error State */}
       {error && (
-        <div className="p-3 bg-red-50 rounded-lg border border-red-200">
-          <p className="font-maplestory text-sm text-red-800">
-            Error: {error}
-          </p>
-          <button 
-            onClick={clearError}
-            className="text-red-600 underline text-xs mt-1"
-          >
-            Clear Error
-          </button>
+        <div className="p-2.5 bg-red-500/10 rounded-lg border border-red-400/20">
+          <p className="font-maplestory text-xs text-red-400">{error}</p>
+          <button onClick={clearError} className="text-red-400/60 underline text-[10px] mt-1">Clear</button>
         </div>
       )}
 
-      {/* Current and Target Potential - Inline */}
-      <div className="grid grid-cols-2 gap-4">
-        <FormFieldWrapper
-          name="currentPotential"
-          label="Current Potential"
-          control={undefined}
-        >
-          {() => (
-            <CategorizedSelect
-              value={currentPotentialValue}
-              onValueChange={setCurrentPotentialValue}
-              placeholder={isLoading ? "Loading..." : "Select current potential"}
-              categories={getPotentialCategories}
-              className="bg-white border-purple-300 font-maplestory w-full"
-              disabled={isLoading || getPotentialCategories.length === 0}
-            />
-          )}
-        </FormFieldWrapper>
-
-        <FormFieldWrapper
-          name="targetPotential"
-          label="Target Potential"
-          control={undefined}
-        >
-          {() => (
-            <CategorizedSelect
-              value={targetPotentialValue}
-              onValueChange={setTargetPotentialValue}
-              placeholder={isLoading ? "Loading..." : "Select target potential"}
-              categories={getPotentialCategories}
-              className="bg-white border-purple-300 font-maplestory w-full"
-              disabled={isLoading || getPotentialCategories.length === 0}
-            />
-          )}
-        </FormFieldWrapper>
+      <div className="space-y-2">
+        <div>
+          <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide mb-1">Current</p>
+          <CategorizedSelect
+            value={currentPotentialValue}
+            onValueChange={setCurrentPotentialValue}
+            placeholder={isLoading ? "Loading…" : "Select current"}
+            categories={getPotentialCategories}
+            className="bg-white/8 border-white/15 font-maplestory w-full"
+            variant="dark"
+            disabled={isLoading || getPotentialCategories.length === 0}
+          />
+        </div>
+        <div>
+          <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide mb-1">Target</p>
+          <CategorizedSelect
+            value={targetPotentialValue}
+            onValueChange={setTargetPotentialValue}
+            placeholder={isLoading ? "Loading…" : "Select target"}
+            categories={getPotentialCategories}
+            className="bg-white/8 border-white/15 font-maplestory w-full"
+            variant="dark"
+            disabled={isLoading || getPotentialCategories.length === 0}
+          />
+        </div>
       </div>
     </div>
   );

@@ -11,20 +11,20 @@ const statusConfig = {
   local: {
     icon: WifiOff,
     text: 'Using local data (API unavailable)',
-    className: 'text-amber-600 bg-amber-50 border-amber-200',
-    iconClassName: 'text-amber-500'
+    className: 'text-amber-400/70 bg-amber-400/8 border-amber-400/20',
+    iconClassName: 'text-amber-400/60'
   },
   api: {
     icon: Wifi,
     text: 'Connected to API',
-    className: 'text-green-600 bg-green-50 border-green-200',
-    iconClassName: 'text-green-500'
+    className: 'text-green-400/70 bg-green-400/8 border-green-400/20',
+    iconClassName: 'text-green-400/60'
   },
   error: {
     icon: AlertTriangle,
     text: 'API Error',
-    className: 'text-red-600 bg-red-50 border-red-200',
-    iconClassName: 'text-red-500'
+    className: 'text-red-400/70 bg-red-400/8 border-red-400/20',
+    iconClassName: 'text-red-400/60'
   }
 };
 

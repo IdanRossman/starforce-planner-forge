@@ -144,7 +144,10 @@ export function CategorizedSelect({
 
   return (
     <Select onValueChange={onValueChange} value={value} disabled={disabled}>
-      <SelectTrigger className={cn(className, "font-maplestory")}>
+      <SelectTrigger
+        className={cn(className, "font-maplestory")}
+        style={variant === 'dark' ? { '--tw-ring-color': 'hsl(var(--primary) / 0.4)' } as React.CSSProperties : undefined}
+      >
         <SelectValue placeholder={placeholder}>
           {selectedOption ? (
             renderSelectedValue ? renderSelectedValue(selectedOption) : defaultRenderSelectedValue(selectedOption)

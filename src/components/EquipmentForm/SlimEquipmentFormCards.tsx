@@ -83,16 +83,16 @@ export function SlimEquipmentFormCards({
   const isEquipmentSelected = !!selectedEquipmentSet;
 
   return (
-    <div className="space-y-4">
-      {/* Equipment Selection Card - Minimal */}
-      <Card className="border-2 bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-300">
-        <CardHeader className="pb-2">
+    <div className="space-y-3">
+      {/* Equipment Selection */}
+      <Card className="border border-white/10 bg-white/5">
+        <CardHeader className="pb-1.5 pt-3 px-3">
           <div className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-blue-600" />
-            <CardTitle className="text-sm font-maplestory text-blue-900">Equipment</CardTitle>
+            <Settings2 className="h-3.5 w-3.5 text-white/40" />
+            <CardTitle className="text-xs font-maplestory text-white/60 uppercase tracking-wide">Equipment</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="px-3 pb-3 pt-0">
           <EquipmentSelectionSection
             slotCategories={slotCategories}
             allowSlotEdit={allowSlotEdit}
@@ -109,75 +109,56 @@ export function SlimEquipmentFormCards({
         </CardContent>
       </Card>
 
-      {/* StarForce Card - Slim - Only show when equipment is selected */}
+      {/* StarForce + Potential side by side */}
       {isEquipmentSelected && (
-        <Card className={`border-2 ${
-          hasStarForceCapability 
-            ? 'bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-300' 
-            : 'bg-gray-50 border-gray-200'
-        }`}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Star className={`h-4 w-4 ${
-                hasStarForceCapability ? 'text-yellow-600' : 'text-gray-400'
-              }`} />
-              <CardTitle className={`text-sm font-maplestory ${
-                hasStarForceCapability ? 'text-yellow-900' : 'text-gray-600'
-              }`}>
-                StarForce
-              </CardTitle>
-              {hasStarForceCapability && (
-                <Badge variant="secondary" className="text-xs bg-yellow-100 text-yellow-700 font-maplestory">
-                  Max: {maxStars}★
-                </Badge>
-              )}
-              {!hasStarForceCapability && (
-                <Badge variant="secondary" className="text-xs">Not Available</Badge>
-              )}
-              {autoAdjusted.current && (
-                <Badge variant="outline" className="text-xs text-yellow-600">Auto-adjusted</Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <SimpleStarForceConfigurationSection
-              watchStarforceable={watchStarforceable}
-              watchLevel={watchLevel}
-              autoAdjusted={autoAdjusted}
-              equipment={equipment}
-              availableEquipment={availableEquipment}
-              selectedSlot={selectedSlot}
-              setShowTransferDialog={setShowTransferDialog}
-            />
-          </CardContent>
-        </Card>
-      )}
+        <div className="grid grid-cols-2 gap-3">
+          {/* StarForce */}
+          <Card className={`border ${hasStarForceCapability ? 'border-yellow-400/20 bg-yellow-400/5' : 'border-white/8 bg-white/3'}`}>
+            <CardHeader className="pb-1.5 pt-3 px-3">
+              <div className="flex items-center gap-2">
+                <Star className={`h-3.5 w-3.5 ${hasStarForceCapability ? 'text-yellow-400' : 'text-white/20'}`} />
+                <CardTitle className={`text-xs font-maplestory uppercase tracking-wide ${hasStarForceCapability ? 'text-yellow-400/70' : 'text-white/30'}`}>
+                  StarForce
+                </CardTitle>
+                {hasStarForceCapability && (
+                  <span className="text-[10px] text-yellow-400/50 font-maplestory ml-auto">Max {maxStars}★</span>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <SimpleStarForceConfigurationSection
+                watchStarforceable={watchStarforceable}
+                watchLevel={watchLevel}
+                autoAdjusted={autoAdjusted}
+                equipment={equipment}
+                availableEquipment={availableEquipment}
+                selectedSlot={selectedSlot}
+                setShowTransferDialog={setShowTransferDialog}
+              />
+            </CardContent>
+          </Card>
 
-      {/* Potential Card - Slim - Only show when equipment is selected */}
-      {isEquipmentSelected && (
-        <Card className="border-2 bg-gradient-to-br from-purple-50 to-violet-50 border-purple-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-purple-600" />
-              <CardTitle className="text-sm font-maplestory text-purple-900">Potential</CardTitle>
-              {/* "NEW" indicator */}
-              <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-violet-500 text-white rounded-full animate-bounce">
-                NEW
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <SimplePotentialConfigurationSection
-              currentPotentialValue={currentPotentialValue}
-              setCurrentPotentialValue={setCurrentPotentialValue}
-              targetPotentialValue={targetPotentialValue}
-              setTargetPotentialValue={setTargetPotentialValue}
-              equipment={equipment}
-              equipmentType={form.watch('type')}
-              equipmentLevel={form.watch('level')}
-            />
-          </CardContent>
-        </Card>
+          {/* Potential */}
+          <Card className="border border-purple-400/20 bg-purple-400/5">
+            <CardHeader className="pb-1.5 pt-3 px-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                <CardTitle className="text-xs font-maplestory text-purple-400/70 uppercase tracking-wide">Potential</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="px-3 pb-3 pt-0">
+              <SimplePotentialConfigurationSection
+                currentPotentialValue={currentPotentialValue}
+                setCurrentPotentialValue={setCurrentPotentialValue}
+                targetPotentialValue={targetPotentialValue}
+                setTargetPotentialValue={setTargetPotentialValue}
+                equipment={equipment}
+                equipmentType={form.watch('type')}
+                equipmentLevel={form.watch('level')}
+              />
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

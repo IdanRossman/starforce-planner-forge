@@ -6,8 +6,9 @@ import { Equipment, EquipmentSlot, EquipmentType, EquipmentTier, PotentialLine }
 import { EquipmentImage } from '@/components/EquipmentImage';
 import { StarForceTransferDialog } from '@/components/StarForceTransferDialog';
 import { getEquipmentBySlot, getEquipmentBySlotAndJob } from '@/services/equipmentService';
-import { MapleDialog, MapleButton, ApiStatusBadge } from '@/components/shared';
+import { ApiStatusBadge } from '@/components/shared';
 import { SelectCategory } from '@/components/shared/forms';
+import { X } from 'lucide-react';
 import { usePotential } from '@/hooks/game/usePotential';
 import { useEquipment } from '@/hooks/data/useEquipment';
 import { useEquipmentFormValidation, type EquipmentFormData } from '@/hooks/utils/useEquipmentFormValidation';
@@ -768,69 +769,103 @@ export function EquipmentForm({
 
   return (
     <>
-      <MapleDialog
-        isVisible={isVisible}
-        opacity={opacity}
-        transform={transform}
-        position="center"
-        minWidth="900px"
-        className="max-w-5xl max-h-[90vh] mx-auto"
-        onClose={() => onOpenChange(false)}
-        character={{
-          name: form.getValues('set') || equipment?.name || 'Equipment',
-          image: selectedEquipmentImage || equipment?.image || '/placeholder.svg'
-        }}
-        bottomRightActions={
-          <MapleButton variant="orange" size="sm" onClick={form.handleSubmit(onSubmit)}>
-            Accept
-          </MapleButton>
-        }
-        bottomLeftActions={undefined}
-      >
-        <div className="space-y-4 p-3 sm:p-6 max-h-[calc(90vh-200px)] overflow-y-auto w-full">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold font-maplestory text-black mb-2">
-              {isEditing ? 'Edit Equipment' : 'Add Equipment'}
-            </h2>
-            <p className="text-sm text-gray-700 font-maplestory">
-              {isEditing 
-                ? 'Update your equipment details and StarForce goals.' 
-                : 'Add a new piece of equipment to track its StarForce progress.'
-              }
-            </p>
-          </div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 w-full">
-              {/* Slim Equipment Form Cards */}
-              <SlimEquipmentFormCards
-                form={form}
-                equipment={equipment}
-                isEditing={isEditing}
-                slotCategories={EQUIPMENT_SLOT_CATEGORIES}
-                allowSlotEdit={storageMode ? true : allowSlotEdit}
-                storageMode={storageMode}
-                defaultSlot={defaultSlot}
-                availableEquipment={availableEquipment}
-                equipmentLoading={equipmentLoading}
-                equipmentSource={equipmentSource}
-                selectedSlot={selectedSlot}
-                selectedEquipmentImage={selectedEquipmentImage}
-                setSelectedEquipmentImage={setSelectedEquipmentImage}
-                currentPotentialValue={currentPotentialValue}
-                setCurrentPotentialValue={setCurrentPotentialValue}
-                targetPotentialValue={targetPotentialValue}
-                setTargetPotentialValue={setTargetPotentialValue}
-                watchStarforceable={watchStarforceable}
-                watchLevel={watchLevel}
-                autoAdjusted={autoAdjusted}
-                hasValidTransferCandidates={hasValidTransferCandidates}
-                currentEquipmentForTransfer={currentEquipmentForTransfer}
-                setShowTransferDialog={setShowTransferDialog}
+      {/* Backdrop */}
+      {isVisible && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          style={{ opacity, transition: 'opacity 0.2s ease' }}
+          onClick={() => onOpenChange(false)}
+        />
+      )}
+
+      {/* Dialog */}
+      {isVisible && (
+        <div
+          className="fixed top-1/2 left-1/2 z-50 w-full max-w-2xl"
+          style={{
+            opacity,
+            transform: `translate(-50%, -50%) ${transform}`,
+            transition: 'opacity 0.2s ease, transform 0.2s ease',
+          }}
+        >
+          <div className="bg-[hsl(217_33%_9%)] border border-primary/20 rounded-2xl shadow-2xl shadow-black/60 flex flex-col max-h-[90vh]">
+
+            {/* Header */}
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8 shrink-0">
+              <EquipmentImage
+                src={selectedEquipmentImage || equipment?.image}
+                alt={form.getValues('set') || equipment?.name || 'Equipment'}
+                size="md"
+                className="shrink-0"
               />
-            </form>
-          </Form>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white font-maplestory truncate">
+                  {form.getValues('set') || equipment?.name || (isEditing ? 'Edit Equipment' : 'Add Equipment')}
+                </p>
+                <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide">
+                  {selectedSlot || equipment?.slot || 'Select a slot'}
+                  {watchLevel ? ` · Lv.${watchLevel}` : ''}
+                </p>
+              </div>
+              <button
+                onClick={() => onOpenChange(false)}
+                className="p-1.5 rounded-lg text-white/30 hover:text-white/70 hover:bg-white/8 transition-all shrink-0"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto p-4 flex-1">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+                  <SlimEquipmentFormCards
+                    form={form}
+                    equipment={equipment}
+                    isEditing={isEditing}
+                    slotCategories={EQUIPMENT_SLOT_CATEGORIES}
+                    allowSlotEdit={storageMode ? true : allowSlotEdit}
+                    storageMode={storageMode}
+                    defaultSlot={defaultSlot}
+                    availableEquipment={availableEquipment}
+                    equipmentLoading={equipmentLoading}
+                    equipmentSource={equipmentSource}
+                    selectedSlot={selectedSlot}
+                    selectedEquipmentImage={selectedEquipmentImage}
+                    setSelectedEquipmentImage={setSelectedEquipmentImage}
+                    currentPotentialValue={currentPotentialValue}
+                    setCurrentPotentialValue={setCurrentPotentialValue}
+                    targetPotentialValue={targetPotentialValue}
+                    setTargetPotentialValue={setTargetPotentialValue}
+                    watchStarforceable={watchStarforceable}
+                    watchLevel={watchLevel}
+                    autoAdjusted={autoAdjusted}
+                    hasValidTransferCandidates={hasValidTransferCandidates}
+                    currentEquipmentForTransfer={currentEquipmentForTransfer}
+                    setShowTransferDialog={setShowTransferDialog}
+                  />
+                </form>
+              </Form>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/8 shrink-0">
+              <button
+                onClick={() => onOpenChange(false)}
+                className="px-4 py-1.5 text-sm font-maplestory rounded-lg text-white/40 hover:text-white/70 hover:bg-white/8 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={form.handleSubmit(onSubmit)}
+                className="px-5 py-1.5 text-sm font-maplestory rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 hover:border-primary/50 transition-all font-semibold"
+              >
+                {isEditing ? 'Save Changes' : 'Add Equipment'}
+              </button>
+            </div>
+          </div>
         </div>
-      </MapleDialog>
+      )}
 
       {/* StarForce Transfer Dialog */}
       {currentEquipmentForTransfer && (
