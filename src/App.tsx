@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { Home, Calculator, Users, BarChart2 } from "lucide-react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
-import { SiCurseforge } from 'react-icons/si';
+import Logo3D from "@/components/ui/Logo3D";
 import Homepage from "./pages/Homepage";
 import CommunityPage from "./pages/CommunityPage";
 import CharacterDashboard from "./pages/CharacterDashboard";
@@ -104,7 +104,7 @@ function AppContent() {
           items={navItems}
           activeHref={location.pathname}
           brandText=""
-          logoIcon={<SiCurseforge className="simple-nav-icon" />}
+          logoIcon={<Logo3D />}
         />
         
         {/* Main Content */}

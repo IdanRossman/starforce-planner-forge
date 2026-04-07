@@ -86,6 +86,7 @@ export default function NewCharacter() {
 
   const [enableCallingCard, setEnableCallingCard] = useState(false);
   const [jobSearch, setJobSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = Object.entries(ORGANIZED_CLASSES);
 
@@ -156,7 +157,8 @@ export default function NewCharacter() {
   };
 
   const handleComplete = async () => {
-    if (!user) return;
+    if (!user || isSubmitting) return;
+    setIsSubmitting(true);
     try {
       const created = await apiService.createCharacter({
         userId: user.id,
@@ -203,6 +205,7 @@ export default function NewCharacter() {
       } else {
         toast({ title: "Error", description: "Failed to create character. Please try again.", variant: "destructive" });
       }
+      setIsSubmitting(false);
     }
   };
 
@@ -213,8 +216,8 @@ export default function NewCharacter() {
           steps={wizardSteps}
           currentStep={currentStep - 1}
           onStepChange={(step) => setCurrentStep(step + 1)}
-          canGoNext={canGoNext}
-          nextLabel={currentStep === TOTAL_STEPS ? "Complete" : "Next"}
+          canGoNext={canGoNext && !isSubmitting}
+          nextLabel={currentStep === TOTAL_STEPS ? (isSubmitting ? "Creating..." : "Complete") : "Next"}
           onNext={async () => {
             if (currentStep === TOTAL_STEPS) {
               await handleComplete();

@@ -150,7 +150,7 @@ class ApiService {
     return this.post(`/api/character/${characterId}/equipment`, slots);
   }
 
-  async getCharactersByUser(userId: string): Promise<Array<{ id: string; userId: string; name: string; job: string; level: number; callingCardHash: string | null; cardGenerationDate: string | null; cardGenerationCount: number }>> {
+  async getCharactersByUser(userId: string): Promise<Array<{ id: string; userId: string; name: string; job: string; level: number; enableCallingCard: boolean; callingCardHash: string | null; cardGenerationDate: string | null; cardGenerationCount: number; animatedCardVideoHash: string | null }>> {
     return this.get(`/api/character/by-user/${userId}`);
   }
 
@@ -193,6 +193,22 @@ class ApiService {
 
   async regenerateCallingCard(characterId: string): Promise<{ hash: string; url: string }> {
     return this.post(`/api/callingcard/${characterId}`, {});
+  }
+
+  async getUserPermissions(userId: string): Promise<{ canAnimateCallingCard: boolean }> {
+    try {
+      return await this.get(`/api/UserPermissions/${userId}`);
+    } catch {
+      return { canAnimateCallingCard: false };
+    }
+  }
+
+  async startAnimateCallingCard(characterId: string): Promise<{ status: string; videoUrl?: string; videoHash?: string }> {
+    return this.post(`/api/CallingCard/${characterId}/animate`, {});
+  }
+
+  async getAnimateCallingCardStatus(characterId: string): Promise<{ status: string; videoUrl?: string; videoHash?: string }> {
+    return this.get(`/api/CallingCard/${characterId}/animate/status`);
   }
 
   async getPartyImage(userId: string): Promise<{ hash: string; url: string } | null> {

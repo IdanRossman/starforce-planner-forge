@@ -1,3 +1,15 @@
+/* Override vanta-container's canvas wildcard for the 3D logo */
+.simple-nav-brand canvas.logo-3d-canvas {
+  position: absolute !important;
+  top: 50% !important;
+  left: auto !important;
+  transform: translateY(-50%) !important;
+  width: 64px !important;
+  height: 64px !important;
+  z-index: auto !important;
+  pointer-events: none !important;
+}
+
 /* iPhone Dynamic Island style navigation */
 .simple-nav-wrapper {
   position: fixed;

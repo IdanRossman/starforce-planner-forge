@@ -15,6 +15,9 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
+  optimizeDeps: {
+    include: ['three', '@react-three/fiber'],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -39,6 +39,9 @@ import {
   RefreshCw,
   Edit,
   Trash2,
+  Sparkles,
+  Film,
+  ImageIcon,
 } from "lucide-react";
 
 interface EnhancedEquipmentManagerProps {
@@ -57,11 +60,15 @@ interface EnhancedEquipmentManagerProps {
   characterName?: string;
   characterImage?: string;
   callingCardHash?: string | null;
+  animatedCardVideoHash?: string | null;
+  canAnimateCallingCard?: boolean;
+  isAnimating?: boolean;
   characterLevel?: number;
   enableCallingCard?: boolean;
   isRegeneratingCard?: boolean;
   remainingGenerations?: number;
   onRegenerateCard?: (e: React.MouseEvent) => void;
+  onAnimateCard?: (e: React.MouseEvent) => void;
   onEditCharacter?: () => void;
   onDeleteCharacter?: () => void;
 }
@@ -112,16 +119,28 @@ export function EnhancedEquipmentManager({
   characterName,
   characterImage,
   callingCardHash,
+  animatedCardVideoHash,
+  canAnimateCallingCard = false,
+  isAnimating = false,
   characterLevel,
   enableCallingCard = false,
   isRegeneratingCard,
   remainingGenerations = 0,
   onRegenerateCard,
+  onAnimateCard,
   onEditCharacter,
   onDeleteCharacter,
 }: EnhancedEquipmentManagerProps) {
   const { isEquipmentLoading, selectedCharacter, refreshCharacterEquipment } = useCharacterContext();
   const [equipmentFormOpen, setEquipmentFormOpen] = useState(false);
+  const [showVideo, setShowVideo] = useState(!!animatedCardVideoHash);
+  const [videoAspectRatio, setVideoAspectRatio] = useState<string>('1376 / 768');
+
+  // sync showVideo when animated card appears or character changes
+  useEffect(() => {
+    setShowVideo(!!animatedCardVideoHash);
+    if (!animatedCardVideoHash) setVideoAspectRatio('1376 / 768');
+  }, [animatedCardVideoHash, characterId]);
   const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
   const [defaultSlot, setDefaultSlot] = useState<EquipmentSlot | null>(null);
   const [activeTab, setActiveTab] = useState("equipment");
@@ -317,10 +336,10 @@ export function EnhancedEquipmentManager({
                 {/* Column 1 — Character data */}
                 <div className="flex flex-col gap-3 overflow-visible">
 
-                  {/* Calling card with action buttons */}
+                  {/* Calling card — clean, no overlays */}
                   <div className="relative overflow-visible">
-                    {/* Glow layer — blurred copy of card or placeholder */}
-                    {(() => {
+                    {/* Glow layer — static card only */}
+                    {!(animatedCardVideoHash && showVideo) && (() => {
                       const glowSrc = callingCardHash
                         ? `${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`
                         : getJobPlaceholderImage(selectedJob || selectedCharacter?.class || '') || characterImage;
@@ -333,54 +352,34 @@ export function EnhancedEquipmentManager({
                         />
                       ) : null;
                     })()}
-                    <div className="relative rounded-xl overflow-hidden ring-1 ring-white/10 group" style={{ aspectRatio: '1376/768' }}>
-                    {callingCardHash ? (
-                      <img
-                        src={`${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`}
-                        alt={characterName}
-                        className="absolute inset-0 w-full h-full object-cover"
-                      />
-                    ) : (
-                      <CallingCardPlaceholder
-                        jobClass={selectedJob || selectedCharacter?.class || ''}
-                        characterImage={characterImage}
-                        characterName={characterName}
-                      />
-                    )}
-
-                    {/* Action buttons — top right, visible on hover */}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {enableCallingCard && (
-                        isRegeneratingCard ? (
-                          <div className="flex items-center gap-1.5 bg-black/60 backdrop-blur-sm rounded-full px-2.5 py-1">
-                            <RefreshCw className="w-3 h-3 text-primary animate-spin" />
-                            <span className="text-[10px] text-white/50 font-maplestory">Regenerating...</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={onRegenerateCard}
-                            disabled={remainingGenerations === 0}
-                            className="flex items-center gap-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-white/70 hover:text-white font-maplestory transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title={remainingGenerations === 0 ? 'No generations left today' : `${remainingGenerations} left today`}
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                            {remainingGenerations === 0 ? '0' : remainingGenerations}
-                          </button>
-                        )
+                    <div
+                      className={`relative rounded-xl ring-1 ring-white/10 ${animatedCardVideoHash && showVideo ? '' : 'overflow-hidden'}`}
+                      style={{ aspectRatio: animatedCardVideoHash && showVideo ? videoAspectRatio : '1376 / 768' }}
+                    >
+                      {animatedCardVideoHash && showVideo ? (
+                        <video
+                          src={`${SUPABASE_URL}/storage/v1/object/public/animated-calling-cards/${animatedCardVideoHash}.mp4`}
+                          autoPlay loop muted playsInline preload="auto"
+                          className="w-full h-full rounded-xl"
+                          onLoadedMetadata={(e) => {
+                            const v = e.currentTarget;
+                            if (v.videoWidth && v.videoHeight)
+                              setVideoAspectRatio(`${v.videoWidth} / ${v.videoHeight}`);
+                          }}
+                        />
+                      ) : callingCardHash ? (
+                        <img
+                          src={`${SUPABASE_URL}/storage/v1/object/public/calling-cards/${callingCardHash}.png`}
+                          alt={characterName}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      ) : (
+                        <CallingCardPlaceholder
+                          jobClass={selectedJob || selectedCharacter?.class || ''}
+                          characterImage={characterImage}
+                          characterName={characterName}
+                        />
                       )}
-                      <button
-                        onClick={onEditCharacter}
-                        className="w-6 h-6 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white transition-colors"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </button>
-                      <button
-                        onClick={onDeleteCharacter}
-                        className="w-6 h-6 rounded-full bg-black/60 hover:bg-destructive/80 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white transition-colors"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
                     </div>
                   </div>
 
@@ -393,6 +392,86 @@ export function EnhancedEquipmentManager({
                         <p className="text-base font-bold text-white font-maplestory leading-tight">{characterName}</p>
                         <p className="text-xs text-white/40 font-maplestory">Level {characterLevel}</p>
                       </div>
+
+                      {/* ── Calling card action panel ── */}
+                      {(callingCardHash || enableCallingCard || onEditCharacter || onDeleteCharacter) && (
+                        <>
+                          <div className="border-t border-white/10" />
+                          <div className="flex flex-col gap-1.5">
+
+                            {/* Static / Animated view toggle */}
+                            {animatedCardVideoHash && callingCardHash && (
+                              <div className="flex items-center gap-1 bg-white/5 rounded-lg p-1">
+                                <button
+                                  onClick={() => setShowVideo(false)}
+                                  className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-maplestory py-1 rounded-md transition-all ${!showVideo ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/60'}`}
+                                >
+                                  <ImageIcon className="w-3 h-3" />
+                                  Static
+                                </button>
+                                <button
+                                  onClick={() => setShowVideo(true)}
+                                  className={`flex-1 flex items-center justify-center gap-1.5 text-[11px] font-maplestory py-1 rounded-md transition-all ${showVideo ? 'bg-white/15 text-white' : 'text-white/40 hover:text-white/60'}`}
+                                >
+                                  <Film className="w-3 h-3" />
+                                  Animated
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Single action row — Regenerate, Animate, Edit, Delete */}
+                            <div className="flex gap-1.5">
+                              {onRegenerateCard && (
+                                <button
+                                  onClick={onRegenerateCard}
+                                  disabled={isRegeneratingCard}
+                                  title={isRegeneratingCard ? 'Generating…' : remainingGenerations > 0 ? `Regenerate (${remainingGenerations} left)` : 'Regenerate'}
+                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <RefreshCw className={`w-3 h-3 flex-shrink-0 ${isRegeneratingCard ? 'animate-spin' : ''}`} />
+                                  <span className="truncate hidden sm:inline">
+                                    {isRegeneratingCard ? 'Generating…' : remainingGenerations > 0 ? `Regen (${remainingGenerations})` : 'Regen'}
+                                  </span>
+                                </button>
+                              )}
+                              {canAnimateCallingCard && onAnimateCard && callingCardHash && (
+                                <button
+                                  onClick={onAnimateCard}
+                                  disabled={isAnimating}
+                                  title={isAnimating ? 'Animating…' : animatedCardVideoHash ? 'Re-animate' : 'Animate'}
+                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400/80 hover:text-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <Sparkles className={`w-3 h-3 flex-shrink-0 ${isAnimating ? 'animate-pulse' : ''}`} />
+                                  <span className="truncate hidden sm:inline">
+                                    {isAnimating ? 'Animating…' : animatedCardVideoHash ? 'Re-animate' : 'Animate'}
+                                  </span>
+                                </button>
+                              )}
+                              {onEditCharacter && (
+                                <button
+                                  onClick={onEditCharacter}
+                                  title="Edit character"
+                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all"
+                                >
+                                  <Edit className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate hidden sm:inline">Edit</span>
+                                </button>
+                              )}
+                              {onDeleteCharacter && (
+                                <button
+                                  onClick={onDeleteCharacter}
+                                  title="Delete character"
+                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-red-400/60 hover:text-red-400 transition-all"
+                                >
+                                  <Trash2 className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate hidden sm:inline">Delete</span>
+                                </button>
+                              )}
+                            </div>
+
+                          </div>
+                        </>
+                      )}
 
                       {/* Worth section */}
                       {(worth || isWorthLoading) && (

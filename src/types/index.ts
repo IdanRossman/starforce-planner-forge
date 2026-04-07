@@ -27,6 +27,7 @@ export interface Character {
   callingCardHash?: string | null;
   cardGenerationDate?: string | null;
   cardGenerationCount?: number;
+  animatedCardVideoHash?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

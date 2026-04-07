@@ -41,7 +41,7 @@ function getCardUrl(hash: string | null | undefined): string | null {
 export default function CharacterDashboard() {
   const navigate = useNavigate();
 
-  const { user } = useAuth();
+  const { user, canAnimateCallingCard } = useAuth();
   const { selectedCharacter, characters, updateCharacter: ctxUpdateCharacter } = useCharacterContext();
   const {
     createCharacter,
@@ -63,6 +63,7 @@ export default function CharacterDashboard() {
 
   // Calling card regeneration state
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
 
   const { toast: toastHook } = useToast();
@@ -78,7 +79,7 @@ export default function CharacterDashboard() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCharacter?.id, selectedCharacter?.name]);
 
-  // Poll for calling card if not yet generated (only if user opted in)
+  // Poll for static calling card if not yet generated
   useEffect(() => {
     if (!selectedCharacter || selectedCharacter.callingCardHash || !selectedCharacter.enableCallingCard) return;
     const interval = setInterval(async () => {
@@ -92,6 +93,22 @@ export default function CharacterDashboard() {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedCharacter?.id, selectedCharacter?.callingCardHash]);
+
+  // Poll for animated card status while animating
+  useEffect(() => {
+    if (!selectedCharacter || !isAnimating) return;
+    const interval = setInterval(async () => {
+      try {
+        const result = await apiService.getAnimateCallingCardStatus(selectedCharacter.id);
+        if (result.status === 'complete' && result.videoHash) {
+          ctxUpdateCharacter(selectedCharacter.id, { animatedCardVideoHash: result.videoHash });
+          setIsAnimating(false);
+        }
+      } catch { /* keep polling */ }
+    }, 8000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCharacter?.id, isAnimating]);
 
   const handleRegenerate = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -108,6 +125,7 @@ export default function CharacterDashboard() {
         callingCardHash: hash,
         cardGenerationCount: newCount,
         cardGenerationDate: today,
+        animatedCardVideoHash: null, // clear video so new static card is visible
       });
     } catch (err) {
       const status = (err as { status?: number }).status;
@@ -120,6 +138,23 @@ export default function CharacterDashboard() {
       }
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleAnimate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectedCharacter || isAnimating) return;
+    setIsAnimating(true);
+    try {
+      const result = await apiService.startAnimateCallingCard(selectedCharacter.id);
+      if (result.status === 'complete' && result.videoHash) {
+        ctxUpdateCharacter(selectedCharacter.id, { animatedCardVideoHash: result.videoHash });
+        setIsAnimating(false);
+      }
+      // if 'pending', the polling effect above will pick it up
+    } catch {
+      toast.error('Failed to start animation. Please try again.');
+      setIsAnimating(false);
     }
   };
 
@@ -336,11 +371,15 @@ export default function CharacterDashboard() {
             characterName={selectedCharacter.name}
             characterImage={characterSprite ?? undefined}
             callingCardHash={selectedCharacter.callingCardHash}
+            animatedCardVideoHash={selectedCharacter.animatedCardVideoHash}
+            canAnimateCallingCard={canAnimateCallingCard}
+            isAnimating={isAnimating}
             characterLevel={selectedCharacter.level}
             enableCallingCard={selectedCharacter.enableCallingCard ?? false}
             isRegeneratingCard={isRegenerating}
             remainingGenerations={remaining}
-            onRegenerateCard={selectedCharacter.enableCallingCard ? handleRegenerate : undefined}
+            onRegenerateCard={selectedCharacter.callingCardHash ? handleRegenerate : undefined}
+            onAnimateCard={canAnimateCallingCard ? handleAnimate : undefined}
             onEditCharacter={() => { setEditingCharacter(selectedCharacter); setCharacterFormOpen(true); }}
             onDeleteCharacter={() => setDeleteConfirmId(selectedCharacter.id)}
           />

@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { apiService } from '@/services/api'
 
 interface AuthContextType {
   user: User | null
   session: Session | null
   loading: boolean
   isPasswordRecovery: boolean
+  canAnimateCallingCard: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signUpWithEmail: (email: string, password: string) => Promise<{ error: AuthError | null; needsEmailConfirmation: boolean }>
   signInWithDiscord: () => Promise<{ error: AuthError | null }>
@@ -23,12 +25,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false)
+  const [canAnimateCallingCard, setCanAnimateCallingCard] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      if (session?.user) {
+        apiService.getUserPermissions(session.user.id).then(p => setCanAnimateCallingCard(p.canAnimateCallingCard))
+      }
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -36,6 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
+      if (session?.user) {
+        apiService.getUserPermissions(session.user.id).then(p => setCanAnimateCallingCard(p.canAnimateCallingCard))
+      } else {
+        setCanAnimateCallingCard(false)
+      }
     })
 
     return () => subscription.unsubscribe()
@@ -78,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearPasswordRecovery = () => setIsPasswordRecovery(false)
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, signInWithEmail, signUpWithEmail, signInWithDiscord, signOut, resetPasswordForEmail, updatePassword, clearPasswordRecovery }}>
+    <AuthContext.Provider value={{ user, session, loading, isPasswordRecovery, canAnimateCallingCard, signInWithEmail, signUpWithEmail, signInWithDiscord, signOut, resetPasswordForEmail, updatePassword, clearPasswordRecovery }}>
       {children}
     </AuthContext.Provider>
   )

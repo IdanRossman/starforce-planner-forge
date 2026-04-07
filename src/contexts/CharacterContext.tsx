@@ -69,9 +69,11 @@ export function CharacterProvider({ children }: CharacterProviderProps) {
             level: c.level,
             equipment: [],
             image: undefined,
+            enableCallingCard: c.enableCallingCard,
             callingCardHash: c.callingCardHash,
             cardGenerationDate: c.cardGenerationDate,
             cardGenerationCount: c.cardGenerationCount,
+            animatedCardVideoHash: c.animatedCardVideoHash,
           }));
           setCharacters(mapped);
 
