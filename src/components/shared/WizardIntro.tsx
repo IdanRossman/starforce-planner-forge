@@ -33,7 +33,7 @@ export function WizardIntro({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
+      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
     >
       <Card className={`max-w-4xl mx-auto bg-card/20 backdrop-blur-md border-white/20 ${className}`}>
         <CardContent className="p-12 text-center space-y-10">
@@ -43,16 +43,16 @@ export function WizardIntro({
               className="text-4xl font-bold text-white font-maplestory"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1 }}
             >
               {title}
             </motion.h2>
             {subtitle && (
-              <motion.p 
+              <motion.p
                 className="text-muted-foreground text-lg font-maplestory"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
+                transition={{ delay: 0.15 }}
               >
                 {subtitle}
               </motion.p>
@@ -64,7 +64,7 @@ export function WizardIntro({
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.2 }}
             >
               {children}
             </motion.div>
@@ -75,7 +75,7 @@ export function WizardIntro({
             className="flex items-center justify-center gap-6 max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.25 }}
           >
             {steps.map((step, index) => {
               const StepIcon = step.icon;
@@ -86,13 +86,13 @@ export function WizardIntro({
                     className="flex-1 text-center space-y-3 min-w-[140px]"
                     initial={{ opacity: 0, scale: 0.8 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.6 + (index * 0.1) }}
+                    transition={{ delay: 0.3 + (index * 0.07) }}
                   >
                     {/* Icon Circle */}
                     <motion.div 
                       className="w-16 h-16 rounded-full border-2 border-white/30 bg-white/10 flex items-center justify-center mx-auto backdrop-blur-sm"
                       whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.5)" }}
-                      transition={{ type: "spring", stiffness: 300 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
                     >
                       <StepIcon className="w-8 h-8 text-white" />
                     </motion.div>
@@ -109,7 +109,7 @@ export function WizardIntro({
                     <motion.div
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.7 + (index * 0.1) }}
+                      transition={{ delay: 0.35 + (index * 0.07) }}
                     >
                       <ArrowRight className="w-8 h-8 text-white/50 flex-shrink-0 mt-6" />
                     </motion.div>
@@ -123,7 +123,7 @@ export function WizardIntro({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 0.45 }}
           >
             <Button 
               size="lg" 

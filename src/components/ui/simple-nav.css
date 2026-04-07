@@ -27,17 +27,20 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem 1.5rem;
-  background: hsl(var(--card) / 0.15);
-  backdrop-filter: blur(20px);
-  border: 1px solid hsl(var(--border) / 0.2);
+  background: hsl(217 33% 9% / 0.97);
+  backdrop-filter: blur(4px);
+  border: 1px solid hsl(var(--primary) / 0.22);
   border-radius: 9999px;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  transition: all 0.3s ease;
+  box-shadow: 0 0 0 1px hsl(var(--primary) / 0.06), 0 8px 32px -8px hsl(0 0% 0% / 0.7);
+  transition: box-shadow 0.2s ease-out, border-color 0.2s ease-out;
   justify-content: space-between;
 }
 
-.simple-nav-island:hover {
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+@media (hover: hover) and (pointer: fine) {
+  .simple-nav-island:hover {
+    border-color: hsl(var(--primary) / 0.35);
+    box-shadow: 0 0 0 1px hsl(var(--primary) / 0.1), 0 12px 40px -8px hsl(0 0% 0% / 0.7);
+  }
 }
 
 .simple-nav-brand {
@@ -48,13 +51,15 @@
   font-weight: 700;
   font-size: 1rem;
   color: hsl(var(--foreground));
-  transition: opacity 0.2s ease;
+  transition: opacity 0.15s ease-out;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.simple-nav-brand:hover {
-  opacity: 0.8;
+@media (hover: hover) and (pointer: fine) {
+  .simple-nav-brand:hover {
+    opacity: 0.8;
+  }
 }
 
 .simple-nav-icon {
@@ -109,13 +114,15 @@
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease-out, color 0.15s ease-out, transform 0.1s ease-out;
   color: hsl(var(--muted-foreground));
 }
 
-.simple-nav-clear-btn:hover {
-  background: hsl(var(--destructive) / 0.1);
-  color: hsl(var(--destructive));
+@media (hover: hover) and (pointer: fine) {
+  .simple-nav-clear-btn:hover {
+    background: hsl(var(--muted) / 0.6);
+    color: hsl(var(--foreground));
+  }
 }
 
 .simple-nav-clear-btn:active {
@@ -135,13 +142,15 @@
   font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
   flex-shrink: 0;
 }
 
-.simple-nav-user-btn:hover {
-  background: hsl(var(--primary) / 0.35);
-  border-color: hsl(var(--primary) / 0.7);
+@media (hover: hover) and (pointer: fine) {
+  .simple-nav-user-btn:hover {
+    background: hsl(var(--primary) / 0.35);
+    border-color: hsl(var(--primary) / 0.7);
+  }
 }
 
 .simple-nav-link {
@@ -151,20 +160,10 @@
   font-size: 0.9375rem;
   font-weight: 500;
   border-radius: 9999px;
-  transition: all 0.2s ease;
+  transition: color 0.15s ease-out, background-color 0.15s ease-out;
   position: relative;
   font-family: 'Maplestory OTF Light', sans-serif;
   white-space: nowrap;
-  background: linear-gradient(
-    120deg,
-    rgba(255, 255, 255, 0) 40%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(255, 255, 255, 0) 60%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  animation: shine 5s linear infinite;
 }
 
 @keyframes shine {
@@ -176,9 +175,11 @@
   }
 }
 
-.simple-nav-link:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--muted) / 0.5);
+@media (hover: hover) and (pointer: fine) {
+  .simple-nav-link:hover {
+    color: hsl(var(--foreground));
+    background: hsl(var(--muted) / 0.5);
+  }
 }
 
 .simple-nav-link.active {
@@ -304,5 +305,19 @@
 
   .simple-nav-link.active .simple-nav-link-icon {
     color: hsl(var(--primary));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simple-nav-island,
+  .simple-nav-brand,
+  .simple-nav-clear-btn,
+  .simple-nav-user-btn,
+  .simple-nav-link {
+    transition: none;
+  }
+
+  .simple-nav-link.active {
+    animation: none;
   }
 }

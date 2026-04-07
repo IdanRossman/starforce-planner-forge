@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { HashRouter, Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { Home, Calculator, Users, BarChart2 } from "lucide-react";
+import { Home, Calculator, Users, Globe } from "lucide-react";
 import SimpleNav from "@/components/ui/simple-nav";
 import VantaWaves from "@/components/ui/vanta-waves";
 import Logo3D from "@/components/ui/Logo3D";
@@ -62,7 +62,7 @@ function AppContent() {
   const navItems = [
     { label: 'Home', href: '/', icon: Home },
     { label: 'Quick Planning', href: '/quick-planning', icon: Calculator },
-    { label: 'Community', href: '/community', icon: BarChart2 },
+    { label: 'Community', href: '/community', icon: Globe },
     { label: 'Characters', href: '/characters', icon: Users }
   ];
 
@@ -204,13 +204,9 @@ function AppContent() {
           </AnimatePresence>
         </main>
         
-        {/* Footer with signature - Pill style at bottom */}
-        <footer className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-40">
-          <div className="bg-black/30 backdrop-blur-md border border-white/20 rounded-full px-6 py-2 shadow-xl">
-            <p className="text-center text-sm shiny-footer-text">
-              Made by Idan Rossman
-            </p>
-          </div>
+        {/* Footer */}
+        <footer className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 pointer-events-none">
+          <p className="text-white/20 text-xs font-maplestory tracking-wide">Made by Idan Rossman</p>
         </footer>
       </div>
     </VantaWaves>

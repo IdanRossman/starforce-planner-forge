@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Star, LogOut, LogIn, Coffee } from 'lucide-react';
+import { Star, LogOut, LogIn, Coffee, ExternalLink } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,68 +55,57 @@ export default function SimpleNav({
           })}
         </div>
 
-        <div className="simple-nav-divider" />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href="https://ko-fi.com/idanrossman"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="simple-nav-clear-btn"
-              aria-label="Support on Ko-fi"
-            >
-              <Coffee className="simple-nav-toggle-icon" />
-            </a>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Support on Ko-fi</p>
-          </TooltipContent>
-        </Tooltip>
-
         {!user && (
-          <>
-            <div className="simple-nav-divider" />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => navigate('/auth')}
-                  className="simple-nav-clear-btn"
-                  aria-label="Sign in"
-                >
-                  <LogIn className="simple-nav-toggle-icon" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Sign In</p>
-              </TooltipContent>
-            </Tooltip>
-          </>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => navigate('/auth')}
+                className="simple-nav-clear-btn"
+                aria-label="Sign in"
+              >
+                <LogIn className="simple-nav-toggle-icon" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Sign In</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {user && (
-          <>
-            <div className="simple-nav-divider" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="simple-nav-user-btn" aria-label="User menu">
-                  {userInitial}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48 bg-black/80 backdrop-blur-md border-white/20">
-                <DropdownMenuLabel className="text-white/60 font-normal text-xs truncate">
-                  {user.email}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-white/10" />
-                <DropdownMenuItem
-                  onClick={signOut}
-                  className="text-red-400 focus:text-red-400 focus:bg-red-400/10 cursor-pointer"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="simple-nav-user-btn" aria-label="User menu">
+                {userInitial}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 bg-[hsl(217_33%_9%/0.98)] backdrop-blur-sm border-white/10">
+              <DropdownMenuLabel className="text-white/50 font-normal text-xs truncate">
+                {user.email}
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem asChild>
+                <a
+                  href="https://ko-fi.com/idanrossman"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-white/70 focus:text-white focus:bg-white/5 cursor-pointer"
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
+                  <Coffee className="w-4 h-4" />
+                  Support on Ko-fi
+                  <ExternalLink className="w-3 h-3 ml-auto text-white/30" />
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-white/10" />
+              <DropdownMenuItem
+                onClick={signOut}
+                className="text-red-400 focus:text-red-400 focus:bg-red-400/10 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </nav>
     </div>

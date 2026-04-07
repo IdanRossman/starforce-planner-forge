@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCharacterContext } from "@/hooks/useCharacterContext";
 import { apiService } from "@/services/api";
 import { fetchCharacterFromMapleRanks } from "@/services/mapleRanksService";
 import { Character } from "@/types";
-import { Sparkles, RefreshCw, Users, Plus, ChevronRight } from "lucide-react";
+import { Sparkles, RefreshCw, Users, Plus, ChevronRight, Star, Calculator, BarChart2 } from "lucide-react";
 
 // Maps class name keywords → tailwind gradient classes
 function getClassGradient(className: string): string {
@@ -38,7 +39,7 @@ function CharacterCard({ char, onClick }: { char: Character; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className={`group relative rounded-2xl overflow-hidden border border-white/10 hover:border-white/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-black/40 text-left bg-gradient-to-br ${getClassGradient(char.class ?? '')}`}
+      className={`group relative w-full rounded-2xl overflow-hidden border border-white/10 hover:border-white/25 [transition:transform_200ms_cubic-bezier(0.23,1,0.32,1),box-shadow_200ms_ease-out,border-color_150ms_ease-out] hover:scale-[1.02] hover:shadow-xl hover:shadow-black/40 active:scale-[0.98] text-left bg-gradient-to-br ${getClassGradient(char.class ?? '')}`}
     >
       {/* Sprite */}
       <div className="relative h-36 flex items-end justify-center overflow-hidden">
@@ -46,7 +47,7 @@ function CharacterCard({ char, onClick }: { char: Character; onClick: () => void
           <img
             src={sprite}
             alt={char.name}
-            className="h-full object-contain drop-shadow-xl transition-transform duration-300 group-hover:scale-105"
+            className="h-full object-contain drop-shadow-xl transition-transform duration-200 group-hover:scale-105"
           />
         ) : (
           <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-4">
@@ -63,7 +64,7 @@ function CharacterCard({ char, onClick }: { char: Character; onClick: () => void
           <span className="text-white font-bold text-base font-maplestory leading-tight">{char.name}</span>
           <span className="text-white/45 text-xs font-maplestory">Lv.{char.level} {char.class}</span>
         </div>
-        <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-all" />
+        <ChevronRight className="w-4 h-4 text-white/30 group-hover:text-white/60 group-hover:translate-x-0.5 transition-[transform,color] duration-200" />
       </div>
     </button>
   );
@@ -172,33 +173,52 @@ export default function Homepage() {
   if (!user) {
     return (
       <div className="h-screen flex items-center justify-center px-6 overflow-hidden">
-        <div className="text-center max-w-2xl mx-auto w-full flex flex-col items-center gap-8">
+        <motion.div
+          className="text-center max-w-lg mx-auto w-full flex flex-col items-center gap-8"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+        >
           <div className="flex flex-col items-center gap-4">
             <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold text-white drop-shadow-2xl tracking-tight whitespace-nowrap">
               Maple Forge
             </h1>
-            <p className="text-xl md:text-2xl text-gray-200 font-light drop-shadow-lg">
-              Plan your Maplestory progression.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button
-              size="lg"
-              className="bg-white text-black hover:bg-gray-100 text-lg px-8 py-6 shadow-2xl transition-all font-maplestory"
-              onClick={() => navigate('/quick-planning')}
+            <motion.p
+              className="text-xl md:text-2xl text-gray-200 font-light drop-shadow-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.12, duration: 0.25 }}
             >
-              Quick Calculator
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              className="text-white/60 hover:text-white hover:bg-white/5 text-base px-6 py-6 font-maplestory"
-              onClick={() => navigate('/auth')}
-            >
-              Sign In
-            </Button>
+              Build your party. Calculate your path.
+            </motion.p>
           </div>
-        </div>
+
+          <motion.div
+            className="flex flex-col items-center gap-5 w-full"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+          >
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+              <Button
+                size="lg"
+                className="bg-white text-black hover:bg-gray-100 text-lg px-8 py-6 shadow-2xl transition-[background-color] duration-150 font-maplestory active:scale-[0.97]"
+                onClick={() => navigate('/quick-planning')}
+              >
+                Quick Calculator
+              </Button>
+              <Button
+                size="lg"
+                variant="ghost"
+                className="text-white/80 hover:text-white hover:bg-white/5 text-base px-6 py-6 font-maplestory"
+                onClick={() => navigate('/auth')}
+              >
+                Sign In
+              </Button>
+            </div>
+
+          </motion.div>
+        </motion.div>
       </div>
     );
   }
@@ -244,7 +264,7 @@ export default function Homepage() {
               className="absolute -inset-6 w-[calc(100%+48px)] h-[calc(100%+48px)] object-cover blur-3xl opacity-60 rounded-3xl pointer-events-none"
             />
           )}
-        <div className="relative w-full rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-xl" style={{ aspectRatio: '16/5' }}>
+        <div className="relative w-full rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-xl aspect-[4/3] sm:aspect-[16/5]">
           {partyImage && !isLoadingPartyImage ? (
             <img src={partyImage.url} alt="Your MapleStory party" className="absolute inset-0 w-full h-full object-cover" />
           ) : (
@@ -260,9 +280,11 @@ export default function Homepage() {
           )}
 
           {/* Welcome text overlay */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/20 to-transparent flex flex-col justify-end p-6">
-            <p className="text-white/40 text-xs tracking-widest uppercase font-maplestory">Welcome back</p>
-            <h1 className="text-3xl font-bold text-white font-maplestory">Ready to forge?</h1>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/25 to-transparent flex flex-col justify-end p-4 sm:p-6">
+            <p className="text-white/65 text-[10px] sm:text-xs tracking-widest uppercase font-maplestory mb-0.5">
+              Welcome back{sortedChars[0]?.name ? `, ${sortedChars[0].name}` : ''}
+            </p>
+            <h1 className="text-2xl sm:text-4xl font-bold text-white font-maplestory drop-shadow-lg">Ready to forge?</h1>
           </div>
 
           {/* Regenerate / updating indicator */}
@@ -274,7 +296,7 @@ export default function Homepage() {
           )}
           {!isRegenerating && !isLoadingPartyImage && (
             <button
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 text-white/30 hover:text-white/60 bg-black/30 hover:bg-black/50 backdrop-blur-sm rounded-full px-3 py-1.5 text-xs font-maplestory transition-colors"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 text-white/55 hover:text-white/85 bg-black/45 hover:bg-black/60 backdrop-blur-sm border border-white/15 hover:border-white/30 rounded-full px-3 py-1.5 text-xs font-maplestory [transition:color_150ms_ease-out,background-color_150ms_ease-out,border-color_150ms_ease-out]"
               onClick={handleRetryGenerate}
             >
               <RefreshCw className="w-3 h-3" />
@@ -292,10 +314,11 @@ export default function Homepage() {
           <p className="text-xs text-red-400/70 font-maplestory -mt-2">Party image generation failed. Try regenerating.</p>
         )}
 
+
         {/* Character grid */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <p className="text-white/40 text-xs tracking-widest uppercase font-maplestory">Your Characters</p>
+            <p className="text-white/60 text-xs tracking-widest uppercase font-maplestory">Your Characters</p>
             {characters.length < 6 && (
               <button
                 className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 font-maplestory transition-colors"
@@ -308,22 +331,32 @@ export default function Homepage() {
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {sortedChars.map(char => (
-              <CharacterCard
+            {sortedChars.map((char, index) => (
+              <motion.div
                 key={char.id}
-                char={char}
-                onClick={() => { selectCharacter(char.id); navigate('/characters'); }}
-              />
+                className="w-full"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.04, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+              >
+                <CharacterCard
+                  char={char}
+                  onClick={() => { selectCharacter(char.id); navigate('/characters'); }}
+                />
+              </motion.div>
             ))}
             {/* Add character ghost card */}
             {characters.length < 6 && (
-              <button
+              <motion.button
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: sortedChars.length * 0.04, duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
                 onClick={() => navigate('/character/new')}
-                className="rounded-2xl border border-dashed border-white/15 hover:border-white/30 hover:bg-white/5 transition-all duration-300 flex flex-col items-center justify-center gap-2 h-[196px] text-white/30 hover:text-white/50"
+                className="rounded-2xl border border-dashed border-white/15 hover:border-white/30 hover:bg-white/5 [transition:border-color_150ms_ease-out,background-color_150ms_ease-out] flex flex-col items-center justify-center gap-2 h-[196px] text-white/30 hover:text-white/50 active:scale-[0.97]"
               >
                 <Plus className="w-6 h-6" />
                 <span className="text-xs font-maplestory">New Character</span>
-              </button>
+              </motion.button>
             )}
           </div>
         </div>

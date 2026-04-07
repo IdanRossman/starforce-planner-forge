@@ -139,17 +139,17 @@ export function ItemCarousel({
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={currentPage}
-                  initial={{ 
-                    x: scrollDirection === 'left' ? -200 : scrollDirection === 'right' ? 200 : 0,
-                    opacity: 0 
+                  initial={{
+                    transform: scrollDirection === 'left' ? 'translateX(-200px)' : scrollDirection === 'right' ? 'translateX(200px)' : 'translateX(0px)',
+                    opacity: 0
                   }}
-                  animate={{ 
-                    x: 0,
-                    opacity: 1 
+                  animate={{
+                    transform: 'translateX(0px)',
+                    opacity: 1
                   }}
-                  exit={{ 
-                    x: scrollDirection === 'left' ? 200 : scrollDirection === 'right' ? -200 : 0,
-                    opacity: 0 
+                  exit={{
+                    transform: scrollDirection === 'left' ? 'translateX(200px)' : scrollDirection === 'right' ? 'translateX(-200px)' : 'translateX(0px)',
+                    opacity: 0
                   }}
                   transition={{ 
                     type: "spring",
@@ -211,8 +211,8 @@ export function ItemCarousel({
           {/* Current StarForce Input - Only show for starforceable items */}
           {isStarforceable && selectedItem && (
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, transform: 'translateX(20px)' }}
+              animate={{ opacity: 1, transform: 'translateX(0px)' }}
               className="flex flex-col gap-2 min-w-[120px]"
             >
               <label className="text-xs font-semibold text-muted-foreground font-maplestory flex items-center gap-1">
