@@ -239,12 +239,12 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
     const cardContent = (
       <Card
         key={slot}
-        className={`relative transition-all duration-200 group ${position} ${
+        className={`relative transition-all duration-150 group ${position} ${
           isDisabled
-            ? "bg-muted/20 border-muted/50 cursor-not-allowed opacity-50"
+            ? "bg-white/3 border-white/5 cursor-not-allowed opacity-40"
             : equipment
-              ? "bg-gradient-to-br from-card to-card/80 cursor-pointer hover:scale-105 hover:shadow-md"
-              : "bg-muted/30 border-dashed border-muted cursor-pointer hover:bg-muted/50"
+              ? "bg-white/8 border-white/10 cursor-pointer hover:bg-white/12 hover:border-white/20 hover:shadow-md hover:shadow-black/30"
+              : "bg-white/3 border-dashed border-white/8 cursor-pointer hover:bg-white/6 hover:border-white/15"
         }`}
         onClick={() => {
           if (isDisabled) return;
@@ -255,7 +255,7 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
           }
         }}
       >
-        <CardContent className={`p-0 ${isMobile ? 'h-[56px]' : 'h-[74px]'} w-full flex items-center justify-center relative`}>
+        <CardContent className={`p-0 ${isMobile ? 'h-[56px]' : 'h-[78px]'} w-full flex items-center justify-center relative`}>
           {equipment ? (
             <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
               <EquipmentDisplay
@@ -267,29 +267,28 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
               />
             </div>
           ) : isDisabled ? (
-            <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
+            <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-white/20">
               <span className={isMobile ? 'text-[7px]' : 'text-[9px]'}>{label}</span>
-              {!isMobile && <span className="text-[8px] text-muted-foreground/60">(Soon)</span>}
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col gap-0.5 items-center justify-center text-muted-foreground">
-              <Plus className={isMobile ? 'w-2 h-2' : 'w-2.5 h-2.5'} />
-              <span className={isMobile ? 'text-[7px]' : 'text-[9px]'}>{label}</span>
+            <div className="w-full h-full flex flex-col gap-1 items-center justify-center text-white/20 hover:text-white/40 transition-colors">
+              <Plus className={isMobile ? 'w-2.5 h-2.5' : 'w-3 h-3'} />
+              <span className={isMobile ? 'text-[7px]' : 'text-[10px]'}>{label}</span>
             </div>
           )}
           {/* Delete button — always visible on touch devices, hover-only on desktop */}
           {equipment && (
-            <div className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+            <div className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
               <Button
                 variant="ghost"
                 size="sm"
-                className="p-0.5 h-auto w-auto text-destructive hover:text-destructive"
+                className="p-0.5 h-auto w-auto text-white/40 hover:text-red-400 hover:bg-red-400/10"
                 onClick={(e) => {
                   e.stopPropagation();
                   onClearEquipment(equipment.slot);
                 }}
               >
-                <X className="w-2 h-2" />
+                <X className="w-2.5 h-2.5" />
               </Button>
             </div>
           )}
@@ -302,18 +301,18 @@ export function EquipmentGrid({ equipment, onEditEquipment, onAddEquipment, onCl
 
   return (
     <TooltipProvider>
-      <div className={`grid grid-cols-7 grid-rows-6 gap-0.5 ${isMobile ? 'p-1' : 'p-2'} bg-card/30 rounded-lg border border-border/50 w-full mx-auto`}>
+      <div className={`grid grid-cols-7 grid-rows-6 gap-1 ${isMobile ? 'p-1.5' : 'p-2.5'} bg-[hsl(217_33%_9%/0.97)] rounded-xl border border-primary/15 w-full mx-auto`}>
         {EQUIPMENT_SLOTS.map(renderEquipmentSlot)}
         {/* Character sprite — spans the empty cols 3-5, rows 1-4 */}
-        <div className="col-start-3 col-end-6 row-start-1 row-end-5 flex items-center justify-center rounded-md overflow-hidden bg-white/5 border border-white/10">
+        <div className="col-start-3 col-end-6 row-start-1 row-end-5 flex items-center justify-center rounded-lg overflow-hidden bg-white/3 border border-white/6">
           {characterImage ? (
             <img
               src={characterImage}
               alt="Character"
-              className="w-2/3 h-2/3 object-contain drop-shadow-lg"
+              className="w-3/4 h-3/4 object-contain drop-shadow-xl"
             />
           ) : (
-            <div className="text-muted-foreground/30 text-[9px] text-center px-2">Character</div>
+            <div className="text-white/10 text-[9px] text-center px-2">Character</div>
           )}
         </div>
       </div>

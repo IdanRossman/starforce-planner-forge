@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EquipmentImage } from '@/components/EquipmentImage';
 import { EquipmentForm, StorageSaveData } from '@/components/EquipmentForm';
-import { Star, Plus, X, Package, ArrowUpDown } from 'lucide-react';
+import { Star, Plus, X, Package, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
 type SortKey = 'none' | 'type' | 'name' | 'starforce' | 'level';
@@ -50,7 +51,7 @@ function storageItemToEquipment(item: StorageItem): Equipment {
 }
 
 const TOTAL_CAPACITY = 100;
-const MIN_VISIBLE_SLOTS = 40;
+const EMPTY_SLOT_BUFFER = 8;
 
 interface StoragePanelProps {
   characterId?: string;
@@ -78,8 +79,7 @@ export function StoragePanel({ characterId, selectedJob, equippedCount }: Storag
     }
   });
 
-  const visibleSlotCount = Math.max(storageItems.length + 8, MIN_VISIBLE_SLOTS);
-  const emptySlots = visibleSlotCount - storageItems.length;
+  const emptySlots = Math.min(EMPTY_SLOT_BUFFER, TOTAL_CAPACITY - storageItems.length);
 
   const handleOpenAdd = () => {
     if (remaining <= 0) {
@@ -151,38 +151,44 @@ export function StoragePanel({ characterId, selectedJob, equippedCount }: Storag
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold font-maplestory">Storage</span>
-          <Badge variant="secondary" className="text-xs font-maplestory">
-            {usedSlots} / {TOTAL_CAPACITY}
-          </Badge>
+          <span className="text-[11px] text-white/40 font-maplestory">{usedSlots} / {TOTAL_CAPACITY}</span>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => {
-              const currentIndex = SORT_OPTIONS.findIndex(o => o.value === sortKey);
-              const next = SORT_OPTIONS[(currentIndex + 1) % SORT_OPTIONS.length];
-              setSortKey(next.value);
-            }}
-            className="flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-maplestory transition-colors bg-white/10 hover:bg-white/20 text-muted-foreground"
-          >
-            <ArrowUpDown className="w-3 h-3" />
-            {SORT_OPTIONS.find(o => o.value === sortKey)?.label}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg font-maplestory transition-colors bg-white/5 hover:bg-white/10 text-white/50 hover:text-white/80 border border-white/8">
+                {SORT_OPTIONS.find(o => o.value === sortKey)?.label}
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="bg-[hsl(217_33%_9%/0.98)] border-white/10 min-w-[110px]">
+              {SORT_OPTIONS.map(opt => (
+                <DropdownMenuItem
+                  key={opt.value}
+                  onClick={() => setSortKey(opt.value)}
+                  className={`text-xs font-maplestory cursor-pointer ${sortKey === opt.value ? 'text-primary' : 'text-white/60'}`}
+                >
+                  {opt.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button
             variant="outline"
             size="sm"
             onClick={handleOpenAdd}
             disabled={remaining <= 0}
-            className="flex items-center gap-1.5 font-maplestory rounded-full h-8 text-xs"
+            className="flex items-center gap-1.5 font-maplestory rounded-lg h-7 text-xs border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-3 h-3" />
             Add Item
           </Button>
         </div>
       </div>
 
       {/* Grid */}
-      <div className="bg-card/30 rounded-lg border border-border/50 p-2">
-        <div className="grid grid-cols-5 sm:grid-cols-8 gap-1 overflow-y-auto xl:max-h-[600px]">
+      <div className="bg-[hsl(217_33%_9%/0.97)] rounded-xl border border-primary/15 p-2">
+        <div className="grid grid-cols-5 gap-1 overflow-y-auto xl:max-h-[580px]">
           {sortedItems.map(item => (
             <StorageSlot
               key={item.id}
@@ -215,10 +221,10 @@ export function StoragePanel({ characterId, selectedJob, equippedCount }: Storag
 function StorageSlot({ item, onEdit, onDelete }: { item: StorageItem; onEdit: () => void; onDelete: () => void }) {
   return (
     <Card
-      className="relative group cursor-pointer bg-gradient-to-br from-card to-card/80 hover:scale-105 hover:shadow-md transition-all duration-200"
+      className="relative group cursor-pointer bg-white/8 border-white/10 hover:bg-white/12 hover:border-white/20 hover:shadow-md hover:shadow-black/30 transition-all duration-150"
       onClick={onEdit}
     >
-      <CardContent className="p-0 h-[74px] w-full flex items-center justify-center relative">
+      <CardContent className="p-0 h-[78px] w-full flex items-center justify-center relative">
         <div className="w-full h-full flex flex-col items-center justify-center gap-0.5">
           <EquipmentImage
             src={item.image}
@@ -258,8 +264,6 @@ function StorageSlot({ item, onEdit, onDelete }: { item: StorageItem; onEdit: ()
 
 function EmptyStorageSlot() {
   return (
-    <Card className="bg-muted/30 border-dashed border-muted">
-      <CardContent className="p-0 h-[74px] w-full" />
-    </Card>
+    <div className="h-10 rounded-lg border border-dashed border-white/6 bg-white/2" />
   );
 }

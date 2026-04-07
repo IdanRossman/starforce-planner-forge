@@ -289,16 +289,16 @@ export function EnhancedEquipmentManager({
     <div className="space-y-4">
       {/* Main Content with Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-11 bg-white/5 backdrop-blur-md border border-border/50 p-1 gap-1 rounded-xl">
+        <TabsList className="grid w-full grid-cols-4 h-11 bg-[hsl(217_33%_9%/0.97)] border border-primary/20 p-1 gap-1 rounded-xl">
           <TabsTrigger
             value="equipment"
-            className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+            className="flex items-center gap-2 font-maplestory data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none text-white/50 hover:text-white/80 transition-colors rounded-lg"
           >
             <span>Setup</span>
           </TabsTrigger>
               <TabsTrigger
                 value="calculator"
-                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none text-white/50 hover:text-white/80 transition-colors rounded-lg"
               >
                 <span className="hidden sm:inline">Starforce Breakdown</span>
                 <span className="inline sm:hidden">Starforce</span>
@@ -310,7 +310,7 @@ export function EnhancedEquipmentManager({
               </TabsTrigger>
               <TabsTrigger
                 value="potential"
-                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none text-white/50 hover:text-white/80 transition-colors rounded-lg"
               >
                 <span className="hidden sm:inline">Potential Breakdown</span>
                 <span className="inline sm:hidden">Potential</span>
@@ -322,9 +322,9 @@ export function EnhancedEquipmentManager({
               </TabsTrigger>
               <TabsTrigger
                 value="sessions"
-                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg"
+                className="flex items-center gap-2 font-maplestory data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-none text-white/50 hover:text-white/80 transition-colors rounded-lg"
               >
-                <span className="hidden sm:inline">SF Sessions</span>
+                <span className="hidden sm:inline">Starforce Sessions</span>
                 <span className="inline sm:hidden">Sessions</span>
               </TabsTrigger>
             </TabsList>
@@ -334,7 +334,7 @@ export function EnhancedEquipmentManager({
               <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
 
                 {/* Column 1 — Character data */}
-                <div className="flex flex-col gap-3 overflow-visible">
+                <div className="flex flex-col gap-3 overflow-visible order-2 xl:order-1">
 
                   {/* Calling card — clean, no overlays */}
                   <div className="relative overflow-visible">
@@ -380,24 +380,55 @@ export function EnhancedEquipmentManager({
                           characterName={characterName}
                         />
                       )}
+                      {/* Character identity overlay */}
+                      {!(animatedCardVideoHash && showVideo) && (
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent px-3 pt-6 pb-3 pointer-events-none">
+                          <p className="text-[10px] text-white/60 uppercase tracking-widest font-maplestory leading-none mb-0.5">{selectedCharacter?.class}</p>
+                          <p className="text-lg font-bold text-white font-maplestory leading-tight">{characterName}</p>
+                          <p className="text-xs text-white/50 font-maplestory">Level {characterLevel}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* Character info card with worth */}
-                  <Card className="bg-white/5 backdrop-blur-md border-border/50 flex-1">
+                  <Card className="bg-[hsl(217_33%_9%/0.97)] border-primary/15 flex-1">
                     <CardContent className="p-3 flex flex-col gap-2 h-full justify-between">
-                      {/* Basic info */}
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-[10px] text-white/35 uppercase tracking-widest font-maplestory">{selectedCharacter?.class}</p>
-                        <p className="text-base font-bold text-white font-maplestory leading-tight">{characterName}</p>
-                        <p className="text-xs text-white/40 font-maplestory">Level {characterLevel}</p>
+                      {/* Character identity + actions row — always visible */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <p className="text-base font-bold text-white font-maplestory leading-tight truncate">{characterName}</p>
+                          <p className="text-[10px] text-white/40 font-maplestory uppercase tracking-wide">{selectedCharacter?.class} · Lv.{characterLevel}</p>
+                        </div>
+                        {(onEditCharacter || onDeleteCharacter) && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            {onEditCharacter && (
+                              <button
+                                onClick={onEditCharacter}
+                                title="Edit character"
+                                className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/40 hover:text-white/80 transition-all"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            {onDeleteCharacter && (
+                              <button
+                                onClick={onDeleteCharacter}
+                                title="Delete character"
+                                className="p-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-red-400/40 hover:text-red-400 transition-all"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
-
-                      {/* ── Calling card action panel ── */}
-                      {(callingCardHash || enableCallingCard || onEditCharacter || onDeleteCharacter) && (
+                      {/* ── Calling card actions ── */}
+                      {(callingCardHash || enableCallingCard) && (onRegenerateCard || (canAnimateCallingCard && onAnimateCard && callingCardHash) || (animatedCardVideoHash && callingCardHash)) && (
                         <>
                           <div className="border-t border-white/10" />
                           <div className="flex flex-col gap-1.5">
+                            <p className="text-[9px] text-white/25 uppercase tracking-widest font-maplestory px-0.5">Calling Card</p>
 
                             {/* Static / Animated view toggle */}
                             {animatedCardVideoHash && callingCardHash && (
@@ -419,7 +450,7 @@ export function EnhancedEquipmentManager({
                               </div>
                             )}
 
-                            {/* Single action row — Regenerate, Animate, Edit, Delete */}
+                            {/* Regen + Animate row */}
                             <div className="flex gap-1.5">
                               {onRegenerateCard && (
                                 <button
@@ -429,7 +460,7 @@ export function EnhancedEquipmentManager({
                                   className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <RefreshCw className={`w-3 h-3 flex-shrink-0 ${isRegeneratingCard ? 'animate-spin' : ''}`} />
-                                  <span className="truncate hidden sm:inline">
+                                  <span className="truncate">
                                     {isRegeneratingCard ? 'Generating…' : remainingGenerations > 0 ? `Regen (${remainingGenerations})` : 'Regen'}
                                   </span>
                                 </button>
@@ -442,36 +473,16 @@ export function EnhancedEquipmentManager({
                                   className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400/80 hover:text-purple-300 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   <Sparkles className={`w-3 h-3 flex-shrink-0 ${isAnimating ? 'animate-pulse' : ''}`} />
-                                  <span className="truncate hidden sm:inline">
+                                  <span className="truncate">
                                     {isAnimating ? 'Animating…' : animatedCardVideoHash ? 'Re-animate' : 'Animate'}
                                   </span>
                                 </button>
                               )}
-                              {onEditCharacter && (
-                                <button
-                                  onClick={onEditCharacter}
-                                  title="Edit character"
-                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white/90 transition-all"
-                                >
-                                  <Edit className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate hidden sm:inline">Edit</span>
-                                </button>
-                              )}
-                              {onDeleteCharacter && (
-                                <button
-                                  onClick={onDeleteCharacter}
-                                  title="Delete character"
-                                  className="flex-1 flex items-center justify-center gap-1 text-[11px] font-maplestory py-1.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 text-red-400/60 hover:text-red-400 transition-all"
-                                >
-                                  <Trash2 className="w-3 h-3 flex-shrink-0" />
-                                  <span className="truncate hidden sm:inline">Delete</span>
-                                </button>
-                              )}
                             </div>
-
                           </div>
                         </>
                       )}
+
 
                       {/* Worth section */}
                       {(worth || isWorthLoading) && (
@@ -527,7 +538,7 @@ export function EnhancedEquipmentManager({
                 </div>
 
                 {/* Column 2 — Equipment Grid */}
-                <Card className="bg-white/5 backdrop-blur-md border-border/50 self-start">
+                <Card className="bg-[hsl(217_33%_9%/0.97)] border-primary/15 self-start order-1 xl:order-2">
                   <CardContent className="relative overflow-hidden p-2">
                     {isEquipmentLoading && (
                       <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/60 backdrop-blur-sm">
@@ -546,7 +557,7 @@ export function EnhancedEquipmentManager({
                 </Card>
 
                 {/* Column 3 — Storage */}
-                <Card className="bg-white/5 backdrop-blur-md border-border/50">
+                <Card className="bg-[hsl(217_33%_9%/0.97)] border-primary/15 order-3">
                   <CardContent className="p-4">
                     <StoragePanel
                       characterId={characterId}
@@ -572,7 +583,7 @@ export function EnhancedEquipmentManager({
                   onSaveEquipment={onSaveEquipment}
                 />
               ) : (
-                <Card className="bg-white/5 backdrop-blur-md border-border/50">
+                <Card className="bg-[hsl(217_33%_9%/0.97)] border-primary/15">
                   <CardContent className="p-12 text-center">
                     <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="font-semibold text-lg mb-2 font-maplestory">No Pending StarForce Goals</h3>

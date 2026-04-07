@@ -270,7 +270,7 @@ export default function CharacterDashboard() {
 
       {/* ── Narrow character sidebar (desktop only) ── */}
       <TooltipProvider>
-        <div className="hidden md:flex fixed top-24 -ml-[4.5rem] w-14 flex-col items-center gap-2 py-3 px-2 z-30 bg-card/15 backdrop-blur-[20px] border border-border/20 rounded-2xl shadow-md">
+        <div className="hidden md:flex fixed top-24 left-4 w-14 flex-col items-center gap-2 py-3 px-2 z-30 bg-[hsl(217_33%_9%/0.97)] backdrop-blur-[4px] border border-primary/20 rounded-2xl shadow-md">
           {sortedChars.map(char => {
             const isSelected = selectedCharacter?.id === char.id;
             const thumbUrl = getCardUrl(char.callingCardHash);
@@ -352,7 +352,8 @@ export default function CharacterDashboard() {
           <div className="flex-1 flex items-center justify-center py-32">
             <div className="text-center flex flex-col items-center gap-4">
               <Target className="w-16 h-16 text-white/10" />
-              <p className="text-white/40 font-maplestory">Select a character on the left to get started</p>
+              <p className="text-white/40 font-maplestory hidden md:block">Select a character on the left to get started</p>
+              <p className="text-white/40 font-maplestory md:hidden">Select a character above to get started</p>
             </div>
           </div>
         )}
