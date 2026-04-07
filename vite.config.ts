@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
     componentTagger(),
   ].filter(Boolean),
   optimizeDeps: {
-    include: ['three', '@react-three/fiber'],
+    include: ['three'],
   },
   resolve: {
     alias: {
