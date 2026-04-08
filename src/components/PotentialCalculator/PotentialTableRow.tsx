@@ -2,11 +2,12 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Equipment } from "@/types";
 import { PotentialBulkItemResult } from "@/services/potentialService";
 import { EquipmentImage } from "@/components/EquipmentImage";
 import { useFormatting } from "@/hooks/display/useFormatting";
-import { Zap, Target, Loader2, Eye, EyeOff, CheckCircle2, X, ArrowRight } from "lucide-react";
+import { Loader2, Eye, EyeOff, CheckCircle2, X, ArrowRight } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface PotentialTableRowProps {
@@ -100,7 +101,7 @@ export function PotentialTableRow({
 
   return (
     <TableRow className={`border-white/5 hover:bg-white/[0.03] transition-colors ${!included ? 'opacity-40' : ''}`}>
-      {/* Equipment Image */}
+      {/* Item image */}
       <TableCell className="py-2 pl-4">
         <EquipmentImage src={equipment.image || '/placeholder.svg'} alt={equipment.name || 'Equipment'} className="w-9 h-9" />
       </TableCell>
@@ -121,18 +122,39 @@ export function PotentialTableRow({
 
       {/* Cube Type */}
       <TableCell className="text-center py-2">
-        <div className="flex items-center justify-center gap-2">
-          <Switch
-            id={`cube-type-${equipment.id}`}
-            checked={currentCubeType === 'red'}
-            onCheckedChange={handleCubeTypeToggle}
-            className="data-[state=checked]:bg-teal-500 data-[state=unchecked]:bg-purple-500"
-          />
-          <Label htmlFor={`cube-type-${equipment.id}`} className="text-xs cursor-pointer font-maplestory text-white/60 flex items-center gap-1">
-            {currentCubeType === 'red' ? 'Glowing' : 'Bright'}
-            {isOptimizedCubeType && <span className="text-[10px]">✨</span>}
-          </Label>
-        </div>
+        <TooltipProvider>
+          <div className="flex items-center justify-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10 w-fit mx-auto">
+            {(['black', 'red'] as const).map((type) => {
+              const active = currentCubeType === type;
+              const label = type === 'red' ? 'Glowing' : 'Bright';
+              const tip = type === 'red'
+                ? 'Red Cube — guaranteed tier-up, lower cost'
+                : 'Black Cube — can rearrange lines, higher success rate';
+              return (
+                <Tooltip key={type}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleCubeTypeToggle(type === 'red')}
+                      className={`px-2.5 py-1 rounded-md text-[11px] font-maplestory transition-all flex items-center gap-1 ${
+                        active
+                          ? type === 'red'
+                            ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40'
+                            : 'bg-purple-500/25 text-purple-300 border border-purple-500/40'
+                          : 'text-white/30 hover:text-white/55 border border-transparent'
+                      }`}
+                    >
+                      {label}
+                      {active && isOptimizedCubeType && <span className="text-[10px]">✨</span>}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs font-maplestory max-w-[180px]">
+                    {tip}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </TooltipProvider>
       </TableCell>
 
       {/* Cost columns */}
@@ -237,17 +259,27 @@ export function PotentialMobileCard({
 
       {/* Row 3: cube type + avg cost */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Switch
-            id={`mob-cube-${equipment.id}`}
-            checked={currentCubeType === 'red'}
-            onCheckedChange={handleCubeTypeToggle}
-            className="data-[state=checked]:bg-teal-500 data-[state=unchecked]:bg-purple-500"
-          />
-          <Label htmlFor={`mob-cube-${equipment.id}`} className="text-xs font-maplestory cursor-pointer text-white/60 flex items-center gap-1">
-            {currentCubeType === 'red' ? 'Glowing' : 'Bright'}
-            {isOptimizedCubeType && <span className="text-[10px]">✨</span>}
-          </Label>
+        <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
+          {(['black', 'red'] as const).map((type) => {
+            const active = currentCubeType === type;
+            const label = type === 'red' ? 'Glowing' : 'Bright';
+            return (
+              <button
+                key={type}
+                onClick={() => handleCubeTypeToggle(type === 'red')}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-maplestory transition-all flex items-center gap-1 ${
+                  active
+                    ? type === 'red'
+                      ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40'
+                      : 'bg-purple-500/25 text-purple-300 border border-purple-500/40'
+                    : 'text-white/30 hover:text-white/55 border border-transparent'
+                }`}
+              >
+                {label}
+                {active && isOptimizedCubeType && <span className="text-[10px]">✨</span>}
+              </button>
+            );
+          })}
         </div>
         <div className="text-right">
           {isCalculating

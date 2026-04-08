@@ -1,16 +1,10 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Equipment, StorageItem, SessionQueueItem } from '@/types';
 import { EquipmentImage } from '@/components/EquipmentImage';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useCharacterContext } from '@/hooks/useCharacterContext';
 import { parseMesoInput, formatMeso } from '@/lib/utils';
-import { Star, X, Plus, Package, Shield, ShieldCheck } from 'lucide-react';
+import { X, Plus, Package, Shield, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const MVP_OPTIONS = [
@@ -186,211 +180,129 @@ export function StartSessionDialog({
     ? (isStarting ? 'Adding…' : `Add to Session (${queue.length} items)`)
     : (isStarting ? 'Starting...' : `Start Session (${queue.length} items)`);
 
-  return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[calc(100vw-2rem)] sm:w-auto">
-        <DialogHeader>
-          <DialogTitle className="font-maplestory">
+  if (!open) return null;
+
+  const inputClass = "w-full rounded-lg px-3 py-2 text-sm font-maplestory text-white placeholder:text-white/25 outline-none border border-white/10 focus:border-primary/40 transition-colors";
+
+  const EventPill = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-xs font-maplestory border transition-all ${
+        active
+          ? 'bg-primary/20 border-primary/40 text-primary'
+          : 'bg-white/[0.05] border-white/15 text-white/55 hover:text-white/80 hover:border-white/30'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => handleClose(false)}>
+      <div
+        className="bg-[hsl(217_33%_9%)] border border-white/10 rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-white/8 shrink-0">
+          <p className="text-sm font-bold text-white font-maplestory">
             {mode === 'add' ? 'Add Items to Session' : 'Start Starforce Session'}
-          </DialogTitle>
-        </DialogHeader>
+          </p>
+          <button onClick={() => handleClose(false)} className="w-7 h-7 rounded-lg border border-white/10 bg-white/5 text-white/40 hover:text-white/80 flex items-center justify-center transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
 
-        <div className="space-y-5 py-1">
-          {/* Name + Meso row — only in start mode */}
-          {mode === 'start' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="font-maplestory text-xs text-white/60">Session Name (optional)</Label>
-                <Input
-                  placeholder="My 22★ grind"
-                  value={sessionName}
-                  onChange={e => setSessionName(e.target.value)}
-                  className="font-maplestory text-sm"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="font-maplestory text-xs text-white/60">Starting Meso Balance</Label>
-                <Input
-                  placeholder="e.g. 50B"
-                  value={startingMesoText}
-                  onChange={e => setStartingMesoText(e.target.value)}
-                  className="font-maplestory text-sm"
-                />
-                {startingMesoText && (
-                  <p className="text-[10px] text-white/40 font-maplestory">
-                    = {formatMeso(parseMesoInput(startingMesoText))} mesos
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-5">
 
-          {/* Event settings — only in start mode */}
-          {mode === 'start' && (
-            <div className="rounded-lg border border-border/50 bg-white/3 p-3 space-y-2">
-              <p className="text-xs font-semibold text-white/50 font-maplestory uppercase tracking-wider">Active Events</p>
-              <div className="space-y-2 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-2 sm:space-y-0">
-                <div className="flex items-center justify-between">
-                  <Label className="font-maplestory text-xs">Star Catching</Label>
-                  <Switch checked={events.starCatching} onCheckedChange={v => onEventsChange({ ...events, starCatching: v })} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="font-maplestory text-xs">30% Meso Off</Label>
-                  <Switch checked={events.thirtyPctMesoReduction} onCheckedChange={v => onEventsChange({ ...events, thirtyPctMesoReduction: v })} />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label className="font-maplestory text-xs">30% Boom Reduction</Label>
-                  <Switch checked={events.thirtyPctBoomReduction} onCheckedChange={v => onEventsChange({ ...events, thirtyPctBoomReduction: v })} />
-                </div>
-                <div className="flex items-center justify-between gap-3">
-                  <Label className="font-maplestory text-xs shrink-0">MVP Discount</Label>
-                  <div className="flex gap-1 flex-wrap justify-end">
-                    {MVP_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => onEventsChange({ ...events, mvpDiscount: opt.value })}
-                        className={`text-[10px] px-2 py-1 rounded font-maplestory transition-colors ${
-                          events.mvpDiscount === opt.value
-                            ? 'bg-primary text-white'
-                            : 'bg-white/10 text-white/50 hover:bg-white/20'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Item picker */}
+          {/* ── 1. Item picker (primary action — first) ── */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-white/50 font-maplestory uppercase tracking-wider">Select Items to Tap</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRequestAddItem}
-                className="h-7 text-xs font-maplestory rounded-full gap-1"
-              >
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-maplestory">Select Items</p>
+              <button onClick={onRequestAddItem} className="flex items-center gap-1 text-[10px] font-maplestory text-white/40 hover:text-white/70 transition-colors border border-white/10 rounded-lg px-2 py-1 bg-white/5 hover:bg-white/10">
                 <Plus className="w-3 h-3" /> Add New Item
-              </Button>
+              </button>
             </div>
 
-            <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'equipped' | 'storage')}>
-              <div className="flex items-center justify-between gap-2">
-                <TabsList className="h-8 bg-white/5 border border-border/40 p-0.5 gap-0.5 rounded-lg">
-                  <TabsTrigger value="equipped" className="h-7 text-xs font-maplestory rounded-md px-3">
-                    Equipped <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{equippedItems.length}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="storage" className="h-7 text-xs font-maplestory rounded-md px-3">
-                    Storage <Badge variant="secondary" className="ml-1 text-[10px] h-4 px-1 font-maplestory">{storageItems.length}</Badge>
-                  </TabsTrigger>
-                </TabsList>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSelectAll}
-                  className="h-7 text-xs font-maplestory text-white/50 hover:text-white/90 px-2"
-                >
-                  {(activeTab === 'equipped' ? allEquippedSelected : allStorageSelected) ? 'Deselect All' : 'Select All'}
-                </Button>
+            {/* Tabs + Select All */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 bg-white/5 rounded-lg p-0.5 border border-white/10">
+                {(['equipped', 'storage'] as const).map(tab => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-3 py-1 rounded-md text-xs font-maplestory transition-all capitalize flex items-center gap-1.5 ${
+                      activeTab === tab ? 'bg-white/10 text-white/90' : 'text-white/40 hover:text-white/60'
+                    }`}
+                  >
+                    {tab}
+                    <span className={`text-[9px] rounded px-1 ${activeTab === tab ? 'bg-white/15 text-white/70' : 'bg-white/5 text-white/25'}`}>
+                      {tab === 'equipped' ? equippedItems.length : storageItems.length}
+                    </span>
+                  </button>
+                ))}
               </div>
+              <button onClick={handleSelectAll} className="text-xs font-maplestory text-white/40 hover:text-white/70 transition-colors">
+                {(activeTab === 'equipped' ? allEquippedSelected : allStorageSelected) ? 'Deselect All' : 'Select All'}
+              </button>
+            </div>
 
-              <TabsContent value="equipped" className="mt-2">
-                {equippedItems.length === 0 ? (
-                  <p className="text-xs text-white/30 font-maplestory py-4 text-center">No starforceable equipped items</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {equippedItems.map(item => {
-                      const selected = isQueued(item.catalogId!);
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => toggleEquipped(item)}
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
-                            selected ? 'border-primary/60 bg-primary/10' : 'border-border/30 bg-white/3 hover:bg-white/8'
-                          }`}
-                        >
-                          <EquipmentImage src={item.image} alt={item.name ?? ''} size="sm" fallbackIcon={() => <Package className="w-3 h-3" />} />
-                          <div className="min-w-0">
-                            <p className="text-xs font-maplestory truncate text-white/80">{item.name ?? 'Unknown'}</p>
-                            <div className="flex items-center gap-0.5 mt-0.5">
-                              <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                              <span className="text-[10px] text-white/50 font-maplestory">{item.currentStarForce}→{item.targetStarForce}</span>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value="storage" className="mt-2">
-                {storageItems.length === 0 ? (
-                  <p className="text-xs text-white/30 font-maplestory py-4 text-center">No starforceable storage items</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto pr-1">
-                    {storageItems.map(item => {
-                      const selected = isQueued(item.catalogId!);
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => toggleStorage(item)}
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
-                            selected ? 'border-primary/60 bg-primary/10' : 'border-border/30 bg-white/3 hover:bg-white/8'
-                          }`}
-                        >
-                          <EquipmentImage src={item.image} alt={item.name ?? ''} size="sm" fallbackIcon={() => <Package className="w-3 h-3" />} />
-                          <div className="min-w-0">
-                            <p className="text-xs font-maplestory truncate text-white/80">{item.name ?? 'Unknown'}</p>
-                            <div className="flex items-center gap-0.5 mt-0.5">
-                              <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                              <span className="text-[10px] text-white/50 font-maplestory">{item.currentStarForce}→{item.targetStarForce}</span>
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-
-          {/* Queue */}
-          {queue.length > 0 && (
-            <div className="space-y-1.5">
-              <p className="text-xs font-semibold text-white/50 font-maplestory uppercase tracking-wider">
-                Queue ({queue.length})
-              </p>
-              <div className="space-y-1">
-                {queue.map(item => (
-                  <div key={item.equipmentId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-border/30">
-                    <EquipmentImage src={item.image} alt={item.name} size="sm" fallbackIcon={() => <Package className="w-3 h-3" />} />
-                    <span className="text-xs font-maplestory flex-1 truncate text-white/80">{item.name}</span>
-                    <div className="flex items-center gap-0.5">
-                      <Star className="w-2.5 h-2.5 text-yellow-400 fill-yellow-400" />
-                      <span className="text-[10px] text-white/50 font-maplestory">{item.startStar}→{item.targetStar}</span>
-                    </div>
+            {/* Item grid with scroll fade */}
+            <div className="relative">
+              <div className="grid grid-cols-2 gap-1.5 max-h-64 overflow-y-auto pr-1">
+                {(activeTab === 'equipped' ? equippedItems : storageItems).length === 0 ? (
+                  <p className="col-span-2 text-xs text-white/25 font-maplestory py-8 text-center">
+                    No starforceable {activeTab} items
+                  </p>
+                ) : (activeTab === 'equipped' ? equippedItems : storageItems).map(item => {
+                  const selected = isQueued(item.catalogId!);
+                  const toggle = activeTab === 'equipped' ? () => toggleEquipped(item as Equipment) : () => toggleStorage(item as StorageItem);
+                  return (
                     <button
-                      onClick={() => onUpdateQueueItem(item.equipmentId, { safeguard: !item.safeguard })}
-                      title={item.safeguard ? 'Safeguard on' : 'Safeguard off'}
-                      className={`w-5 h-5 flex items-center justify-center transition-colors ${
-                        item.safeguard ? 'text-blue-400' : 'text-white/20 hover:text-white/50'
+                      key={item.catalogId}
+                      onClick={toggle}
+                      className={`flex items-center gap-2 p-2 rounded-lg border text-left transition-all ${
+                        selected ? 'border-primary/50 bg-primary/10' : 'border-white/8 bg-white/[0.03] hover:bg-white/8'
                       }`}
                     >
-                      {item.safeguard
-                        ? <ShieldCheck className="w-3.5 h-3.5" />
-                        : <Shield className="w-3.5 h-3.5" />
-                      }
+                      <EquipmentImage src={item.image} alt={item.name ?? ''} size="sm" fallbackIcon={() => <Package className="w-3 h-3" />} />
+                      <div className="min-w-0">
+                        <p className="text-xs font-maplestory truncate text-white/80">{item.name ?? 'Unknown'}</p>
+                        <p className="text-[10px] text-white/35 font-maplestory mt-0.5">☆{item.currentStarForce} → ★{item.targetStarForce}</p>
+                      </div>
                     </button>
+                  );
+                })}
+              </div>
+              {/* Scroll fade indicator */}
+              <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[hsl(217_33%_9%)] to-transparent rounded-b-lg" />
+            </div>
+          </div>
+
+          {/* ── 2. Queue (appears right below grid as items are selected) ── */}
+          {queue.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-maplestory">Queue · {queue.length} {queue.length === 1 ? 'item' : 'items'}</p>
+              <div className="space-y-1">
+                {queue.map(item => (
+                  <div key={item.equipmentId} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/8">
+                    <EquipmentImage src={item.image} alt={item.name} size="sm" fallbackIcon={() => <Package className="w-3 h-3" />} />
+                    <span className="text-xs font-maplestory flex-1 truncate text-white/80">{item.name}</span>
+                    <span className="text-[10px] text-white/35 font-maplestory shrink-0">☆{item.startStar}→★{item.targetStar}</span>
                     <button
-                      onClick={() => onRemoveFromQueue(item.equipmentId)}
-                      className="w-4 h-4 flex items-center justify-center text-white/30 hover:text-destructive transition-colors"
+                      onClick={() => onUpdateQueueItem(item.equipmentId, { safeguard: !item.safeguard })}
+                      title={item.safeguard ? 'Safeguard: ON — boom protection active' : 'Safeguard: OFF — click to enable'}
+                      className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-maplestory border transition-all shrink-0 ${
+                        item.safeguard
+                          ? 'bg-blue-500/15 border-blue-400/30 text-blue-400'
+                          : 'bg-white/5 border-white/10 text-white/25 hover:text-white/50 hover:border-white/25'
+                      }`}
                     >
+                      {item.safeguard ? <ShieldCheck className="w-3 h-3" /> : <Shield className="w-3 h-3" />}
+                      <span>{item.safeguard ? 'Guard' : 'Guard'}</span>
+                    </button>
+                    <button onClick={() => onRemoveFromQueue(item.equipmentId)} className="w-4 h-4 flex items-center justify-center text-white/25 hover:text-red-400 transition-colors shrink-0">
                       <X className="w-3 h-3" />
                     </button>
                   </div>
@@ -398,15 +310,95 @@ export function StartSessionDialog({
               </div>
             </div>
           )}
+
+          {/* ── 3. Events (secondary config) ── */}
+          {mode === 'start' && (
+            <div className="space-y-2.5">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-maplestory">Active Events</p>
+              {/* Event toggles */}
+              <div className="flex flex-wrap gap-2">
+                <EventPill label="Star Catching" active={events.starCatching} onClick={() => onEventsChange({ ...events, starCatching: !events.starCatching })} />
+                <EventPill label="30% Meso Off" active={events.thirtyPctMesoReduction} onClick={() => onEventsChange({ ...events, thirtyPctMesoReduction: !events.thirtyPctMesoReduction })} />
+                <EventPill label="30% Boom Reduction" active={events.thirtyPctBoomReduction} onClick={() => onEventsChange({ ...events, thirtyPctBoomReduction: !events.thirtyPctBoomReduction })} />
+              </div>
+              {/* MVP Discount — own row */}
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] text-white/30 font-maplestory uppercase tracking-widest shrink-0">MVP Discount</span>
+                <div className="flex items-center gap-0.5 bg-white/5 rounded-full p-0.5 border border-white/10">
+                  {MVP_OPTIONS.map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => onEventsChange({ ...events, mvpDiscount: opt.value })}
+                      className={`text-[10px] px-3 py-1 rounded-full font-maplestory transition-colors ${
+                        events.mvpDiscount === opt.value
+                          ? 'bg-primary/25 text-primary border border-primary/40'
+                          : 'text-white/40 hover:text-white/70 border border-transparent'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── 4. Session details (metadata — last) ── */}
+          {mode === 'start' && (
+            <div className="space-y-2">
+              <p className="text-[10px] text-white/40 uppercase tracking-widest font-maplestory">Session Details</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-white/25 font-maplestory">Name <span className="text-white/15">(optional)</span></p>
+                  <input
+                    placeholder="My 22★ grind"
+                    value={sessionName}
+                    onChange={e => setSessionName(e.target.value)}
+                    className={inputClass}
+                    style={{ background: 'rgba(255,255,255,0.06)' }}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-[10px] text-white/25 font-maplestory">Starting Balance</p>
+                  <input
+                    placeholder="e.g. 50B"
+                    value={startingMesoText}
+                    onChange={e => setStartingMesoText(e.target.value)}
+                    className={inputClass}
+                    style={{ background: 'rgba(255,255,255,0.06)' }}
+                  />
+                  {startingMesoText
+                    ? <p className="text-[10px] text-primary/70 font-maplestory">= {formatMeso(parseMesoInput(startingMesoText))} mesos</p>
+                    : <p className="text-[10px] text-white/20 font-maplestory">Tracks spend per milestone</p>
+                  }
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => handleClose(false)} className="font-maplestory w-full sm:w-auto">Cancel</Button>
-          <Button onClick={handleStart} disabled={isStarting || queue.length === 0} className="font-maplestory w-full sm:w-auto">
-            {ctaLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        {/* Footer */}
+        <div className="flex items-center gap-2 px-5 py-4 border-t border-white/8 shrink-0">
+          <button onClick={() => handleClose(false)} className="flex-1 py-2 rounded-lg border border-white/15 bg-white/5 text-sm font-maplestory text-white/50 hover:text-white/80 hover:bg-white/10 transition-all">
+            Cancel
+          </button>
+          <button
+            onClick={handleStart}
+            disabled={isStarting || queue.length === 0}
+            className="flex-[2] py-2.5 rounded-lg bg-primary/90 hover:bg-primary text-sm font-maplestory text-white font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {isStarting
+              ? (mode === 'add' ? 'Adding…' : 'Starting…')
+              : queue.length === 0
+                ? 'Select items to start'
+                : mode === 'add'
+                  ? `Add to Session · ${queue.length} ${queue.length === 1 ? 'item' : 'items'}`
+                  : `Start Session · ${queue.length} ${queue.length === 1 ? 'item' : 'items'}`
+            }
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
