@@ -90,11 +90,11 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
   const included = isItemIncluded(calc.id);
 
   return (
-    <TableRow 
+    <TableRow
       key={calc.id}
       onMouseEnter={() => setHoveredRow(calc.id)}
       onMouseLeave={() => setHoveredRow(null)}
-      className={`group transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
+      className={`group border-white/5 hover:bg-white/3 transition-all ${included ? '' : 'opacity-40'}`}
     >
       {/* Equipment Image/Name */}
       <TableCell>
@@ -199,18 +199,12 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
             <Switch
               checked={itemSafeguard[calc.id] || false}
               onCheckedChange={(checked) => {
-                console.log(`Setting safeguard for ${calc.id}: ${checked}`);
                 setItemSafeguard(prev => ({ ...prev, [calc.id]: checked }));
-                // Update the equipment object in the parent component
-                if (onUpdateSafeguard) {
-                  onUpdateSafeguard(calc.id, checked);
-                }
+                if (onUpdateSafeguard) onUpdateSafeguard(calc.id, checked);
               }}
             />
           ) : (
-            <span className="text-xs text-muted-foreground" title="Safeguard only applies when targeting 15-16★">
-              N/A
-            </span>
+            <span className="text-xs text-white/15">—</span>
           )}
         </div>
       </TableCell>
@@ -219,7 +213,7 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
       <TableCell className="text-center">
         <div className="flex items-center justify-center gap-1">
           <div className="relative">
-            <Input
+            <input
               type="number"
               min="0"
               max="99"
@@ -228,7 +222,8 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
                 const spares = parseInt(e.target.value) || 0;
                 setItemSpares(prev => ({ ...prev, [calc.id]: spares }));
               }}
-              className={`w-16 h-8 text-center [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${calc.spareClassName}`}
+              className="w-14 h-7 text-center text-xs font-maplestory text-white rounded border border-white/15 focus:outline-none focus:border-primary/40 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              style={{ background: 'rgba(255,255,255,0.08)' }}
               placeholder="0"
               title={calc.spareTitle}
             />
@@ -324,117 +319,80 @@ export const EquipmentTableRow: React.FC<EquipmentTableRowProps> = ({
       {/* Average Cost */}
       <TableCell className="text-center">
         <div className="flex flex-col items-center">
-          <span className="font-medium text-yellow-400">
+          <span className="font-medium text-primary font-maplestory text-sm">
             {formatMesos.display(calc.averageCost)}
           </span>
           {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.averageSpareCost > 0 && (
-            <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.averageSpareCost)}`}>
-              (+{formatMesos.display(calc.spareCostBreakdown.averageSpareCost)} spares)
+            <span className="text-[10px] text-white/30 font-maplestory" title={`Enhancement: ${formatMesos.display(calc.spareCostBreakdown.enhancementCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.averageSpareCost)}`}>
+              +{formatMesos.display(calc.spareCostBreakdown.averageSpareCost)}
             </span>
           )}
         </div>
       </TableCell>
-      
+
       {/* Median Cost */}
       <TableCell className="text-center">
-        <div className="flex flex-col items-center">
-          <span className="font-medium text-orange-400">
-            {formatMesos.display(calc.medianCost)}
-          </span>
-          {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.medianSpareCost > 0 && (
-            <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.medianCost - calc.spareCostBreakdown.medianSpareCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.medianSpareCost)}`}>
-              (+{formatMesos.display(calc.spareCostBreakdown.medianSpareCost)} spares)
-            </span>
-          )}
-        </div>
+        <span className="font-medium text-white/60 font-maplestory text-sm">
+          {formatMesos.display(calc.medianCost)}
+        </span>
       </TableCell>
-      
+
       {/* 75th Percentile Cost */}
       <TableCell className="text-center">
-        <div className="flex flex-col items-center">
-          <span className="font-medium text-red-400">
-            {formatMesos.display(calc.p75Cost)}
-          </span>
-          {enhancedSettings.isInteractive && calc.spareCostBreakdown && calc.spareCostBreakdown.p75SpareCost > 0 && (
-            <span className="text-xs text-muted-foreground" title={`Enhancement: ${formatMesos.display(calc.p75Cost - calc.spareCostBreakdown.p75SpareCost)} + Spares: ${formatMesos.display(calc.spareCostBreakdown.p75SpareCost)}`}>
-              (+{formatMesos.display(calc.spareCostBreakdown.p75SpareCost)} spares)
-            </span>
-          )}
-        </div>
+        <span className="font-medium text-white/35 font-maplestory text-sm">
+          {formatMesos.display(calc.p75Cost)}
+        </span>
       </TableCell>
-      
+
       {/* Average Booms */}
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
-          <AlertTriangle className="w-3 h-3 text-red-500" />
-          <span className="font-medium text-red-400">
-            {calc.averageBooms.toFixed(1)}
-          </span>
-        </div>
+        <span className={`font-medium font-maplestory text-sm ${calc.averageBooms > 0 ? 'text-amber-400/80' : 'text-white/20'}`}>
+          {calc.averageBooms.toFixed(1)}
+        </span>
       </TableCell>
-      
+
       {/* Median Booms */}
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
-          <AlertTriangle className="w-3 h-3 text-orange-500" />
-          <span className="font-medium text-orange-400">
-            {calc.medianBooms.toFixed(1)}
-          </span>
-        </div>
+        <span className="font-medium text-white/50 font-maplestory text-sm">
+          {calc.medianBooms.toFixed(1)}
+        </span>
       </TableCell>
-      
+
       {/* 75th Percentile Booms */}
       <TableCell className="text-center">
-        <div className="flex items-center justify-center gap-1">
-          <AlertTriangle className="w-3 h-3 text-red-600" />
-          <span className="font-medium text-red-600">
-            {calc.p75Booms.toFixed(1)}
-          </span>
-        </div>
+        <span className="font-medium text-white/30 font-maplestory text-sm">
+          {calc.p75Booms.toFixed(1)}
+        </span>
       </TableCell>
-      
+
       {/* Actions */}
-      <TableCell className="text-center">
+      <TableCell className="text-center pr-4">
         <div className="flex items-center justify-center gap-1">
-          <Button
-            size="sm"
-            variant="outline"
+          <button
             onClick={() => toggleItemIncluded(calc.id)}
-            className={`h-7 w-7 p-0 ${
-              included 
-                ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20' 
-                : 'text-gray-400 hover:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-900/20'
+            className={`h-7 w-7 rounded-lg border transition-all flex items-center justify-center ${
+              included
+                ? 'border-white/15 bg-white/5 text-white/40 hover:text-white/80 hover:bg-white/10'
+                : 'border-white/10 bg-white/3 text-white/20 hover:text-white/50'
             }`}
-            title={included ? "Exclude from calculations" : "Include in calculations"}
+            title={included ? 'Exclude from calculations' : 'Include in calculations'}
           >
             {included ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (onUpdateStarforce) {
-                onUpdateStarforce(calc.id, calc.targetStarForce || 0, calc.targetStarForce || 0);
-              }
-            }}
-            className="h-7 w-7 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20"
-            title="Mark as completed (set current = target)"
+          </button>
+          <button
+            onClick={() => onUpdateStarforce?.(calc.id, calc.targetStarForce || 0, calc.targetStarForce || 0)}
+            className="h-7 w-7 rounded-lg border border-white/10 bg-white/3 text-green-400/50 hover:text-green-400 hover:bg-green-400/10 hover:border-green-400/20 transition-all flex items-center justify-center"
+            title="Mark as completed"
           >
             <CheckCircle2 className="w-3.5 h-3.5" />
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              if (onUpdateStarforce) {
-                onUpdateStarforce(calc.id, 0, 0);
-              }
-            }}
-            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-            title="Remove from planning (set target = current)"
+          </button>
+          <button
+            onClick={() => onUpdateStarforce?.(calc.id, 0, 0)}
+            className="h-7 w-7 rounded-lg border border-white/10 bg-white/3 text-red-400/40 hover:text-red-400 hover:bg-red-400/10 hover:border-red-400/20 transition-all flex items-center justify-center"
+            title="Reset target to current"
           >
             <X className="w-3.5 h-3.5" />
-          </Button>
+          </button>
         </div>
       </TableCell>
     </TableRow>

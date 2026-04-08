@@ -37,45 +37,18 @@ export function PotentialCalculatorSettings({
   };
 
   return (
-    <Card>
-      <CardContent className="space-y-4 pt-4">
-        <div>
-          <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory flex items-center gap-2">
-            <Settings className="w-4 h-4" />
-            Calculation Options
-          </h4>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="smart-cube-optimization"
-                checked={potentialSettings.smartCubeOptimization}
-                onCheckedChange={(checked) => handleSettingChange('smartCubeOptimization', checked)}
-              />
-              <Label htmlFor="smart-cube-optimization" className="text-sm cursor-pointer font-maplestory">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-yellow-500" />
-                  Smart Cube Optimization
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="w-4 h-4 text-muted-foreground hover:text-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          Equipment with optimized cube recommendations will show a sparkle icon (✨) next to the cube type.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Automatically recommend the most cost-effective cube type
-                </div>
-              </Label>
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="border border-white/10 bg-[hsl(217_33%_12%)] rounded-xl px-4 pt-3 pb-4 flex flex-col gap-3">
+      <p className="text-[9px] text-white/40 uppercase tracking-widest font-maplestory">Settings</p>
+      <button
+        onClick={() => handleSettingChange('smartCubeOptimization', !potentialSettings.smartCubeOptimization)}
+        className={`w-full py-2 rounded-lg text-xs font-maplestory border transition-all ${
+          potentialSettings.smartCubeOptimization
+            ? 'bg-primary/20 border-primary/40 text-primary'
+            : 'bg-white/[0.05] border-white/15 text-white/55 hover:text-white/80 hover:border-white/30'
+        }`}
+      >
+        Smart Cube Optimization
+      </button>
+    </div>
   );
 }

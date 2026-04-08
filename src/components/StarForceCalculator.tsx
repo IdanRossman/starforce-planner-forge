@@ -150,7 +150,7 @@ export function StarForceCalculator({
     return included;
   }, [equipment, additionalEquipment]);
 
-  // Use the calculation hook for equipment mode
+  // Use the calculation hook for equipment mode (sorting handled client-side)
   const {
     equipmentCalculations,
     isCalculating,
@@ -166,10 +166,33 @@ export function StarForceCalculator({
     itemSpares,
     itemSparePrices,
     itemIncluded,
-    sortField,
-    sortDirection,
+    sortField: null,
+    sortDirection: null,
     manualMode: true
   });
+
+  // Client-side sort — no API round-trip needed
+  const sortedEquipmentCalculations = useMemo(() => {
+    if (!sortField || !sortDirection) return equipmentCalculations;
+    return [...equipmentCalculations].sort((a, b) => {
+      let aVal: string | number;
+      let bVal: string | number;
+      switch (sortField) {
+        case 'name': aVal = (a.name || '').toLowerCase(); bVal = (b.name || '').toLowerCase(); break;
+        case 'currentStarForce': aVal = a.currentStarForce; bVal = b.currentStarForce; break;
+        case 'targetStarForce': aVal = a.targetStarForce; bVal = b.targetStarForce; break;
+        case 'averageCost': aVal = a.averageCost; bVal = b.averageCost; break;
+        case 'medianCost': aVal = a.medianCost; bVal = b.medianCost; break;
+        case 'p75Cost': aVal = a.p75Cost; bVal = b.p75Cost; break;
+        case 'averageBooms': aVal = a.averageBooms; bVal = b.averageBooms; break;
+        case 'medianBooms': aVal = a.medianBooms; bVal = b.medianBooms; break;
+        case 'p75Booms': aVal = a.p75Booms; bVal = b.p75Booms; break;
+        default: return 0;
+      }
+      if (typeof aVal === 'string') return sortDirection === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal);
+      return sortDirection === 'asc' ? aVal - (bVal as number) : (bVal as number) - aVal;
+    });
+  }, [equipmentCalculations, sortField, sortDirection]);
 
   // Helper functions for luck analysis
 
@@ -310,214 +333,154 @@ export function StarForceCalculator({
   };
 
   return (
-    <div className="space-y-6">
-        {/* Settings Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-maplestory">
-              <Settings className="w-5 h-5 text-primary" />
-              Enhancement Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Event Settings */}
-            <div>
-              <h4 className="font-medium text-sm mb-3 text-muted-foreground font-maplestory">Enhancement Settings</h4>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="discount-event"
-                    checked={enhancedSettings.thirtyPercentOff}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, thirtyPercentOff: checked }))}
-                  />
-                  <Label htmlFor="discount-event" className="text-sm cursor-pointer font-maplestory">30% Off Event</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="boom-reduction-event"
-                    checked={enhancedSettings.thirtyPercentBoomReduction}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, thirtyPercentBoomReduction: checked }))}
-                  />
-                  <Label htmlFor="boom-reduction-event" className="text-sm cursor-pointer font-maplestory">30% Boom Reduction</Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="star-catching"
-                    checked={enhancedSettings.starCatching !== false}
-                    onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, starCatching: checked }))}
-                  />
-                  <Label htmlFor="star-catching" className="text-sm cursor-pointer font-maplestory">Star Catching</Label>
-                </div>
-                {!isMobile && (
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      id="interactive-server"
-                      checked={enhancedSettings.isInteractive}
-                      onCheckedChange={(checked) => setEnhancedSettings(prev => ({ ...prev, isInteractive: checked }))}
-                    />
-                    <Label htmlFor="interactive-server" className="text-sm cursor-pointer font-maplestory">Interactive Server</Label>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="space-y-3">
 
+      {/* Stats + Settings inline row */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch">
 
-        {/* Statistics Overview */}
+        {/* Stats panel — primary output */}
         {!isCalculating && !calculationError && aggregateStats.totalCount > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Calculator className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">{formatMesos.display(aggregateStats.totalExpectedCost)}</div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Average Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">{formatMesos.display(aggregateStats.totalMedianCost)}</div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Median Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-red-500/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-red-500" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-red-400 font-maplestory">{formatMesos.display(aggregateStats.totalP75Cost)}</div>
-                  <div className="text-sm text-muted-foreground font-maplestory">75th % Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <div className="border border-white/10 border-l-2 border-l-primary/30 bg-[hsl(217_33%_9%)] rounded-xl flex items-center flex-1 min-w-0">
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-primary font-maplestory leading-tight">{formatMesos.display(aggregateStats.totalExpectedCost)}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Avg Cost</p>
+            </div>
+            <div className="w-px h-10 bg-white/10 shrink-0" />
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-white/60 font-maplestory leading-tight">{formatMesos.display(aggregateStats.totalMedianCost)}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Median</p>
+            </div>
+            <div className="w-px h-10 bg-white/10 shrink-0" />
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-white/35 font-maplestory leading-tight">{formatMesos.display(aggregateStats.totalP75Cost)}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">75th %</p>
+            </div>
+          </div>
         )}
 
-        {/* Equipment Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 font-maplestory">
-                <Calculator className="w-5 h-5 text-primary" />
-                {isMobile ? 'SF Planning' : 'StarForce Planning Table'}
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                {hasChanges && (
-                  <Button
-                    onClick={triggerRecalculation}
-                    disabled={isCalculating}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-black font-maplestory animate-pulse shadow-lg shadow-yellow-500/25 border-2 border-yellow-400 relative"
-                    size="sm"
-                  >
-                    {/* Glowing effect */}
-                    <div className="absolute inset-0 bg-yellow-400 rounded opacity-20 animate-ping"></div>
-                    <div className="relative flex items-center">
-                      {isCalculating ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Calculating...
-                        </>
-                      ) : (
-                        <>
-                          <Calculator className="w-4 h-4 mr-2" />
-                          Recalculate
-                        </>
-                      )}
-                    </div>
-                  </Button>
-                )}
-                {!isMobile && (
-                  <Button onClick={exportData} variant="outline" size="sm" className="flex items-center gap-2 font-maplestory">
-                    <Download className="w-4 h-4" />
-                    Export
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isCalculating ? (
-              <div className="text-center py-8">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <h3 className="font-semibold text-lg mb-2 font-maplestory">Calculating StarForce Costs</h3>
-                <p className="text-muted-foreground font-maplestory">Using enhanced simulation algorithms...</p>
-              </div>
-            ) : calculationError ? (
-              <div className="text-center py-8">
-                <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2 text-red-600 font-maplestory">Calculation Error</h3>
-                <p className="text-muted-foreground mb-4 font-maplestory">{calculationError}</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    // Trigger recalculation
-                    triggerRecalculation();
-                  }}
-                  className="font-maplestory"
+        {/* Settings panel — secondary controls */}
+        <div className="border border-white/10 bg-[hsl(217_33%_12%)] rounded-xl px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
+          <p className="text-[9px] text-white/40 uppercase tracking-widest font-maplestory">Settings</p>
+          <div className="grid grid-cols-2 gap-2">
+            {([
+              { key: 'thirtyPercentOff', label: '30% Off Event' },
+              { key: 'thirtyPercentBoomReduction', label: '30% Boom Reduction' },
+              { key: 'starCatching', label: 'Star Catching' },
+              ...(!isMobile ? [{ key: 'isInteractive', label: 'Interactive Server' }] : []),
+            ] as { key: keyof typeof enhancedSettings; label: string }[]).map(({ key, label }) => {
+              const active = key === 'starCatching' ? enhancedSettings.starCatching !== false : !!enhancedSettings[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => setEnhancedSettings(prev => ({
+                    ...prev,
+                    [key]: key === 'starCatching' ? !(prev.starCatching !== false) : !prev[key]
+                  }))}
+                  className={`w-full py-2 rounded-lg text-xs font-maplestory border transition-all ${
+                    active
+                      ? 'bg-primary/20 border-primary/40 text-primary'
+                      : 'bg-white/[0.05] border-white/15 text-white/55 hover:text-white/80 hover:border-white/30'
+                  }`}
                 >
-                  Try Again
-                </Button>
-              </div>
-            ) : equipmentCalculations.length === 0 ? (
-              <div className="text-center py-8">
-                <Star className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-lg mb-2 font-maplestory">No Pending Equipment</h3>
-                <p className="text-muted-foreground font-maplestory">All equipment is already at target StarForce levels!</p>
-              </div>
-            ) : (
-              <EquipmentTableContent
-                equipmentCalculations={equipmentCalculations}
-                enhancedSettings={enhancedSettings}
-                sortField={sortField}
-                sortDirection={sortDirection}
-                onSort={handleSort}
-                getSortIcon={getSortIcon}
-                hoveredRow={hoveredRow}
-                setHoveredRow={setHoveredRow}
-                isItemIncluded={isItemIncluded}
-                editingField={editingField}
-                tempValue={tempValue}
-                setTempValue={setTempValue}
-                itemSafeguard={itemSafeguard}
-                setItemSafeguard={setItemSafeguard}
-                itemSpares={itemSpares}
-                setItemSpares={setItemSpares}
-                itemSparePrices={itemSparePrices}
-                setItemSparePrices={setItemSparePrices}
-                tempSparePrices={tempSparePrices}
-                setTempSparePrices={setTempSparePrices}
-                onUpdateSafeguard={onUpdateSafeguard}
-                onUpdateStarforce={onUpdateStarforce}
-                toggleItemIncluded={toggleItemIncluded}
-                isSafeguardEligible={isSafeguardEligible}
-                getCurrentSparePrice={getCurrentSparePrice}
-                commitSparePriceChange={commitSparePriceChange}
-                handleStartFieldEdit={handleStartFieldEdit}
-                handleSaveFieldEdit={handleSaveFieldEdit}
-                handleCancelFieldEdit={handleCancelFieldEdit}
-                formatMesos={formatMesos}
-              />
-            )}
-          </CardContent>
-        </Card>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
       </div>
-    );
+
+      {/* Planning table */}
+      <div className="border border-white/10 bg-[hsl(217_33%_9%)] rounded-xl overflow-hidden">
+        {/* Table header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+          <p className="text-sm font-bold text-white font-maplestory">StarForce Planning</p>
+          <div className="flex items-center gap-2">
+            {hasChanges && (
+              <button
+                onClick={triggerRecalculation}
+                disabled={isCalculating}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-maplestory rounded-lg bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 hover:border-primary/50 transition-all disabled:opacity-50"
+              >
+                {isCalculating
+                  ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  : <Calculator className="w-3.5 h-3.5" />
+                }
+                {isCalculating ? 'Calculating…' : 'Recalculate'}
+              </button>
+            )}
+            {!isMobile && (
+              <button
+                onClick={exportData}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-maplestory rounded-lg border border-white/15 bg-white/5 text-white/50 hover:text-white/80 hover:bg-white/10 transition-all"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Table body */}
+        <div className="p-0">
+          {isCalculating ? (
+            <div className="text-center py-12">
+              <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm font-maplestory text-white/60">Calculating StarForce costs…</p>
+            </div>
+          ) : calculationError ? (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-8 h-8 text-amber-400/60 mx-auto mb-3" />
+              <p className="text-sm font-maplestory text-white/60 mb-3">{calculationError}</p>
+              <button
+                onClick={triggerRecalculation}
+                className="px-3 py-1.5 text-xs font-maplestory rounded-lg border border-white/15 bg-white/5 text-white/50 hover:text-white/80 transition-all"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : sortedEquipmentCalculations.length === 0 ? (
+            <div className="text-center py-12">
+              <Star className="w-8 h-8 text-white/15 mx-auto mb-3" />
+              <p className="text-sm font-maplestory text-white/40">All equipment is at target — nothing to plan.</p>
+            </div>
+          ) : (
+            <EquipmentTableContent
+              equipmentCalculations={sortedEquipmentCalculations}
+              enhancedSettings={enhancedSettings}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              getSortIcon={getSortIcon}
+              hoveredRow={hoveredRow}
+              setHoveredRow={setHoveredRow}
+              isItemIncluded={isItemIncluded}
+              editingField={editingField}
+              tempValue={tempValue}
+              setTempValue={setTempValue}
+              itemSafeguard={itemSafeguard}
+              setItemSafeguard={setItemSafeguard}
+              itemSpares={itemSpares}
+              setItemSpares={setItemSpares}
+              itemSparePrices={itemSparePrices}
+              setItemSparePrices={setItemSparePrices}
+              tempSparePrices={tempSparePrices}
+              setTempSparePrices={setTempSparePrices}
+              onUpdateSafeguard={onUpdateSafeguard}
+              onUpdateStarforce={onUpdateStarforce}
+              toggleItemIncluded={toggleItemIncluded}
+              isSafeguardEligible={isSafeguardEligible}
+              getCurrentSparePrice={getCurrentSparePrice}
+              commitSparePriceChange={commitSparePriceChange}
+              handleStartFieldEdit={handleStartFieldEdit}
+              handleSaveFieldEdit={handleSaveFieldEdit}
+              handleCancelFieldEdit={handleCancelFieldEdit}
+              formatMesos={formatMesos}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }

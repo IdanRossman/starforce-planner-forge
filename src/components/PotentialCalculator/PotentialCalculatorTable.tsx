@@ -53,40 +53,27 @@ export function PotentialCalculatorTable({
 
   if (potentialEquipment.length === 0) {
     return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Zap className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-          <h3 className="font-semibold text-xl mb-2 font-maplestory">No Potential Goals Set</h3>
-          <p className="text-muted-foreground mb-4 font-maplestory">
-            Add potential goals to your equipment to see cost calculations and optimization suggestions.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="border border-white/10 bg-[hsl(217_33%_9%)] rounded-xl p-12 text-center">
+        <Zap className="w-8 h-8 text-white/15 mx-auto mb-3" />
+        <p className="text-sm font-maplestory text-white/40">No potential goals set — add targets to your equipment to see cost estimates.</p>
+      </div>
     );
   }
 
-  const cardHeader = (
-    <CardHeader className="pb-4">
-      <CardTitle className="flex items-center gap-2 font-maplestory">
-        <Zap className="w-5 h-5 text-purple-500" />
-        {isMobile ? 'Potential' : 'Potential Enhancement Calculations'}
-        <Badge variant="secondary" className="ml-2 font-maplestory bg-purple-500/20 text-purple-600">
-          {potentialEquipment.length} item{potentialEquipment.length !== 1 ? 's' : ''}
-        </Badge>
-        {isCalculating && (
-          <Badge variant="secondary" className="ml-2 font-maplestory bg-blue-500/20 text-blue-600 animate-pulse">
-            Calculating...
-          </Badge>
-        )}
-      </CardTitle>
-    </CardHeader>
+  const tableHeader = (
+    <div className="flex items-center justify-between px-4 py-3 border-b border-white/8">
+      <p className="text-sm font-bold text-white font-maplestory">Potential Planning</p>
+      {isCalculating && (
+        <span className="text-[10px] font-maplestory text-white/40 animate-pulse uppercase tracking-widest">Calculating…</span>
+      )}
+    </div>
   );
 
   if (isMobile) {
     return (
-      <Card>
-        {cardHeader}
-        <CardContent className="p-3 space-y-2">
+      <div className="border border-white/10 bg-[hsl(217_33%_9%)] rounded-xl overflow-hidden">
+        {tableHeader}
+        <div className="p-3 space-y-2">
           {potentialEquipment.map(item => (
             <PotentialMobileCard
               key={item.id}
@@ -101,34 +88,32 @@ export function PotentialCalculatorTable({
               resetUserModifications={resetUserModifications}
             />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card>
-      {cardHeader}
-      <CardContent className="p-0">
-        <div className="rounded-md border border-border overflow-hidden">
-          <Table>
-            <PotentialTableHeader />
-            <PotentialTableContent
-              potentialEquipment={potentialEquipment}
-              calculationResults={calculationResults}
-              isCalculating={isCalculating}
-              onUpdateCubeType={onUpdateCubeType}
-              onUpdatePotential={onUpdatePotential}
-              onSaveEquipment={onSaveEquipment}
-              onSaveAdditionalEquipment={onSaveAdditionalEquipment}
-              isItemIncluded={isItemIncluded}
-              toggleItemIncluded={toggleItemIncluded}
-              smartOptimizationEnabled={smartOptimizationEnabled}
-              resetUserModifications={resetUserModifications}
-            />
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="border border-white/10 bg-[hsl(217_33%_9%)] rounded-xl overflow-hidden">
+      {tableHeader}
+      <div className="overflow-x-auto">
+        <Table>
+          <PotentialTableHeader />
+          <PotentialTableContent
+            potentialEquipment={potentialEquipment}
+            calculationResults={calculationResults}
+            isCalculating={isCalculating}
+            onUpdateCubeType={onUpdateCubeType}
+            onUpdatePotential={onUpdatePotential}
+            onSaveEquipment={onSaveEquipment}
+            onSaveAdditionalEquipment={onSaveAdditionalEquipment}
+            isItemIncluded={isItemIncluded}
+            toggleItemIncluded={toggleItemIncluded}
+            smartOptimizationEnabled={smartOptimizationEnabled}
+            resetUserModifications={resetUserModifications}
+          />
+        </Table>
+      </div>
+    </div>
   );
 }

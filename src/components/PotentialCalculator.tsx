@@ -306,91 +306,48 @@ export function PotentialCalculator() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Settings Panel */}
-      <PotentialCalculatorSettings
-        potentialSettings={potentialSettings}
-        onUpdatePotentialSettings={handleUpdatePotentialSettings}
-        isCalculating={isCalculating}
-      />
+    <div className="space-y-3">
 
+      {/* Stats + Settings inline row */}
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+
+        {/* Stats panel */}
+        {summary && (
+          <div className="border border-white/10 border-l-2 border-l-primary/30 bg-[hsl(217_33%_9%)] rounded-xl flex items-center flex-1 min-w-0">
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-primary font-maplestory leading-tight">{formatMesos.display(summary.totalAverageCost)}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Avg Cost</p>
+            </div>
+            <div className="w-px h-10 bg-white/10 shrink-0" />
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-white/60 font-maplestory leading-tight">{formatMesos.display(summary.totalMedianCost)}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Median</p>
+            </div>
+            <div className="w-px h-10 bg-white/10 shrink-0" />
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-white/35 font-maplestory leading-tight">{Math.round(summary.totalAverageCubes).toLocaleString()}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Avg Cubes</p>
+            </div>
+            <div className="w-px h-10 bg-white/10 shrink-0" />
+            <div className="flex-1 text-center py-4">
+              <p className="text-2xl font-bold text-white/20 font-maplestory leading-tight">{summary.itemCount}</p>
+              <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mt-1">Items</p>
+            </div>
+          </div>
+        )}
+
+        {/* Settings panel */}
+        <PotentialCalculatorSettings
+          potentialSettings={potentialSettings}
+          onUpdatePotentialSettings={handleUpdatePotentialSettings}
+          isCalculating={isCalculating}
+        />
+
+      </div>
 
       {error && (
-        <div className="bg-destructive/15 border border-destructive text-destructive px-4 py-3 rounded-md">
+        <div className="border border-red-500/30 bg-red-500/10 text-red-400 px-4 py-3 rounded-xl text-sm font-maplestory">
           {error}
-        </div>
-      )}
-
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Total Average Cost */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Calculator className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-400 font-maplestory">
-                    {formatMesos.display(summary.totalAverageCost)}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Average Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Total Median Cost */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-green-500" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-green-400 font-maplestory">
-                    {formatMesos.display(summary.totalMedianCost)}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Median Cost</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Average Cubes */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                  <Target className="w-5 h-5 text-blue-500" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-400 font-maplestory">
-                    {Math.round(summary.totalAverageCubes).toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Average Cubes</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Equipment Count */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex flex-col items-center justify-center gap-3">
-                <div className="w-10 h-10 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <Package className="w-5 h-5 text-purple-500" />
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-purple-400 font-maplestory">
-                    {summary.itemCount}
-                  </div>
-                  <div className="text-sm text-muted-foreground font-maplestory">Equipment Count</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
 

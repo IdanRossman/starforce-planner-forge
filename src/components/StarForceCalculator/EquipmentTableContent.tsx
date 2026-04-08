@@ -67,27 +67,22 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
 
   if (isMobile) {
     return (
-      <div className="space-y-3 max-h-[600px] overflow-y-auto px-0.5 pb-1">
+      <div className="space-y-2 p-3 max-h-[600px] overflow-y-auto">
         {equipmentCalculations.map((calc) => {
           const included = props.isItemIncluded(calc.id);
           const isEditingCurrent = props.editingField?.id === calc.id && props.editingField?.field === 'current';
           const isEditingTarget = props.editingField?.id === calc.id && props.editingField?.field === 'target';
+          const highBooms = calc.averageBooms >= 2;
 
           return (
             <div
               key={calc.id}
-              className={`rounded-lg border border-border/50 p-3 space-y-3 bg-card/50 transition-opacity ${included ? '' : 'opacity-50 bg-muted/30'}`}
+              className={`rounded-xl border border-white/8 bg-[hsl(217_33%_7%)] p-3 space-y-3 transition-opacity ${included ? '' : 'opacity-40'}`}
             >
-              {/* Row 1: image + name + action buttons */}
-              <div className="flex items-start gap-3">
+              {/* Row 1: image + name + actions */}
+              <div className="flex items-center gap-2.5">
                 <div className="relative shrink-0">
-                  <EquipmentImage
-                    src={calc.image}
-                    alt={calc.name}
-                    size="md"
-                    maxRetries={2}
-                    showFallback={true}
-                  />
+                  <EquipmentImage src={calc.image} alt={calc.name} size="md" maxRetries={2} showFallback={true} />
                   {!included && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded">
                       <EyeOff className="w-3 h-3 text-white" />
@@ -95,54 +90,51 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm font-maplestory leading-tight">{calc.name || 'Equipment'}</p>
-                  <div className="flex gap-1 mt-1 flex-wrap">
+                  <p className="text-sm font-maplestory text-white/90 truncate leading-tight">{calc.name || 'Equipment'}</p>
+                  <div className="flex gap-1 mt-0.5">
                     {calc.transferredTo && (
-                      <Badge variant="destructive" className="text-xs px-1 py-0 h-4 flex items-center gap-0.5">
+                      <span className="text-[9px] font-maplestory text-red-400/70 flex items-center gap-0.5">
                         <ArrowRight className="w-2 h-2" />Destroyed
-                      </Badge>
+                      </span>
                     )}
                     {calc.transferredFrom && (
-                      <Badge variant="secondary" className="text-xs px-1 py-0 h-4 flex items-center gap-0.5">
+                      <span className="text-[9px] font-maplestory text-white/40 flex items-center gap-0.5">
                         <ArrowLeft className="w-2 h-2" />Transferred
-                      </Badge>
+                      </span>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-1 shrink-0">
-                  <Button
-                    size="sm" variant="outline"
+                  <button
                     onClick={() => props.toggleItemIncluded(calc.id)}
-                    className={`h-8 w-8 p-0 ${included ? 'text-blue-500' : 'text-gray-400'}`}
                     title={included ? "Exclude from calculations" : "Include in calculations"}
+                    className={`w-7 h-7 rounded-md border flex items-center justify-center transition-colors ${included ? 'border-white/20 bg-white/8 text-white/60 hover:text-white/90' : 'border-white/10 bg-white/5 text-white/25'}`}
                   >
                     {included ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  </Button>
-                  <Button
-                    size="sm" variant="outline"
+                  </button>
+                  <button
                     onClick={() => props.onUpdateStarforce?.(calc.id, calc.targetStarForce || 0, calc.targetStarForce || 0)}
-                    className="h-8 w-8 p-0 text-green-600"
                     title="Mark as completed"
+                    className="w-7 h-7 rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-400/80 hover:bg-emerald-500/20 flex items-center justify-center transition-colors"
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    size="sm" variant="outline"
+                  </button>
+                  <button
                     onClick={() => props.onUpdateStarforce?.(calc.id, 0, 0)}
-                    className="h-8 w-8 p-0 text-red-600"
                     title="Remove from planning"
+                    className="w-7 h-7 rounded-md border border-red-500/30 bg-red-500/10 text-red-400/80 hover:bg-red-500/20 flex items-center justify-center transition-colors"
                   >
                     <X className="w-3.5 h-3.5" />
-                  </Button>
+                  </button>
                 </div>
               </div>
 
-              {/* Row 2: Current SF → Target SF + Safeguard */}
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-3 h-3 text-yellow-500 shrink-0" />
+              {/* Row 2: stars + guard + spares */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-2.5 py-1.5 border border-white/8">
+                  <span className="text-white/40 text-xs">☆</span>
                   {isEditingCurrent ? (
-                    <Input
+                    <input
                       type="number" min="0" max={calc.targetStarForce}
                       value={props.tempValue} autoFocus
                       onChange={(e) => props.setTempValue(parseInt(e.target.value) || 0)}
@@ -151,23 +143,18 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
                         if (e.key === 'Enter') { props.handleSaveFieldEdit(calc); e.currentTarget.blur(); }
                         if (e.key === 'Escape') props.handleCancelFieldEdit();
                       }}
-                      className="w-14 h-8 text-center text-sm"
+                      className="w-10 bg-transparent text-center text-sm text-white outline-none font-maplestory [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   ) : (
-                    <button
-                      onClick={() => props.handleStartFieldEdit(calc.id, 'current', calc.currentStarForce)}
-                      className="font-semibold text-sm hover:text-yellow-300 transition-colors min-w-[1.5rem] text-left"
-                      title="Tap to edit"
-                    >
+                    <button onClick={() => props.handleStartFieldEdit(calc.id, 'current', calc.currentStarForce)}
+                      className="text-sm font-maplestory text-white/80 hover:text-white transition-colors min-w-[1rem]">
                       {calc.currentStarForce || 0}
                     </button>
                   )}
-                </div>
-                <span className="text-muted-foreground text-sm">→</span>
-                <div className="flex items-center gap-1.5">
-                  <Target className="w-3 h-3 text-primary shrink-0" />
+                  <span className="text-white/20 text-xs">→</span>
+                  <span className="text-primary/60 text-xs">★</span>
                   {isEditingTarget ? (
-                    <Input
+                    <input
                       type="number" min={calc.currentStarForce} max="30"
                       value={props.tempValue} autoFocus
                       onChange={(e) => props.setTempValue(parseInt(e.target.value) || 0)}
@@ -176,21 +163,19 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
                         if (e.key === 'Enter') { props.handleSaveFieldEdit(calc); e.currentTarget.blur(); }
                         if (e.key === 'Escape') props.handleCancelFieldEdit();
                       }}
-                      className="w-14 h-8 text-center text-sm"
+                      className="w-10 bg-transparent text-center text-sm text-primary outline-none font-maplestory [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                   ) : (
-                    <button
-                      onClick={() => props.handleStartFieldEdit(calc.id, 'target', calc.targetStarForce)}
-                      className="font-semibold text-sm hover:text-primary/80 transition-colors min-w-[1.5rem] text-left"
-                      title="Tap to edit"
-                    >
+                    <button onClick={() => props.handleStartFieldEdit(calc.id, 'target', calc.targetStarForce)}
+                      className="text-sm font-maplestory text-primary hover:text-primary/80 transition-colors min-w-[1rem]">
                       {calc.targetStarForce || 0}
                     </button>
                   )}
                 </div>
+
                 {props.isSafeguardEligible(calc) && (
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    <span className="text-xs text-muted-foreground font-maplestory">Guard:</span>
+                  <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-2.5 py-1.5 border border-white/8">
+                    <span className="text-[10px] text-white/40 font-maplestory">Guard</span>
                     <Switch
                       checked={props.itemSafeguard[calc.id] || false}
                       onCheckedChange={(checked) => {
@@ -200,27 +185,44 @@ export const EquipmentTableContent: React.FC<EquipmentTableContentProps> = (prop
                     />
                   </div>
                 )}
+
+                <div className="flex items-center gap-1.5 bg-white/5 rounded-lg px-2.5 py-1.5 border border-white/8 ml-auto">
+                  <span className="text-[10px] text-white/40 font-maplestory">Spares</span>
+                  <input
+                    type="number" min="0"
+                    value={props.itemSpares[calc.id] || 0}
+                    onChange={(e) => props.setItemSpares(prev => ({ ...prev, [calc.id]: parseInt(e.target.value) || 0 }))}
+                    className="w-8 bg-transparent text-center text-sm text-white/80 outline-none font-maplestory [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                </div>
               </div>
 
-              {/* Row 3: Booms + Cost breakdown */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground font-maplestory">
-                <AlertTriangle className="w-3 h-3 text-orange-500" />
-                <span>{calc.averageBooms.toFixed(1)} avg booms</span>
-              </div>
+              {/* Row 3: booms (only warn if high) */}
+              {highBooms && (
+                <div className="flex items-center gap-1.5 text-[11px] font-maplestory text-amber-400/80">
+                  <AlertTriangle className="w-3 h-3 shrink-0" />
+                  <span>{calc.averageBooms.toFixed(1)} avg booms — consider getting spares</span>
+                </div>
+              )}
+              {!highBooms && (
+                <div className="text-[11px] font-maplestory text-white/25">
+                  {calc.averageBooms.toFixed(1)} avg booms
+                </div>
+              )}
 
-              {/* Row 4: Cost breakdown */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/30">
+              {/* Row 4: cost breakdown */}
+              <div className="grid grid-cols-3 gap-1 pt-2 border-t border-white/8">
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground font-maplestory mb-0.5">Avg Cost</p>
-                  <p className="text-xs font-semibold text-yellow-400">{props.formatMesos.display(calc.averageCost)}</p>
+                  <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mb-0.5">Avg Cost</p>
+                  <p className="text-xs font-maplestory font-semibold text-primary">{props.formatMesos.display(calc.averageCost)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground font-maplestory mb-0.5">Median</p>
-                  <p className="text-xs font-semibold text-orange-400">{props.formatMesos.display(calc.medianCost)}</p>
+                  <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mb-0.5">Median</p>
+                  <p className="text-xs font-maplestory font-semibold text-white/60">{props.formatMesos.display(calc.medianCost)}</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-[10px] text-muted-foreground font-maplestory mb-0.5">75th %</p>
-                  <p className="text-xs font-semibold text-red-400">{props.formatMesos.display(calc.p75Cost)}</p>
+                  <p className="text-[9px] text-white/30 font-maplestory uppercase tracking-wide mb-0.5">75th %</p>
+                  <p className="text-xs font-maplestory font-semibold text-white/35">{props.formatMesos.display(calc.p75Cost)}</p>
                 </div>
               </div>
             </div>
